@@ -1,0 +1,34 @@
+<a class="skip-link" href="#main">Ir al contenido</a>
+<header class="header">
+  <a class="brand" routerLink="/" aria-label="ApexPredict, inicio"
+    ><span class="brand-mark">A</span> APEX<span>PREDICT</span></a
+  >
+  <nav aria-label="Navegacion principal">
+    <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+      >Calendario</a
+    >
+    @if (auth.hasRole('player', 'admin')) {
+      <a routerLink="/dashboard" routerLinkActive="active">Mis ligas</a>
+    }
+    @if (auth.hasRole('admin')) {
+      <a routerLink="/admin" routerLinkActive="active">Administracion</a>
+    }
+  </nav>
+  @if (auth.authenticated()) {
+    <button class="button quiet" (click)="auth.logout()">Salir · {{ auth.username() }}</button>
+  } @else {
+    <button class="button small" [disabled]="!auth.available()" (click)="auth.login()">
+      Iniciar sesion <span aria-hidden="true">↗</span>
+    </button>
+  }
+</header>
+@if (!auth.available()) {
+  <p class="notice error" role="alert">
+    El inicio de sesion no esta disponible. Comproba la conexion y recarga la pagina.
+  </p>
+}
+<main id="main"><router-outlet /></main>
+<footer>
+  <span>APEXPREDICT</span><span>Un prode para vivir cada carrera.</span
+  ><span>Datos: Jolpica F1 · Proyecto DACS</span>
+</footer>

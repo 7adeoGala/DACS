@@ -1,0 +1,44 @@
+{
+  "realm": "apexpredict",
+  "enabled": true,
+  "displayName": "ApexPredict",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "player", "description": "Participante del prode" },
+      { "name": "admin", "description": "Administrador de ApexPredict" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "apexpredict-web",
+      "name": "ApexPredict Angular",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["https://dacs2026.local/apexpredict/*", "http://localhost:4200/*", "https://localhost:4200/*"],
+      "webOrigins": ["https://dacs2026.local", "http://localhost:4200", "https://localhost:4200"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://dacs2026.local/apexpredict/*##http://localhost:4200/*##https://localhost:4200/*"
+      },
+      "protocolMappers": [{
+        "name": "apexpredict-bff-audience",
+        "protocol": "openid-connect",
+        "protocolMapper": "oidc-audience-mapper",
+        "consentRequired": false,
+        "config": {
+          "included.custom.audience": "apexpredict-bff",
+          "access.token.claim": "true",
+          "id.token.claim": "false"
+        }
+      }]
+    }
+  ]
+}

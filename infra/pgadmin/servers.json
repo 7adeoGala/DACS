@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "ApexPredict (PostgreSQL)",
+      "Group": "DACS 2026",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "apexpredict",
+      "Username": "apexpredict",
+      "SSLMode": "prefer"
+    }
+  }
+}
+
