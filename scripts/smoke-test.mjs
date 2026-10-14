@@ -49,10 +49,23 @@ const cases = [
     assert.equal((await request('/apexpredict/missing.js')).status, 404);
     assert.equal((await request('/apexpredict/missing.css')).status, 404);
   }],
-  ['La API llega al BFF con /api eliminado', async () => {
-    const res = await request('/api/health?probe=bff');
-    assert.equal(res.status, 200);
-    assert.deepEqual(JSON.parse(res.text), { service: 'apexpredict-bff', status: 'UP' });
+  ['La API llega al BFF y responde a los pings de los 3 microservicios', async () => {
+    const health = await request('/api/health?probe=bff');
+    assert.equal(health.status, 200);
+    assert.deepEqual(JSON.parse(health.text), { service: 'apexpredict-bff', status: 'UP' });
+
+    const bffPing = await request('/api/ping');
+    assert.equal(bffPing.status, 200);
+    assert.deepEqual(JSON.parse(bffPing.text), { service: 'apexpredict-bff', status: 'UP' });
+
+    const backendPing = await request('/api/backendping');
+    assert.equal(backendPing.status, 200);
+    assert.deepEqual(JSON.parse(backendPing.text), { service: 'apexpredict-domain-service', status: 'UP' });
+
+    const conectorPing = await request('/api/conectorping');
+    assert.equal(conectorPing.status, 200);
+    assert.deepEqual(JSON.parse(conectorPing.text), { service: 'apexpredict-f1-connector', status: 'UP' });
+
     const missing = await request('/api/no-such-route.json');
     assert.equal(missing.status, 401);
     assert.equal((await request('/api/health', { method: 'POST' })).status, 401);
@@ -73,6 +86,7 @@ const cases = [
     const res = await request(`/auth/realms/apexpredict/protocol/openid-connect/auth?${query}`);
     assert.equal(res.status, 200);
     assert.match(res.text, /kc-form-login/);
+    assert.match(res.text, /login-actions\/registration\?/, 'El login ofrece registro de cuentas');
     const css = res.text.match(/href="([^"]*\/auth\/resources\/[^"?]+\.css[^\"]*)"/);
     assert.ok(css, 'No se encontro CSS de Keycloak en /auth/resources/');
     const url = new URL(css[1].replaceAll('&amp;', '&'), 'https://dacs2026.local');
@@ -107,6 +121,16 @@ const cases = [
     assert.equal(client.publicClient, true);
     assert.equal(client.attributes['pkce.code.challenge.method'], 'S256');
     assert.equal(client.directAccessGrantsEnabled, false);
+    const realmRes = await request('/auth/admin/realms/apexpredict', { headers });
+    assert.equal(realmRes.status, 200);
+    const realm = JSON.parse(realmRes.text);
+    assert.equal(realm.registrationAllowed, true);
+    assert.equal(realm.defaultLocale, 'es');
+    const inherited = await request(`/auth/admin/realms/apexpredict/roles-by-id/${realm.defaultRole.id}/composites/realm`, { headers });
+    assert.equal(inherited.status, 200);
+    const defaults = JSON.parse(inherited.text).map(role => role.name);
+    assert.ok(defaults.includes('player'), 'Nuevas cuentas tienen permisos de jugador');
+    assert.ok(!defaults.includes('admin'), 'Registro sin privilegios de administrador');
   }],
 ];
 

@@ -1,7 +1,14 @@
 package ar.edu.dacs.apexpredict.security;
 
-import ar.edu.dacs.apexpredict.application.*;
+import ar.edu.dacs.apexpredict.client.ConectorClient;
+import ar.edu.dacs.apexpredict.client.DomainClient;
 import ar.edu.dacs.apexpredict.web.ApiController;
+import ar.edu.dacs.apexpredict.web.ApiExceptionHandler;
+import ar.edu.dacs.apexpredict.web.dto.LeagueView;
+import feign.FeignException;
+import feign.Request;
+import feign.RequestTemplate;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.*;
@@ -16,6 +23,7 @@ import org.springframework.test.web.servlet.*;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -25,36 +33,156 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebAppConfiguration
 @TestPropertySource(properties = "apexpredict.security.cors-origins=http://localhost:4200,https://dacs2026.local")
 class AuthorizationTest {
-    @Configuration @EnableWebMvc @EnableWebSecurity
-    @Import({SecurityConfig.class, ApiController.class})
+
+    @Configuration
+    @EnableWebMvc
+    @EnableWebSecurity
+    @Import({SecurityConfig.class, ApiController.class, ApiExceptionHandler.class})
     static class Config {
-        @Bean F1DataProvider f1() { return mock(F1DataProvider.class); }
-        @Bean PlayerService players() { return mock(PlayerService.class); }
-        @Bean JwtDecoder decoder() { return mock(JwtDecoder.class); }
+        @Bean
+        DomainClient domainClient() {
+            return mock(DomainClient.class);
+        }
+
+        @Bean
+        ConectorClient conectorClient() {
+            return mock(ConectorClient.class);
+        }
+
+        @Bean
+        JwtDecoder decoder() {
+            return mock(JwtDecoder.class);
+        }
     }
-    @Autowired WebApplicationContext context;
-    @Autowired JwtDecoder decoder;
+
+    @Autowired
+    WebApplicationContext context;
+    @Autowired
+    DomainClient domainClient;
+    @Autowired
+    ConectorClient conectorClient;
+    @Autowired
+    JwtDecoder decoder;
+
     private MockMvc mvc;
-    @BeforeEach void setup() {
+
+    @BeforeEach
+    void setup() {
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
         for (String role : List.of("player", "admin", "observer")) {
             when(decoder.decode(role)).thenReturn(Jwt.withTokenValue(role).header("alg", "RS256")
                 .subject(role).issuer("https://dacs2026.local/auth/realms/apexpredict")
+                .audience(List.of("apexpredict-bff"))
                 .issuedAt(Instant.now()).expiresAt(Instant.now().plusSeconds(300))
+                .claim("preferred_username", role)
+                .claim("email", role + "@example.com")
                 .claim("realm_access", Map.of("roles", List.of(role))).build());
         }
     }
-    @Test void publicHealthWorksWithoutToken() throws Exception { mvc.perform(get("/health")).andExpect(status().isOk()); }
-    @Test void unauthenticatedPlayerRouteIs401() throws Exception { mvc.perform(get("/leagues")).andExpect(status().isUnauthorized()); }
-    @Test void playerCanReadOwnLeagues() throws Exception { mvc.perform(get("/leagues").header("Authorization", "Bearer player")).andExpect(status().isOk()); }
-    @Test void playerCannotUseAdminRoute() throws Exception { mvc.perform(get("/admin/status").header("Authorization", "Bearer player")).andExpect(status().isForbidden()); }
-    @Test void missingRoleIs403() throws Exception { mvc.perform(get("/leagues").header("Authorization", "Bearer observer")).andExpect(status().isForbidden()); }
-    @Test void adminRouteRequiresAdminRole() throws Exception { mvc.perform(get("/admin/status").header("Authorization", "Bearer admin")).andExpect(status().isOk()); }
-    @Test void corsAcceptsOnlyConfiguredOrigins() throws Exception {
-        mvc.perform(options("/me").header("Origin", "http://localhost:4200").header("Access-Control-Request-Method", "PUT")
-            .header("Access-Control-Request-Headers", "authorization")).andExpect(status().isOk())
+
+    @Test
+    void publicHealthWorksWithoutToken() throws Exception {
+        mvc.perform(get("/health"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.service").value("apexpredict-bff"))
+            .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void publicPingWorksWithoutToken() throws Exception {
+        mvc.perform(get("/ping"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.service").value("apexpredict-bff"))
+            .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void backendPingDelegatesToDomainService() throws Exception {
+        when(domainClient.ping()).thenReturn(Map.of("service", "apexpredict-domain-service", "status", "UP"));
+        mvc.perform(get("/backendping"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.service").value("apexpredict-domain-service"))
+            .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void conectorPingDelegatesToConnector() throws Exception {
+        when(conectorClient.ping()).thenReturn(Map.of("service", "apexpredict-f1-connector", "status", "UP"));
+        mvc.perform(get("/conectorping"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.service").value("apexpredict-f1-connector"))
+            .andExpect(jsonPath("$.status").value("UP"));
+    }
+
+    @Test
+    void unauthenticatedPlayerRouteIs401WithDacsFormat() throws Exception {
+        mvc.perform(get("/leagues"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.status").value(401))
+            .andExpect(jsonPath("$.code").value("bff_401"))
+            .andExpect(jsonPath("$.description").exists())
+            .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    void playerCanReadOwnLeagues() throws Exception {
+        when(domainClient.leagues()).thenReturn(List.of(new LeagueView(UUID.randomUUID(), "Test League")));
+        mvc.perform(get("/leagues").header("Authorization", "Bearer player"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].name").value("Test League"));
+    }
+
+    @Test
+    void playerCannotUseAdminRouteReturns403WithDacsFormat() throws Exception {
+        mvc.perform(get("/admin/status").header("Authorization", "Bearer player"))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.status").value(403))
+            .andExpect(jsonPath("$.code").value("bff_403"))
+            .andExpect(jsonPath("$.description").exists())
+            .andExpect(jsonPath("$.message").exists());
+    }
+
+    @Test
+    void missingRoleIs403WithDacsFormat() throws Exception {
+        mvc.perform(get("/leagues").header("Authorization", "Bearer observer"))
+            .andExpect(status().isForbidden())
+            .andExpect(jsonPath("$.status").value(403))
+            .andExpect(jsonPath("$.code").value("bff_403"));
+    }
+
+    @Test
+    void adminRouteRequiresAdminRole() throws Exception {
+        when(domainClient.adminStatus()).thenReturn(Map.of("status", "authorized"));
+        mvc.perform(get("/admin/status").header("Authorization", "Bearer admin"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("authorized"));
+    }
+
+    @Test
+    void downstreamFailureReturns502DacsFormat() throws Exception {
+        Request request = Request.create(Request.HttpMethod.GET, "/conector/calendar/2026", Map.of(), null, StandardCharsets.UTF_8, new RequestTemplate());
+        when(conectorClient.calendar(2026)).thenThrow(new FeignException.BadGateway("Downstream 502", request, null, Map.of()));
+
+        mvc.perform(get("/calendar/2026"))
+            .andExpect(status().isBadGateway())
+            .andExpect(jsonPath("$.status").value(502))
+            .andExpect(jsonPath("$.code").value("bff_502"))
+            .andExpect(jsonPath("$.description").exists())
+            .andExpect(jsonPath("$.message").value("Bad Gateway"));
+    }
+
+    @Test
+    void corsAcceptsOnlyConfiguredOrigins() throws Exception {
+        mvc.perform(options("/me")
+            .header("Origin", "http://localhost:4200")
+            .header("Access-Control-Request-Method", "PUT")
+            .header("Access-Control-Request-Headers", "authorization"))
+            .andExpect(status().isOk())
             .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"));
-        mvc.perform(options("/me").header("Origin", "https://attacker.invalid")
-            .header("Access-Control-Request-Method", "PUT")).andExpect(status().isForbidden());
+
+        mvc.perform(options("/me")
+            .header("Origin", "https://attacker.invalid")
+            .header("Access-Control-Request-Method", "PUT"))
+            .andExpect(status().isForbidden());
     }
 }

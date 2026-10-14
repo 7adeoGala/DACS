@@ -17,9 +17,16 @@ import { Race } from '../../core/models/api.models';
           Arma tu liga. Comparte la pasion por la Formula 1.<br />Cada fin de semana, una nueva
           historia.
         </p>
-        <button class="button" [disabled]="!auth.available()" (click)="auth.login()">
-          Entrar a mis ligas <span aria-hidden="true">→</span>
-        </button>
+        <div class="hero-actions">
+          <button class="button" [disabled]="!auth.available()" (click)="auth.login()">
+            Entrar a mis ligas <span aria-hidden="true">→</span>
+          </button>
+          @if (!auth.authenticated()) {
+            <button class="button quiet" [disabled]="!auth.available()" (click)="auth.register()">
+              Crear cuenta
+            </button>
+          }
+        </div>
       </div>
       <div class="track-art" aria-hidden="true">
         <svg viewBox="0 0 440 310">

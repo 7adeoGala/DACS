@@ -48,4 +48,7 @@ export class AuthService {
   logout(): Promise<void> {
     return this.keycloak.logout({ redirectUri: new URL('.', document.baseURI).href });
   }
+  register(): Promise<void> {
+    return this.keycloak.register({ redirectUri: new URL('dashboard', document.baseURI).href });
+  }
 }

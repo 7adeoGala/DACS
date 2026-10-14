@@ -1,9 +1,26 @@
 import { randomBytes } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { adminApi } from './local-http.mjs';
+import { loginWithCode } from './local-oidc.mjs';
 
 const api = await adminApi();
 const realm = JSON.parse(readFileSync(new URL('../infra/keycloak/apexpredict-realm.json', import.meta.url), 'utf8'));
+// Aplicar tambien sobre volumenes existentes: el import inicial no los actualiza.
+const settings = ['registrationAllowed', 'loginWithEmailAllowed', 'duplicateEmailsAllowed',
+  'verifyEmail', 'resetPasswordAllowed', 'internationalizationEnabled', 'supportedLocales',
+  'defaultLocale', 'passwordPolicy'];
+const currentRealm = (await api('')).json();
+const defaultRole = currentRealm.defaultRole;
+if (!defaultRole?.id) throw new Error('Keycloak no informa el rol predeterminado del realm.');
+const playerRole = (await api('/roles/player')).json();
+const inheritedRoles = (await api(`/roles-by-id/${defaultRole.id}/composites/realm`)).json();
+if (inheritedRoles.some(role => role.name === 'admin')) {
+  throw new Error('El rol predeterminado incluye admin. Revisar la configuracion antes de habilitar cuentas.');
+}
+if (!inheritedRoles.some(role => role.name === 'player')) {
+  await api(`/roles-by-id/${defaultRole.id}/composites`, 'POST', [playerRole]);
+}
+await api('', 'PUT', Object.fromEntries(settings.map(key => [key, realm[key]])));
 const desired = realm.clients.find(client => client.clientId === 'apexpredict-web');
 const [current] = (await api('/clients?clientId=apexpredict-web')).json();
 if (!current) throw new Error('El realm debe importarse al iniciar Keycloak antes de configurar el cliente.');
@@ -16,8 +33,16 @@ for (const mapper of protocolMappers) {
     existing ? 'PUT' : 'POST', { ...mapper, ...(existing ? { id: existing.id } : {}) });
 }
 console.log('Cliente Keycloak actualizado: callbacks de desarrollo, PKCE y audiencia del BFF.');
+console.log('Registro habilitado en espanol. Las cuentas nuevas reciben el rol player.');
 
 if (process.argv.includes('--demo')) {
+  // Declarar el marcador: Keycloak filtra atributos no incluidos en el perfil.
+  // Solo administradores pueden verlo o editarlo; no aparece en el registro.
+  const profile = (await api('/users/profile')).json();
+  const marker = { name: 'apexpredict-dev', displayName: 'Cuenta de pruebas ApexPredict',
+    permissions: { view: ['admin'], edit: ['admin'] }, multivalued: false };
+  profile.attributes = [...profile.attributes.filter(attribute => attribute.name !== marker.name), marker];
+  await api('/users/profile', 'PUT', profile);
   const localDir = new URL('../.local/', import.meta.url);
   const credentialsFile = new URL('dev-users.json', localDir);
   mkdirSync(localDir, { recursive: true });
@@ -25,8 +50,20 @@ if (process.argv.includes('--demo')) {
   const roles = (await api('/roles')).json();
   for (const [username, assigned] of [['demo-player', ['player']], ['demo-admin', ['player', 'admin']], ['demo-observer', []]]) {
     let [user] = (await api(`/users?username=${username}&exact=true`)).json();
-    if (user && (!credentials[username] || user.attributes?.['apexpredict-dev']?.[0] !== 'true')) {
+    if (user && !credentials[username]?.password) {
       throw new Error(`La cuenta ${username} ya existe y no pertenece a este setup. No se modifica.`);
+    }
+    if (user && user.attributes?.['apexpredict-dev']?.[0] !== 'true') {
+      // Migrar las demos anteriores cuyo marcador Keycloak descarto. Exigir un
+      // login real con su secreto local antes de modificar esa identidad.
+      const token = await loginWithCode(username, credentials[username].password);
+      const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
+      if (claims.sub !== user.id) throw new Error(`La credencial local no corresponde a ${username}.`);
+      const details = (await api(`/users/${user.id}`)).json();
+      await api(`/users/${user.id}`, 'PUT', {
+        ...details, attributes: { ...details.attributes, 'apexpredict-dev': ['true'] },
+      });
+      console.log(`Cuenta demo anterior reconocida mediante login: ${username}.`);
     }
     if (!user) {
       const password = credentials[username]?.password ?? randomBytes(24).toString('base64url');
@@ -39,8 +76,21 @@ if (process.argv.includes('--demo')) {
         credentials: [{ type: 'password', value: password, temporary: false }] });
       [user] = (await api(`/users?username=${username}&exact=true`)).json();
     }
+    const details = (await api(`/users/${user.id}`)).json();
+    if (!details.email || !details.firstName || !details.lastName) {
+      await api(`/users/${user.id}`, 'PUT', { ...details,
+        email: details.email || `${username}@example.com`,
+        firstName: details.firstName || 'Demo', lastName: details.lastName || username.replace('demo-', ''),
+      });
+    }
     if (assigned.length) await api(`/users/${user.id}/role-mappings/realm`, 'POST',
       roles.filter(role => assigned.includes(role.name)));
+    // Esta cuenta de prueba debe seguir sin permisos, incluso con player por defecto.
+    if (username === 'demo-observer') {
+      const mappings = (await api(`/users/${user.id}/role-mappings/realm`)).json();
+      const removed = mappings.filter(role => [defaultRole.name, 'player', 'admin'].includes(role.name));
+      if (removed.length) await api(`/users/${user.id}/role-mappings/realm`, 'DELETE', removed);
+    }
   }
   console.log('Cuentas locales de prueba listas. Credenciales en .local/dev-users.json (excluido de Git).');
 }

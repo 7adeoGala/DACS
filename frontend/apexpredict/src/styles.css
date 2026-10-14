@@ -167,6 +167,11 @@ h1 em {
 .hero .eyebrow {
   margin-bottom: 23px;
 }
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
 .track-art {
   display: flex;
   align-items: center;

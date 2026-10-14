@@ -7,19 +7,22 @@ documentan aqui; no se recibio otra guia de la catedra.
 
 ## Arranque habitual
 
-Con Docker Desktop en modo Linux, desde la raiz:
+Desde PowerShell en la raiz del proyecto:
 
 ```powershell
-docker compose up -d --build --wait --wait-timeout 240
-node scripts/configure-keycloak.mjs --demo
-cd frontend/apexpredict
-npm ci
-npm run build -- --configuration=production --base-href=/apexpredict/
-cd ../..
-node scripts/publish-frontend.mjs
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
 ```
 
-Abrir **https://dacs2026.local/apexpredict/**. La raiz del dominio redirige a esa
+El script inicia Docker Desktop, instala dependencias cuando hace falta, compila,
+levanta los servicios, configura Keycloak y verifica el entorno. Abrir
+**https://dacs2026.local/apexpredict/** y pulsar **Crear cuenta**, o ingresar a
+**Iniciar sesion > Registrarse**, para crear un perfil propio con rol `player`.
+
+**Guia completa:** [inicializacion, cuentas, desarrollo y solucion de problemas](docs/arranque.md).
+Usar `start.ps1 -Dev` para agregar Angular en el puerto 4200 y `-Demo` para crear
+las cuentas de las pruebas automatizadas.
+
+La raiz del dominio redirige a esa
 ruta. El parametro `/nombre-app/` de la consigna se concreta como `/apexpredict/`.
 El cliente de Keycloak se actualiza mediante su API porque `--import-realm` omite
 realms ya existentes; no se borran los volumenes de la Fase 1.
@@ -207,7 +210,10 @@ Keycloak acepta callbacks tanto `http://localhost:4200/*` como
 `configure-keycloak.mjs --demo` crea `demo-player`, `demo-admin` y `demo-observer`
 con contrasenas aleatorias y roles diferenciados. Se conservan al repetir el setup.
 No se reemplazan cuentas ajenas con esos nombres. Sin `--demo`, solo se configura
-el cliente. No se habilita registro publico ni se envian correos.
+el cliente, el registro local y el rol predeterminado `player`. Las cuentas propias
+se crean desde **Registrarse** en el login o **Crear cuenta** en la portada. La
+contrasena requiere al menos 10 caracteres; el perfil se guarda al entrar a Mis ligas.
+No se envian correos de verificacion ni recuperacion porque no hay SMTP configurado.
 
 pgAdmin usa `PGADMIN_EMAIL` y `PGADMIN_PASSWORD`. La conexion precargada es
 `postgres:5432`, base/usuario `apexpredict`, password `APP_DB_PASSWORD`.

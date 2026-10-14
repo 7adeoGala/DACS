@@ -3,12 +3,26 @@
   "enabled": true,
   "displayName": "ApexPredict",
   "sslRequired": "external",
-  "registrationAllowed": false,
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": false,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["es", "en"],
+  "defaultLocale": "es",
+  "passwordPolicy": "length(10)",
   "resetPasswordAllowed": false,
+  "defaultRole": { "name": "default-roles-apexpredict" },
   "roles": {
     "realm": [
       { "name": "player", "description": "Participante del prode" },
-      { "name": "admin", "description": "Administrador de ApexPredict" }
+      { "name": "admin", "description": "Administrador de ApexPredict" },
+      {
+        "name": "default-roles-apexpredict",
+        "description": "Roles iniciales de las cuentas de ApexPredict",
+        "composite": true,
+        "composites": { "realm": ["player", "offline_access", "uma_authorization"] }
+      }
     ]
   },
   "clients": [
@@ -28,17 +42,30 @@
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "https://dacs2026.local/apexpredict/*##http://localhost:4200/*##https://localhost:4200/*"
       },
-      "protocolMappers": [{
-        "name": "apexpredict-bff-audience",
-        "protocol": "openid-connect",
-        "protocolMapper": "oidc-audience-mapper",
-        "consentRequired": false,
-        "config": {
-          "included.custom.audience": "apexpredict-bff",
-          "access.token.claim": "true",
-          "id.token.claim": "false"
+      "protocolMappers": [
+        {
+          "name": "apexpredict-bff-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "apexpredict-bff",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "apexpredict-backend-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "apexpredict-backend",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
         }
-      }]
+      ]
     }
   ]
 }

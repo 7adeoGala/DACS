@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: apexpredict-f1-connector
+server:
+  port: 9002
+  servlet:
+    context-path: /conector
+  error:
+    include-message: never
+    include-stacktrace: never
+apexpredict:
+  jolpica:
+    base-url: https://api.jolpi.ca/ergast/f1
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 10000
+        loggerLevel: basic

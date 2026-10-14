@@ -1,4 +1,40 @@
-# Validacion · 24/09/2026
+# Validacion · 29/09/2026
+
+## Arranque y registro verificados el 29/09
+
+| Comprobacion | Resultado |
+| --- | --- |
+| `start.ps1 -Demo` | Arranque completo correcto; repetible sin reemplazar contrasenas ni datos |
+| Docker Compose | 5 servicios saludables |
+| Certificado en Windows y Chrome | HTTPS verificado; resuelta la confirmacion pendiente del 24/09 |
+| Frontend compilado | Publicado en https://dacs2026.local/apexpredict/ |
+| Angular | 9 pruebas aprobadas, incluidas 2 regresiones del formulario de ligas |
+| Infraestructura | 8/8 comprobaciones; registro visible y rol player predeterminado |
+| Integracion | 7/7; login PKCE, perfiles, persistencia, roles, CORS y Jolpica |
+| Limites entre core y features | Correctos |
+| Navegador: registro | Alta desde Iniciar sesion > Registrarse en espanol y retorno a Mis ligas |
+| Navegador: reingreso | Cierre de sesion e ingreso con la cuenta recien creada |
+| Navegador: ligas | Creacion desde el formulario y persistencia despues de recargar |
+| Navegador: autorizacion | Jugador redirigido a acceso denegado al abrir /admin |
+| Desarrollo en http://localhost:4200/ | Angular activo; calendario, sesion SSO y ligas persistidas verificados en Chrome, sin errores de JavaScript |
+
+Se corrigio un problema detectado en la prueba visual: el formulario de ligas no
+tenia un `FormGroup` asociado y el navegador recargaba la pagina al enviarlo.
+Ahora el envio lo maneja Angular; las pruebas comprueban que no navega ni duplica
+la peticion mientras espera la respuesta.
+
+La cuenta creada para verificar el registro tiene sus credenciales unicamente en
+`.local/registration-user.json` y conserva una `Liga de registro verificado`. Es una
+cuenta de prueba: el usuario puede crear su cuenta propia desde el login. Se comprobo
+ademas contra el BFF que el perfil es idempotente y esa cuenta recibe 403 en administracion.
+
+La herramienta de navegador integrada sigue sin poder conectarse por un error de
+su entorno; la verificacion se completo con `agent-browser` y Chrome local, sin
+desactivar TLS. Captura: `.local/registro-verificado.png`.
+
+La guia operativa esta en [arranque.md](arranque.md).
+
+## Referencia de la ejecucion inicial del 24/09
 
 ## Verificado
 
@@ -20,25 +56,11 @@ aislamiento de ligas, 401/403, CORS en https://localhost:8080 y calendario/resul
 reales de Jolpica. Las pruebas criptograficas tambien rechazaron firmas adulteradas,
 issuer incorrecto, otra audiencia y tokens vencidos.
 
-## Pendiente de confirmacion de Windows
+## Incidencia del 24/09: resuelta el 29/09
 
-La interfaz de desarrollo se renderiza, pero Chrome devuelve
-`net::ERR_CERT_AUTHORITY_INVALID` al conectar a los servicios HTTPS. Windows mantiene
-abierta la ventana **Advertencia de seguridad** de `scripts/trust-browser-cert.ps1`.
-La importacion al almacen `CurrentUser\Root` espera la aceptacion del usuario.
+El 24/09 Chrome devolvia `net::ERR_CERT_AUTHORITY_INVALID` porque faltaba completar
+la confirmacion de Windows para importar el certificado al almacen `CurrentUser\Root`.
+El 29/09 se comprobo que el certificado ya estaba confiado y se completo el recorrido
+de registro e ingreso en Chrome con HTTPS verificado.
 
-No se desactivo la validacion de certificados. Las pruebas Node confian en el PEM
-explicito y por eso pudieron verificar TLS y autenticacion de extremo a extremo.
-Todavia no se da por aprobado el login desde la interfaz del navegador.
-
-Despues de aceptar la advertencia:
-
-1. Recargar http://localhost:4200 y confirmar calendario e inicio de sesion.
-2. Ingresar como `demo-player` (password en `.local/dev-users.json`).
-3. Comprobar Mis ligas y rechazo al ingresar manualmente a `/admin`.
-4. Repetir con `demo-admin` y verificar el acceso administrativo.
-5. Verificar el mismo flujo en https://dacs2026.local/apexpredict/.
-
-La herramienta de navegador integrada no pudo iniciar por un error de su entorno.
-Se utilizo `agent-browser` con Chrome local para verificar el renderizado y obtener
-el error TLS. La captura de esa comprobacion esta en `.local/dev-home.png`.
+Las pruebas Node siguen usando el PEM explicito y verifican TLS sin excepciones.

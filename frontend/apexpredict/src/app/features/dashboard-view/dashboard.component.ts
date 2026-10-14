@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { switchMap } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { League } from '../../core/models/api.models';
@@ -20,12 +20,12 @@ import { League } from '../../core/models/api.models';
         <p class="notice error" role="alert">{{ error() }}</p>
       }
       @if (!loading() && ready()) {
-        <form class="create-league" (ngSubmit)="create()">
+        <form class="create-league" [formGroup]="form" (ngSubmit)="create()">
           <label for="league-name">Nombre de la nueva liga</label>
           <div>
             <input
               id="league-name"
-              [formControl]="name"
+              formControlName="name"
               maxlength="100"
               placeholder="Por ejemplo, La ultima curva"
               required
@@ -54,6 +54,7 @@ export class DashboardComponent implements OnInit {
     nonNullable: true,
     validators: [Validators.required, Validators.maxLength(100), Validators.pattern(/\S/)],
   });
+  readonly form = new FormGroup({ name: this.name });
   readonly leagues = signal<League[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
