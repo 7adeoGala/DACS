@@ -1,5 +1,6 @@
 package ar.edu.dacs.apexpredict.security;
 
+import ar.edu.dacs.apexpredict.application.NotificationService;
 import ar.edu.dacs.apexpredict.application.PlayerService;
 import ar.edu.dacs.apexpredict.web.DomainController;
 import ar.edu.dacs.apexpredict.web.DomainExceptionHandler;
@@ -34,6 +35,11 @@ class DomainAuthorizationTest {
         @Bean
         PlayerService players() {
             return mock(PlayerService.class);
+        }
+
+        @Bean
+        NotificationService notifications() {
+            return mock(NotificationService.class);
         }
 
         @Bean

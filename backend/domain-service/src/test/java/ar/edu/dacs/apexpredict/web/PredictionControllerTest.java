@@ -2,6 +2,7 @@ package ar.edu.dacs.apexpredict.web;
 
 import ar.edu.dacs.apexpredict.application.PredictionService;
 import ar.edu.dacs.apexpredict.application.ScoringService;
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -24,13 +25,13 @@ class PredictionControllerTest {
     private Jwt jwt;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         predictionService = Mockito.mock(PredictionService.class);
         scoringService = Mockito.mock(ScoringService.class);
         controller = new PredictionController(predictionService, scoringService);
 
         jwt = Mockito.mock(Jwt.class);
-        when(jwt.getIssuer()).thenReturn(java.net.URI.create("https://dacs2026.local/auth/realms/apexpredict").toURL());
+        when(jwt.getIssuer()).thenReturn(URI.create("https://dacs2026.local/auth/realms/apexpredict").toURL());
         when(jwt.getSubject()).thenReturn("player-123");
     }
 
