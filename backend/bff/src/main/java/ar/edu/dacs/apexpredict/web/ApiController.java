@@ -2,14 +2,11 @@ package ar.edu.dacs.apexpredict.web;
 
 import ar.edu.dacs.apexpredict.client.ConectorClient;
 import ar.edu.dacs.apexpredict.client.DomainClient;
-import ar.edu.dacs.apexpredict.web.dto.CreateLeague;
-import ar.edu.dacs.apexpredict.web.dto.Finish;
-import ar.edu.dacs.apexpredict.web.dto.LeagueView;
-import ar.edu.dacs.apexpredict.web.dto.Profile;
-import ar.edu.dacs.apexpredict.web.dto.Race;
+import ar.edu.dacs.apexpredict.web.dto.*;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -60,6 +57,8 @@ public class ApiController {
         return domainClient.me();
     }
 
+    // --- Ligas y Leaderboards ---
+
     @GetMapping("/leagues")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public List<LeagueView> leagues() {
@@ -71,6 +70,71 @@ public class ApiController {
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public LeagueView createLeague(@Valid @RequestBody CreateLeague request) {
         return domainClient.createLeague(request);
+    }
+
+    @PutMapping("/leagues/{id}")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public LeagueView editLeague(@PathVariable UUID id, @Valid @RequestBody EditLeague request) {
+        return domainClient.editLeague(id, request);
+    }
+
+    @PostMapping("/leagues/join/{inviteCode}")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public LeagueView joinLeague(@PathVariable UUID inviteCode) {
+        return domainClient.joinLeague(inviteCode);
+    }
+
+    @GetMapping("/leaderboard/global")
+    public List<LeaderboardEntry> globalLeaderboard() {
+        return domainClient.globalLeaderboard();
+    }
+
+    @GetMapping("/leagues/{id}/leaderboard")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public List<LeaderboardEntry> leagueLeaderboard(@PathVariable UUID id) {
+        return domainClient.leagueLeaderboard(id);
+    }
+
+    // --- Predicciones y Lock Time ---
+
+    @GetMapping("/sessions/next")
+    public NextSession nextSession() {
+        return domainClient.nextSession();
+    }
+
+    @GetMapping("/predictions/current")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public PredictionDetail currentPrediction() {
+        return domainClient.currentPrediction();
+    }
+
+    @GetMapping("/predictions/session/{sessionId}")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public PredictionDetail predictionForSession(@PathVariable UUID sessionId) {
+        return domainClient.predictionForSession(sessionId);
+    }
+
+    @PostMapping("/predictions/session/{sessionId}")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public PredictionDetail submitPrediction(
+        @PathVariable UUID sessionId,
+        @Valid @RequestBody SubmitPrediction request
+    ) {
+        return domainClient.submitPrediction(sessionId, request);
+    }
+
+    // --- Notificaciones ---
+
+    @GetMapping("/notifications")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public List<NotificationView> notifications() {
+        return domainClient.notifications();
+    }
+
+    @PostMapping("/admin/notifications/send-reminders/{sessionId}")
+    @PreAuthorize("hasRole('admin')")
+    public Map<String, Object> sendReminders(@PathVariable UUID sessionId) {
+        return domainClient.sendReminders(sessionId);
     }
 
     @GetMapping("/admin/status")

@@ -1,0 +1,123 @@
+package ar.edu.dacs.apexpredict.web;
+
+import ar.edu.dacs.apexpredict.application.PredictionService;
+import ar.edu.dacs.apexpredict.application.ScoringService;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import java.util.List;
+import java.util.UUID;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+/**
+ * Controlador REST encargado del Dashboard de Predicciones y validación estricta del "Lock Time".
+ */
+@RestController
+@RequestMapping
+public class PredictionController {
+
+    private final PredictionService predictionService;
+    private final ScoringService scoringService;
+
+    public PredictionController(PredictionService predictionService, ScoringService scoringService) {
+        this.predictionService = predictionService;
+        this.scoringService = scoringService;
+    }
+
+    /**
+     * Requerimiento 2.A: Al ingresar a la plataforma, el usuario debe visualizar la siguiente carrera programada.
+     */
+    @GetMapping("/sessions/next")
+    public PredictionService.NextSessionView getNextSession() {
+        var next = predictionService.getNextScheduledSession();
+        if (next == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No hay carreras futuras programadas.");
+        }
+        return next;
+    }
+
+    /**
+     * Consulta el pronóstico del usuario actual para la siguiente carrera programada.
+     */
+    @GetMapping("/predictions/current")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public PredictionService.PredictionDetailView getCurrentPrediction(@AuthenticationPrincipal Jwt jwt) {
+        var next = predictionService.getNextScheduledSession();
+        if (next == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No hay carreras futuras programadas.");
+        }
+        return predictionService.getUserPrediction(jwt.getIssuer().toString(), jwt.getSubject(), next.id());
+    }
+
+    /**
+     * Consulta el pronóstico del usuario para una sesión específica.
+     */
+    @GetMapping("/predictions/session/{sessionId}")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public PredictionService.PredictionDetailView getPredictionForSession(
+        @AuthenticationPrincipal Jwt jwt,
+        @PathVariable UUID sessionId
+    ) {
+        return predictionService.getUserPrediction(jwt.getIssuer().toString(), jwt.getSubject(), sessionId);
+    }
+
+    /**
+     * Requerimiento 2.A y Regla de Negocio (Lock Time):
+     * El usuario debe poder cargar y editar sus predicciones a través de un formulario.
+     * El sistema debe bloquear cualquier edición o carga de pronósticos exactamente en el horario
+     * oficial de inicio de la sesión; no se permiten cambios posteriores.
+     */
+    @PostMapping("/predictions/session/{sessionId}")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public PredictionService.PredictionDetailView submitPrediction(
+        @AuthenticationPrincipal Jwt jwt,
+        @PathVariable UUID sessionId,
+        @Valid @RequestBody SubmitPredictionDto body
+    ) {
+        try {
+            return predictionService.saveOrUpdatePrediction(
+                jwt.getIssuer().toString(),
+                jwt.getSubject(),
+                sessionId,
+                new PredictionService.SubmitPredictionRequest(
+                    body.podium(),
+                    body.polePositionDriverId(),
+                    body.duelDriverPick(),
+                    body.safetyCarCount(),
+                    body.dnfCount()
+                )
+            );
+        } catch (IllegalStateException ex) {
+            // Error de negocio: Lock Time superado o perfil no creado
+            throw new ResponseStatusException(HttpStatus.LOCKED, ex.getMessage(), ex);
+        } catch (IllegalArgumentException ex) {
+            // Error de validación de datos
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
+    }
+
+    /**
+     * Ejecuta el cálculo y asignación de puntos para las predicciones de una sesión concluida.
+     */
+    @PostMapping("/admin/sessions/{sessionId}/score")
+    @PreAuthorize("hasRole('admin')")
+    public List<ScoringService.ScoredPredictionSummary> scoreSession(@PathVariable UUID sessionId) {
+        return scoringService.scoreSession(sessionId);
+    }
+
+    public record SubmitPredictionDto(
+        @NotNull(message = "El podio es obligatorio")
+        @Size(min = 3, max = 3, message = "El podio debe tener exactamente 3 pilotos")
+        List<String> podium,
+
+        String polePositionDriverId,
+        String duelDriverPick,
+        Integer safetyCarCount,
+        Integer dnfCount
+    ) {}
+}
