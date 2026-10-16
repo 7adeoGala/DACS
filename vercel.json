@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm --prefix frontend/apexpredict install",
+  "buildCommand": "npm --prefix frontend/apexpredict run build",
+  "outputDirectory": "frontend/apexpredict/dist/apexpredict/browser",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
