@@ -9,7 +9,8 @@ import {
   NextSession,
   PredictionDetail,
   SubmitPrediction,
-  LeaderboardEntry
+  LeaderboardEntry,
+  PredictionHistoryItem
 } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -59,6 +60,10 @@ export class ApiService {
 
   currentPrediction() {
     return this.http.get<PredictionDetail>(`${this.base}/predictions/current`);
+  }
+
+  predictionHistory() {
+    return this.http.get<PredictionHistoryItem[]>(`${this.base}/predictions/history`);
   }
 
   submitPrediction(sessionId: string, prediction: SubmitPrediction) {

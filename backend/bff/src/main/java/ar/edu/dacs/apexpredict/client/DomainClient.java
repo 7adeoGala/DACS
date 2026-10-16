@@ -44,6 +44,9 @@ public interface DomainClient {
     @GetMapping("/predictions/current")
     PredictionDetail currentPrediction();
 
+    @GetMapping("/predictions/history")
+    List<PredictionHistoryItem> predictionHistory();
+
     @GetMapping("/predictions/session/{sessionId}")
     PredictionDetail predictionForSession(@PathVariable("sessionId") UUID sessionId);
 

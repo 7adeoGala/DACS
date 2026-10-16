@@ -55,6 +55,15 @@ public class PredictionController {
     }
 
     /**
+     * Consulta el historial completo de pronósticos y puntuaciones del usuario.
+     */
+    @GetMapping("/predictions/history")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public List<PredictionService.PredictionHistoryItem> getPredictionHistory(@AuthenticationPrincipal Jwt jwt) {
+        return predictionService.getUserPredictionHistory(jwt.getIssuer().toString(), jwt.getSubject());
+    }
+
+    /**
      * Consulta el pronóstico del usuario para una sesión específica.
      */
     @GetMapping("/predictions/session/{sessionId}")

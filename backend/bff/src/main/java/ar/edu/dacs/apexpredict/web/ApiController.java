@@ -108,6 +108,12 @@ public class ApiController {
         return domainClient.currentPrediction();
     }
 
+    @GetMapping("/predictions/history")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public List<PredictionHistoryItem> predictionHistory() {
+        return domainClient.predictionHistory();
+    }
+
     @GetMapping("/predictions/session/{sessionId}")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PredictionDetail predictionForSession(@PathVariable UUID sessionId) {

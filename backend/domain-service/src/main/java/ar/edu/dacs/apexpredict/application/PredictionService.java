@@ -17,17 +17,23 @@ public class PredictionService {
     private final SessionRepository sessions;
     private final UserRepository users;
     private final WeekendMatchupService matchupService;
+    private final SessionResultRepository results;
+    private final ScoringService scoringService;
 
     public PredictionService(
         PredictionRepository predictions,
         SessionRepository sessions,
         UserRepository users,
-        WeekendMatchupService matchupService
+        WeekendMatchupService matchupService,
+        SessionResultRepository results,
+        ScoringService scoringService
     ) {
         this.predictions = predictions;
         this.sessions = sessions;
         this.users = users;
         this.matchupService = matchupService;
+        this.results = results;
+        this.scoringService = scoringService;
     }
 
     /**
@@ -201,6 +207,95 @@ public class PredictionService {
             matchup.getDriver2Id()
         );
     }
+
+    /**
+     * Consulta el historial completo de predicciones y puntuaciones del usuario.
+     */
+    @Transactional(readOnly = true)
+    public List<PredictionHistoryItem> getUserPredictionHistory(String issuer, String subject) {
+        User user = users.findByIssuerAndSubject(issuer, subject)
+            .orElseThrow(() -> new IllegalStateException("Perfil no inicializado."));
+
+        return predictions.findByUserOrderBySubmittedAtDesc(user).stream()
+            .map(p -> {
+                Session s = p.getSession();
+                WeekendMatchup matchup = matchupService.findForSession(s.getId()).orElse(null);
+                SessionResult result = results.findBySessionId(s.getId()).orElse(null);
+                ScoringService.ScoreBreakdown breakdown = null;
+                if (result != null) {
+                    try {
+                        breakdown = scoringService.calculateScore(p, result, matchup);
+                    } catch (Exception ignored) {}
+                }
+                String d1 = matchup != null ? matchup.getDriver1Id() : null;
+                String d2 = matchup != null ? matchup.getDriver2Id() : null;
+
+                return new PredictionHistoryItem(
+                    p.getId(),
+                    s.getId(),
+                    s.getName(),
+                    s.getCircuit(),
+                    s.getRaceDate() != null ? s.getRaceDate().toString() : null,
+                    s.getStartsAt(),
+                    p.getPodium(),
+                    p.getPolePositionDriverId(),
+                    p.getDuelDriverPick(),
+                    p.getSafetyCarCount(),
+                    p.getDnfCount(),
+                    p.getScore(),
+                    p.getSubmittedAt(),
+                    d1,
+                    d2,
+                    breakdown != null ? new ScoreBreakdownDto(
+                        breakdown.podiumHits(),
+                        breakdown.podiumPoints(),
+                        breakdown.poleHit(),
+                        breakdown.polePoints(),
+                        breakdown.duelHit(),
+                        breakdown.duelPoints(),
+                        breakdown.safetyCarHit(),
+                        breakdown.safetyCarPoints(),
+                        breakdown.dnfHit(),
+                        breakdown.dnfPoints(),
+                        breakdown.totalPoints()
+                    ) : null
+                );
+            })
+            .toList();
+    }
+
+    public record ScoreBreakdownDto(
+        int podiumHits,
+        int podiumPoints,
+        boolean poleHit,
+        int polePoints,
+        boolean duelHit,
+        int duelPoints,
+        boolean safetyCarHit,
+        int safetyCarPoints,
+        boolean dnfHit,
+        int dnfPoints,
+        int totalPoints
+    ) {}
+
+    public record PredictionHistoryItem(
+        UUID predictionId,
+        UUID sessionId,
+        String sessionName,
+        String circuit,
+        String raceDate,
+        Instant startsAt,
+        List<String> podium,
+        String polePositionDriverId,
+        String duelDriverPick,
+        Integer safetyCarCount,
+        Integer dnfCount,
+        Integer score,
+        Instant submittedAt,
+        String matchupDriver1,
+        String matchupDriver2,
+        ScoreBreakdownDto scoreBreakdown
+    ) {}
 
     public record NextSessionView(
         UUID id,
