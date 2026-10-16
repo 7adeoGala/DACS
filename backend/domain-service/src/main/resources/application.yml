@@ -3,7 +3,7 @@ spring:
     name: apexpredict-domain-service
   datasource:
     url: ${DB_URL:jdbc:postgresql://postgres:5432/apexpredict}
-    username: apexpredict
+    username: ${DB_USER:apexpredict}
     password: ${APP_DB_PASSWORD}
   jpa:
     open-in-view: false

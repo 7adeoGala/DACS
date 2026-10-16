@@ -80,8 +80,9 @@ services:
   domain-service:
     build: ./backend/domain-service
     environment:
-      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?Falta APP_DB_PASSWORD}
-      DB_URL: jdbc:postgresql://postgres:5432/apexpredict
+      APP_DB_PASSWORD: ${DOMAIN_DB_PASSWORD:-${APP_DB_PASSWORD}}
+      DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/apexpredict}
+      DB_USER: ${DB_USER:-apexpredict}
     volumes:
       - ./infra/certs/generated/dacs2026.local.pem:/certs/local.pem:ro
     depends_on:

@@ -2,12 +2,12 @@ spring:
   application:
     name: apexpredict-bff
 server:
-  port: 8443
+  port: ${PORT:8443}
   servlet:
     context-path: /bff
   forward-headers-strategy: none
   ssl:
-    enabled: true
+    enabled: ${SERVER_SSL_ENABLED:true}
     key-store: ${TLS_KEY_STORE:file:/certs/local.p12}
     key-store-type: PKCS12
     key-store-password: ${CERT_PASSWORD}
@@ -32,4 +32,4 @@ apexpredict:
     issuer: https://dacs2026.local/auth/realms/apexpredict
     jwk-set-uri: https://dacs2026.local/auth/realms/apexpredict/protocol/openid-connect/certs
     audience: apexpredict-bff
-    cors-origins: http://localhost:4200,https://localhost:4200,https://dacs2026.local
+    cors-origins: ${CORS_ORIGINS:http://localhost:4200,https://localhost:4200,https://dacs2026.local}
