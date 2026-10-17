@@ -10,6 +10,7 @@ FROM quay.io/keycloak/keycloak:26.7.4
 
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 COPY apexpredict-realm.json /opt/keycloak/data/import/apexpredict-realm.json
+COPY theme/ /opt/keycloak/themes/
 
 # Limitar el uso de memoria a < 450 MB para que no supere el límite de 512MB del tier gratis de Render
 ENV KC_DB=postgres \

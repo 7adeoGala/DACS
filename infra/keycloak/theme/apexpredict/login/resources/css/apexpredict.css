@@ -1,0 +1,201 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --pf-v5-global--FontFamily--sans-serif: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --bg: #090b0e;
+  --surface: #141822;
+  --surface-card: #181d2a;
+  --surface-hover: #1e2434;
+  --red: #e10600;
+  --red-bright: #ff1801;
+  --red-glow: rgba(225, 6, 0, 0.35);
+  --cyan: #00f2fe;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+}
+
+body#keycloak-bg {
+  background-color: var(--bg) !important;
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(225, 6, 0, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 85% 65%, rgba(0, 242, 254, 0.06) 0%, transparent 45%),
+    linear-gradient(180deg, #090b0ef2, #090b0e) !important;
+  background-attachment: fixed !important;
+  font-family: var(--pf-v5-global--FontFamily--sans-serif) !important;
+  color: var(--text-main) !important;
+  margin: 0;
+  min-height: 100vh;
+}
+
+.pf-v5-c-login {
+  background: transparent !important;
+  font-family: inherit !important;
+}
+
+.pf-v5-c-login__container {
+  max-width: 480px !important;
+  margin: 40px auto !important;
+  padding: 0 16px !important;
+}
+
+/* Brand header */
+.pf-v5-c-login__header {
+  margin-bottom: 24px !important;
+  text-align: center !important;
+}
+
+#kc-header-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  font-size: 24px !important;
+  font-weight: 900 !important;
+  letter-spacing: -0.5px !important;
+  text-transform: uppercase !important;
+  color: #fff !important;
+}
+
+#kc-header-wrapper::before {
+  content: 'A';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  background: var(--red);
+  color: #fff;
+  font-weight: 900;
+  font-size: 22px;
+  border-radius: 8px;
+  box-shadow: 0 0 16px var(--red-glow);
+}
+
+/* Main Card */
+.pf-v5-c-login__main {
+  background: var(--surface) !important;
+  border: 1px solid var(--line-strong) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.7), 0 0 40px rgba(225, 6, 0, 0.06) !important;
+  backdrop-filter: blur(12px) !important;
+  padding: 32px 28px !important;
+}
+
+.pf-v5-c-login__main-header {
+  border-bottom: 1px solid var(--line) !important;
+  padding-bottom: 16px !important;
+  margin-bottom: 20px !important;
+}
+
+#kc-page-title {
+  color: var(--text-main) !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.3px !important;
+  margin: 0 !important;
+}
+
+/* Form controls / labels */
+.pf-v5-c-form__label-text {
+  color: var(--text-muted) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.pf-v5-c-form-control input,
+input.pf-v5-c-form-control {
+  background-color: var(--surface-card) !important;
+  border: 1px solid var(--line-strong) !important;
+  border-radius: 8px !important;
+  color: var(--text-main) !important;
+  font-size: 15px !important;
+  padding: 12px 14px !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.pf-v5-c-form-control input:focus,
+input.pf-v5-c-form-control:focus {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 3px var(--red-glow) !important;
+  outline: none !important;
+}
+
+/* Primary Button */
+.pf-v5-c-button.pf-m-primary,
+input[type="submit"].pf-v5-c-button {
+  background: linear-gradient(135deg, var(--red) 0%, var(--red-bright) 100%) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: #fff !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  padding: 13px 24px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 16px var(--red-glow) !important;
+  transition: transform 0.15s, box-shadow 0.15s !important;
+  margin-top: 12px !important;
+  width: 100% !important;
+}
+
+.pf-v5-c-button.pf-m-primary:hover,
+input[type="submit"].pf-v5-c-button:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 24px rgba(225, 6, 0, 0.5) !important;
+}
+
+/* Eye / toggle password button */
+.pf-v5-c-button.pf-m-control {
+  background: var(--surface-card) !important;
+  border: 1px solid var(--line-strong) !important;
+  color: var(--text-muted) !important;
+  border-radius: 0 8px 8px 0 !important;
+}
+
+/* Links */
+a {
+  color: var(--cyan) !important;
+  text-decoration: none !important;
+  font-weight: 500 !important;
+  transition: color 0.15s, text-decoration 0.15s !important;
+}
+
+a:hover {
+  color: #fff !important;
+  text-decoration: underline !important;
+}
+
+#kc-registration {
+  color: var(--text-muted) !important;
+  font-size: 14px !important;
+  text-align: center !important;
+  margin-top: 20px !important;
+  padding-top: 16px !important;
+  border-top: 1px solid var(--line) !important;
+}
+
+/* Errors & Feedback */
+#kc-error-message,
+.kc-feedback-text,
+.pf-v5-c-helper-text__item.pf-m-error {
+  background: rgba(225, 6, 0, 0.12) !important;
+  border: 1px solid rgba(225, 6, 0, 0.35) !important;
+  color: #ff9e9e !important;
+  border-radius: 8px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+}
+
+/* Language selector dropdown */
+.pf-v5-c-login__main-header-utilities select {
+  background: var(--surface-card) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 6px !important;
+  padding: 4px 8px !important;
+}

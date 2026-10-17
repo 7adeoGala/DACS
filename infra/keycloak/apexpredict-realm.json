@@ -12,6 +12,7 @@
   "defaultLocale": "es",
   "passwordPolicy": "length(10)",
   "resetPasswordAllowed": false,
+  "loginTheme": "apexpredict",
   "defaultRole": { "name": "default-roles-apexpredict" },
   "roles": {
     "realm": [
