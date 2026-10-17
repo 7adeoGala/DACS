@@ -75,61 +75,120 @@ import {
           }
 
           <!-- 1. PODIO TOP 3 ESCALONADO -->
-          <div class="spotlight-card">
+          <div class="spotlight-card podium-card-wrapper">
             <div class="card-title-row">
-              <h3>PODIO OFICIAL DE CARRERA</h3>
+              <div>
+                <h3>PODIO OFICIAL DE CARRERA</h3>
+                <p class="dim" style="font-size: 0.84rem; margin: 2px 0 0;">
+                  Tocá o hacé clic en cualquier posición para seleccionar al piloto desde la grilla interactiva.
+                </p>
+              </div>
               <span class="mono-pts">+58 PTS TOTALES</span>
             </div>
             
             <div class="podium-grid">
               <!-- P1: GANADOR (ORO) -->
               <div class="podium-col gold-border">
-                <div class="podium-header gold">🥇 P1 WINNER (+25 PTS)</div>
-                <label class="field-label">Vencedor del Gran Premio</label>
-                <select 
-                  [ngModel]="p1DriverId()" 
-                  (ngModelChange)="p1DriverId.set($event)"
-                  [disabled]="isLocked()" 
-                  class="driver-select">
-                  @for (d of drivers; track d.id) {
-                    <option [value]="d.id">{{ d.name }} (#{{ d.number }} • {{ d.team }})</option>
-                  }
-                </select>
+                <div class="podium-col-header">
+                  <span class="podium-badge gold">🥇 P1 WINNER</span>
+                  <span class="pts-tag gold">+25 PTS</span>
+                </div>
+                <div class="podium-slot-label">Vencedor del Gran Premio</div>
+                
+                @if (getDriver(p1DriverId()); as d) {
+                  <div class="driver-template-card gold-slot" 
+                       [style.--driver-color]="d.teamColor"
+                       (click)="openDriverPicker('p1')"
+                       [class.disabled-card]="isLocked()">
+                    <div class="dtc-header">
+                      <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
+                        {{ d.team }}
+                      </span>
+                      <div class="dtc-badges">
+                        <span class="dtc-code">{{ d.code }}</span>
+                        <span class="dtc-num">#{{ d.number }}</span>
+                      </div>
+                    </div>
+                    <div class="dtc-main">
+                      <div class="dtc-name">{{ d.name }}</div>
+                    </div>
+                    <div class="dtc-action">
+                      <span>Cambiar Piloto</span>
+                      <span class="action-icon">⇄</span>
+                    </div>
+                  </div>
+                }
               </div>
 
               <!-- P2: SEGUNDO LUGAR (PLATA) -->
               <div class="podium-col silver-border">
-                <div class="podium-header silver">🥈 P2 SEGUNDO (+18 PTS)</div>
-                <label class="field-label">Segundo Clasificado</label>
-                <select 
-                  [ngModel]="p2DriverId()" 
-                  (ngModelChange)="p2DriverId.set($event)"
-                  [disabled]="isLocked()" 
-                  class="driver-select">
-                  @for (d of drivers; track d.id) {
-                    <option [value]="d.id">{{ d.name }} (#{{ d.number }} • {{ d.team }})</option>
-                  }
-                </select>
+                <div class="podium-col-header">
+                  <span class="podium-badge silver">🥈 P2 SEGUNDO</span>
+                  <span class="pts-tag silver">+18 PTS</span>
+                </div>
+                <div class="podium-slot-label">Segundo Clasificado</div>
+                
+                @if (getDriver(p2DriverId()); as d) {
+                  <div class="driver-template-card silver-slot" 
+                       [style.--driver-color]="d.teamColor"
+                       (click)="openDriverPicker('p2')"
+                       [class.disabled-card]="isLocked()">
+                    <div class="dtc-header">
+                      <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
+                        {{ d.team }}
+                      </span>
+                      <div class="dtc-badges">
+                        <span class="dtc-code">{{ d.code }}</span>
+                        <span class="dtc-num">#{{ d.number }}</span>
+                      </div>
+                    </div>
+                    <div class="dtc-main">
+                      <div class="dtc-name">{{ d.name }}</div>
+                    </div>
+                    <div class="dtc-action">
+                      <span>Cambiar Piloto</span>
+                      <span class="action-icon">⇄</span>
+                    </div>
+                  </div>
+                }
               </div>
 
               <!-- P3: TERCER LUGAR (BRONCE) -->
               <div class="podium-col bronze-border">
-                <div class="podium-header bronze">🥉 P3 TERCERO (+15 PTS)</div>
-                <label class="field-label">Tercer Clasificado</label>
-                <select 
-                  [ngModel]="p3DriverId()" 
-                  (ngModelChange)="p3DriverId.set($event)"
-                  [disabled]="isLocked()" 
-                  class="driver-select">
-                  @for (d of drivers; track d.id) {
-                    <option [value]="d.id">{{ d.name }} (#{{ d.number }} • {{ d.team }})</option>
-                  }
-                </select>
+                <div class="podium-col-header">
+                  <span class="podium-badge bronze">🥉 P3 TERCERO</span>
+                  <span class="pts-tag bronze">+15 PTS</span>
+                </div>
+                <div class="podium-slot-label">Tercer Clasificado</div>
+                
+                @if (getDriver(p3DriverId()); as d) {
+                  <div class="driver-template-card bronze-slot" 
+                       [style.--driver-color]="d.teamColor"
+                       (click)="openDriverPicker('p3')"
+                       [class.disabled-card]="isLocked()">
+                    <div class="dtc-header">
+                      <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
+                        {{ d.team }}
+                      </span>
+                      <div class="dtc-badges">
+                        <span class="dtc-code">{{ d.code }}</span>
+                        <span class="dtc-num">#{{ d.number }}</span>
+                      </div>
+                    </div>
+                    <div class="dtc-main">
+                      <div class="dtc-name">{{ d.name }}</div>
+                    </div>
+                    <div class="dtc-action">
+                      <span>Cambiar Piloto</span>
+                      <span class="action-icon">⇄</span>
+                    </div>
+                  </div>
+                }
               </div>
             </div>
 
             @if (isPodiumDuplicate()) {
-              <div class="alert-box error">
+              <div class="alert-box error" style="margin-top: 1rem;">
                 ⚠️ Atención: No podés seleccionar al mismo piloto en dos posiciones del podio a la vez.
               </div>
             }
@@ -142,16 +201,31 @@ import {
                 <h4>🏁 Pole Position (Sábado)</h4>
                 <span class="cyan-pts">+20 PTS</span>
               </div>
-              <label class="dim">Piloto más veloz en Q3</label>
-              <select 
-                [ngModel]="poleDriverId()" 
-                (ngModelChange)="poleDriverId.set($event)"
-                [disabled]="isLocked()" 
-                class="driver-select">
-                @for (d of drivers; track d.id) {
-                  <option [value]="d.id">{{ d.name }} ({{ d.team }})</option>
-                }
-              </select>
+              <div class="podium-slot-label" style="margin-bottom: 0.75rem;">Piloto más veloz en Q3</div>
+              
+              @if (getDriver(poleDriverId()); as d) {
+                <div class="driver-template-card pole-slot" 
+                     [style.--driver-color]="d.teamColor"
+                     (click)="openDriverPicker('pole')"
+                     [class.disabled-card]="isLocked()">
+                  <div class="dtc-header">
+                    <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
+                      {{ d.team }}
+                    </span>
+                    <div class="dtc-badges">
+                      <span class="dtc-code">{{ d.code }}</span>
+                      <span class="dtc-num">#{{ d.number }}</span>
+                    </div>
+                  </div>
+                  <div class="dtc-main">
+                    <div class="dtc-name">{{ d.name }}</div>
+                  </div>
+                  <div class="dtc-action">
+                    <span>Cambiar Piloto</span>
+                    <span class="action-icon">⇄</span>
+                  </div>
+                </div>
+              }
             </div>
 
             <div class="spotlight-card">
@@ -654,6 +728,78 @@ import {
           </div>
         </section>
       }
+
+      <!-- ========================================== -->
+      <!-- MODAL SELECTOR DE PILOTOS (MISMO TEMPLATE) -->
+      <!-- ========================================== -->
+      @if (isPickerOpen()) {
+        <div class="driver-picker-backdrop" (click)="closeDriverPicker()">
+          <div class="driver-picker-modal" (click)="$event.stopPropagation()">
+            <div class="picker-header">
+              <div>
+                <h3 class="picker-title">{{ getPickerTitle() }}</h3>
+                <p class="picker-subtitle">
+                  Elegí el piloto. Si ya fue asignado a otro puesto del podio, se intercambiarán automáticamente.
+                </p>
+              </div>
+              <button type="button" class="picker-close-btn" (click)="closeDriverPicker()" aria-label="Cerrar">✕</button>
+            </div>
+
+            <div class="picker-search-bar">
+              <span class="search-icon">🔍</span>
+              <input 
+                type="text" 
+                [ngModel]="pickerSearch()" 
+                (ngModelChange)="pickerSearch.set($event)"
+                placeholder="Buscar por piloto, escudería (# o código)..." 
+                class="picker-search-input" />
+              @if (pickerSearch()) {
+                <button type="button" class="clear-search-btn" (click)="pickerSearch.set('')">✕</button>
+              }
+            </div>
+
+            <div class="picker-grid-scroll">
+              @if (filteredDrivers().length > 0) {
+                <div class="picker-drivers-grid">
+                  @for (d of filteredDrivers(); track d.id) {
+                    <div class="driver-template-card picker-mode"
+                         [class.is-selected]="isCurrentInSlot(d.id)"
+                         [class.is-swap]="isDriverInAnotherSlot(d.id)"
+                         [style.--driver-color]="d.teamColor"
+                         (click)="selectDriver(pickerSlot(), d.id)">
+                      <div class="dtc-header">
+                        <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
+                          {{ d.team }}
+                        </span>
+                        <div class="dtc-badges">
+                          <span class="dtc-code">{{ d.code }}</span>
+                          <span class="dtc-num">#{{ d.number }}</span>
+                        </div>
+                      </div>
+                      <div class="dtc-main">
+                        <div class="dtc-name">{{ d.name }}</div>
+                      </div>
+                      <div class="dtc-action">
+                        @if (isCurrentInSlot(d.id)) {
+                          <span class="status-chip current">✓ Seleccionado</span>
+                        } @else if (isDriverInAnotherSlot(d.id)) {
+                          <span class="status-chip swap">⇄ En {{ getDriverSlotName(d.id) }} (Intercambiar)</span>
+                        } @else {
+                          <span class="status-chip pick">Elegir piloto →</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="picker-empty-state">
+                  <p>No se encontraron pilotos que coincidan con "{{ pickerSearch() }}".</p>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styles: [`
@@ -761,49 +907,361 @@ import {
       font-weight: 700;
       font-size: 0.85rem;
     }
+    .podium-card-wrapper {
+      position: relative;
+      overflow: hidden;
+    }
     .podium-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1.25rem;
+      margin-top: 0.5rem;
     }
     .podium-col {
-      background: var(--surface);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%), var(--surface);
       border: 1px solid var(--line);
-      border-radius: var(--radius-sm);
+      border-radius: var(--radius-md);
       padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
     }
-    .gold-border { border-top: 4px solid var(--gold); }
-    .silver-border { border-top: 4px solid var(--silver); }
-    .bronze-border { border-top: 4px solid var(--bronze); }
-    .podium-header {
-      font-size: 0.82rem;
+    .gold-border { 
+      border-top: 4px solid var(--gold); 
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, rgba(18, 22, 31, 0.95) 100%);
+    }
+    .silver-border { 
+      border-top: 4px solid var(--silver); 
+      background: linear-gradient(180deg, rgba(226, 232, 240, 0.06) 0%, rgba(18, 22, 31, 0.95) 100%);
+    }
+    .bronze-border { 
+      border-top: 4px solid var(--bronze); 
+      background: linear-gradient(180deg, rgba(205, 127, 50, 0.06) 0%, rgba(18, 22, 31, 0.95) 100%);
+    }
+    .podium-col-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+    .podium-badge {
       font-weight: 800;
-      margin-bottom: 0.6rem;
+      font-size: 0.9rem;
+      letter-spacing: 0.02em;
     }
-    .podium-header.gold { color: var(--gold); }
-    .podium-header.silver { color: var(--silver); }
-    .podium-header.bronze { color: var(--bronze); }
-    .field-label {
-      font-size: 0.82rem;
+    .podium-badge.gold { color: var(--gold); }
+    .podium-badge.silver { color: var(--silver); }
+    .podium-badge.bronze { color: var(--bronze); }
+    .pts-tag {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.8rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .pts-tag.gold {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--gold);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .pts-tag.silver {
+      background: rgba(226, 232, 240, 0.15);
+      color: var(--silver);
+      border: 1px solid rgba(226, 232, 240, 0.35);
+    }
+    .pts-tag.bronze {
+      background: rgba(205, 127, 50, 0.15);
+      color: var(--bronze);
+      border: 1px solid rgba(205, 127, 50, 0.35);
+    }
+    .podium-slot-label {
+      font-size: 0.78rem;
       color: var(--text-dim);
-      display: block;
-      margin-bottom: 0.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.85rem;
     }
-    .driver-select {
+
+    /* ================================================= */
+    /* PLANTILLA UNIFICADA DE TARJETA DE PILOTO (F1 DTC)  */
+    /* ================================================= */
+    .driver-template-card {
+      --driver-color: #3671c6;
+      background: #0d1118;
+      border: 1px solid var(--line-strong);
+      border-left: 5px solid var(--driver-color);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.15rem;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+    .driver-template-card:hover:not(.disabled-card) {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.25);
+      border-left-color: var(--driver-color);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 14px -3px var(--driver-color);
+    }
+    .driver-template-card.disabled-card {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .driver-template-card.gold-slot:hover {
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 16px -2px rgba(245, 158, 11, 0.4);
+    }
+    .driver-template-card.silver-slot:hover {
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 16px -2px rgba(226, 232, 240, 0.35);
+    }
+    .driver-template-card.bronze-slot:hover {
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 16px -2px rgba(205, 127, 50, 0.35);
+    }
+    .driver-template-card.pole-slot:hover {
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 16px -2px rgba(6, 182, 212, 0.4);
+    }
+    .dtc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .dtc-team {
+      font-size: 0.72rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 65%;
+    }
+    .dtc-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .dtc-code {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.06);
+      padding: 2px 6px;
+      border-radius: 3px;
+    }
+    .dtc-num {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      font-weight: 800;
+      color: #fff;
+    }
+    .dtc-main {
+      padding: 0.2rem 0;
+    }
+    .dtc-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dtc-action {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+      padding-top: 0.6rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      transition: color 0.15s;
+    }
+    .driver-template-card:hover:not(.disabled-card) .dtc-action {
+      color: #ffffff;
+    }
+    .action-icon {
+      font-size: 0.95rem;
+      color: var(--cyan);
+    }
+
+    /* Selector modal mode for driver template card */
+    .driver-template-card.picker-mode {
+      padding: 0.85rem 1rem;
+    }
+    .driver-template-card.picker-mode.is-selected {
+      border-color: var(--green);
+      border-left-color: var(--driver-color);
+      background: rgba(16, 185, 129, 0.08);
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+    }
+    .driver-template-card.picker-mode.is-swap {
+      border-color: rgba(245, 158, 11, 0.4);
+      border-left-color: var(--driver-color);
+    }
+    .status-chip {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
       width: 100%;
-      background: #0d1015;
+      text-align: center;
+    }
+    .status-chip.current {
+      background: rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .status-chip.swap {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fde68a;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .status-chip.pick {
+      color: var(--cyan);
+    }
+    .driver-template-card.picker-mode:hover .status-chip.pick {
+      color: #ffffff;
+    }
+
+    /* ================================================= */
+    /* MODAL OVERLAY Y BUSCADOR DE PILOTOS               */
+    /* ================================================= */
+    .driver-picker-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      animation: fadeInBackdrop 0.18s ease-out;
+    }
+    @keyframes fadeInBackdrop {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .driver-picker-modal {
+      background: #0f131a;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-md);
+      max-width: 860px;
+      width: 100%;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9);
+      animation: slideUpModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+    }
+    @keyframes slideUpModal {
+      from { opacity: 0; transform: translateY(16px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .picker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding: 1.25rem 1.5rem 1rem;
+      border-bottom: 1px solid var(--line);
+      background: #131720;
+    }
+    .picker-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin: 0;
+    }
+    .picker-subtitle {
+      font-size: 0.84rem;
+      color: var(--text-dim);
+      margin: 4px 0 0;
+    }
+    .picker-close-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--line);
+      color: var(--text-muted);
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.15s;
+    }
+    .picker-close-btn:hover {
+      background: rgba(225, 6, 0, 0.2);
+      border-color: var(--red);
+      color: #fff;
+    }
+    .picker-search-bar {
+      padding: 1rem 1.5rem;
+      position: relative;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      background: #0d1016;
+    }
+    .search-icon {
+      position: absolute;
+      left: 2.25rem;
+      font-size: 1rem;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+    .picker-search-input {
+      width: 100%;
+      background: #141923;
       border: 1px solid var(--line-strong);
       color: #fff;
-      padding: 0.75rem;
+      padding: 0.75rem 2.5rem 0.75rem 2.5rem;
       border-radius: var(--radius-sm);
-      font-family: var(--font-ui);
-      font-size: 0.9rem;
-      margin-top: 0.5rem;
-      cursor: pointer;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
     }
-    .driver-select:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    .picker-search-input:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 2px rgba(225, 6, 0, 0.2);
+    }
+    .clear-search-btn {
+      position: absolute;
+      right: 2.25rem;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 4px;
+    }
+    .clear-search-btn:hover {
+      color: #fff;
+    }
+    .picker-grid-scroll {
+      overflow-y: auto;
+      padding: 1.25rem 1.5rem 1.5rem;
+      max-height: calc(88vh - 180px);
+    }
+    .picker-drivers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+    .picker-empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-dim);
     }
     .alert-box {
       padding: 0.75rem 1rem;
@@ -1090,6 +1548,15 @@ import {
       .podium-grid, .grid-two-cols, .counters-grid {
         grid-template-columns: 1fr;
       }
+      .picker-drivers-grid {
+        grid-template-columns: 1fr;
+      }
+      .driver-picker-backdrop {
+        padding: 0.75rem;
+      }
+      .driver-picker-modal {
+        max-height: 94vh;
+      }
       .league-podium-pedestals {
         flex-direction: column;
         align-items: stretch;
@@ -1135,6 +1602,22 @@ export class DashboardComponent implements OnInit {
   readonly duelWinnerId = signal<string>('norris');
   readonly safetyCars = signal<number>(1);
   readonly dnfs = signal<number>(2);
+
+  // Selector interactivo de pilotos
+  readonly isPickerOpen = signal<boolean>(false);
+  readonly pickerSlot = signal<'p1' | 'p2' | 'p3' | 'pole'>('p1');
+  readonly pickerSearch = signal<string>('');
+
+  readonly filteredDrivers = computed(() => {
+    const q = this.pickerSearch().trim().toLowerCase();
+    if (!q) return this.drivers;
+    return this.drivers.filter(d =>
+      d.name.toLowerCase().includes(q) ||
+      d.team.toLowerCase().includes(q) ||
+      d.code.toLowerCase().includes(q) ||
+      d.number.toString().includes(q)
+    );
+  });
 
   readonly hasExistingPrediction = signal<boolean>(false);
   readonly predictionSubmittedAt = signal<string | null>(null);
@@ -1324,6 +1807,96 @@ export class DashboardComponent implements OnInit {
   decrementDNFs() {
     if (this.isLocked()) return;
     if (this.dnfs() > 0) this.dnfs.update(v => v - 1);
+  }
+
+  getDriver(id?: string | null): F1Driver | undefined {
+    if (!id) return undefined;
+    return this.drivers.find(d => d.id === id);
+  }
+
+  openDriverPicker(slot: 'p1' | 'p2' | 'p3' | 'pole') {
+    if (this.isLocked()) return;
+    this.pickerSlot.set(slot);
+    this.pickerSearch.set('');
+    this.isPickerOpen.set(true);
+  }
+
+  closeDriverPicker() {
+    this.isPickerOpen.set(false);
+  }
+
+  getPickerTitle(): string {
+    switch (this.pickerSlot()) {
+      case 'p1': return '🥇 Seleccionar Ganador P1 (+25 PTS)';
+      case 'p2': return '🥈 Seleccionar 2° Lugar P2 (+18 PTS)';
+      case 'p3': return '🥉 Seleccionar 3° Lugar P3 (+15 PTS)';
+      case 'pole': return '🏁 Seleccionar Pole Position (+20 PTS)';
+    }
+  }
+
+  isCurrentInSlot(driverId: string): boolean {
+    const slot = this.pickerSlot();
+    if (slot === 'p1') return this.p1DriverId() === driverId;
+    if (slot === 'p2') return this.p2DriverId() === driverId;
+    if (slot === 'p3') return this.p3DriverId() === driverId;
+    if (slot === 'pole') return this.poleDriverId() === driverId;
+    return false;
+  }
+
+  getDriverSlotName(driverId: string): string | null {
+    if (this.p1DriverId() === driverId) return 'P1 Ganador';
+    if (this.p2DriverId() === driverId) return 'P2 Segundo';
+    if (this.p3DriverId() === driverId) return 'P3 Tercero';
+    return null;
+  }
+
+  isDriverInAnotherSlot(driverId: string): boolean {
+    const slot = this.pickerSlot();
+    if (slot === 'pole') return false;
+    if (slot === 'p1') return this.p2DriverId() === driverId || this.p3DriverId() === driverId;
+    if (slot === 'p2') return this.p1DriverId() === driverId || this.p3DriverId() === driverId;
+    if (slot === 'p3') return this.p1DriverId() === driverId || this.p2DriverId() === driverId;
+    return false;
+  }
+
+  selectDriver(slot: 'p1' | 'p2' | 'p3' | 'pole', driverId: string) {
+    if (this.isLocked()) return;
+
+    if (slot === 'pole') {
+      this.poleDriverId.set(driverId);
+      this.closeDriverPicker();
+      return;
+    }
+
+    // Lógica de auto-intercambio (swap) para evitar errores de duplicado
+    const currentP1 = this.p1DriverId();
+    const currentP2 = this.p2DriverId();
+    const currentP3 = this.p3DriverId();
+
+    if (slot === 'p1') {
+      if (currentP2 === driverId) {
+        this.p2DriverId.set(currentP1);
+      } else if (currentP3 === driverId) {
+        this.p3DriverId.set(currentP1);
+      }
+      this.p1DriverId.set(driverId);
+    } else if (slot === 'p2') {
+      if (currentP1 === driverId) {
+        this.p1DriverId.set(currentP2);
+      } else if (currentP3 === driverId) {
+        this.p3DriverId.set(currentP2);
+      }
+      this.p2DriverId.set(driverId);
+    } else if (slot === 'p3') {
+      if (currentP1 === driverId) {
+        this.p1DriverId.set(currentP3);
+      } else if (currentP2 === driverId) {
+        this.p2DriverId.set(currentP3);
+      }
+      this.p3DriverId.set(driverId);
+    }
+
+    this.closeDriverPicker();
   }
 
   getDriverName(id?: string | null): string {
