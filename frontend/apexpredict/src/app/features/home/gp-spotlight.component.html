@@ -227,11 +227,7 @@
 
         <!-- Mini Leaderboard Real de Usuarios -->
         <div class="league-preview-card">
-          <div class="card-head">
-            <span>CAMPEONATO GLOBAL</span>
-            <span class="badge-top5">TOP PILOTOS</span>
-          </div>
-          <h4>Tabla de Puntuaciones</h4>
+          <h4>Tabla de jugadores global</h4>
           <div class="standings-mini-list">
             @for (u of paddockStandings(); track u.username) {
               <div class="standings-mini-item" [class.highlight-me]="u.isCurrentUser">
