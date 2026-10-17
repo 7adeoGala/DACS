@@ -26,6 +26,14 @@ export interface League {
   memberCount?: number;
   hasPassword?: boolean;
   isMember?: boolean;
+  isPrivate?: boolean;
+  userRank?: number;
+  userPoints?: number;
+  podium?: {
+    p1?: { name: string; points: number };
+    p2?: { name: string; points: number };
+    p3?: { name: string; points: number };
+  };
 }
 
 export interface Finish {
@@ -150,13 +158,25 @@ export interface PredictionHistoryItem {
   scoreBreakdown?: ScoreBreakdown | null;
 }
 
-export interface DriverOption {
+export interface F1Driver {
   id: string;
   name: string;
   code: string;
   number: number;
   team: string;
   teamColor: string;
+}
+
+export type DriverOption = F1Driver;
+
+export interface PredictionPayload {
+  p1DriverId: string;
+  p2DriverId: string;
+  p3DriverId: string;
+  poleDriverId: string;
+  duelWinnerId: string;
+  safetyCars: number;
+  dnfs: number;
 }
 
 export const F1_DRIVERS: DriverOption[] = [

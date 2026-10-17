@@ -1,1014 +1,1352 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { DatePipe } from '@angular/common';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
-import { switchMap, catchError, of } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { 
+  F1_DRIVERS, 
+  F1Driver, 
+  PredictionPayload, 
   League, 
   NextSession, 
-  PredictionDetail, 
   LeaderboardEntry, 
-  PredictionHistoryItem,
-  F1_DRIVERS,
-  DriverOption,
-  JolpicaDriverStanding,
-  JolpicaRaceResult
+  PredictionHistoryItem 
 } from '../../core/models/api.models';
 
-type DashboardTab = 'prediction' | 'leagues' | 'leaderboard' | 'history';
-
 @Component({
-  standalone: true,
   selector: 'app-dashboard',
-  imports: [ReactiveFormsModule, DatePipe],
+  standalone: true,
+  imports: [CommonModule, FormsModule],
   template: `
-    <section class="section page">
-      <!-- DASHBOARD HEADER -->
-      <header class="section-heading" style="margin-bottom: 28px;">
-        <div>
-          <p class="eyebrow"><span class="red-dot"></span> PADDOCK · APEXPREDICT 2026</p>
-          <h1>Centro de Control & Pronósticos</h1>
-          <p class="lead" style="margin: 8px 0 0;">
-            Cargá tus pronósticos oficiales, gestioná tus ligas privadas y revisá tu historial de puntuación en tiempo real.
-          </p>
+    <div class="dashboard-page">
+      <!-- HEADER DEL COCKPIT CON TABS PRINCIPALES -->
+      <div class="cockpit-header">
+        <div class="tabs-bar">
+          <button 
+            type="button"
+            [class.active]="activeTab() === 'pronostico'" 
+            (click)="activeTab.set('pronostico')">
+            🎯 Pronóstico GP
+          </button>
+          <button 
+            type="button"
+            [class.active]="activeTab() === 'ligas'" 
+            (click)="activeTab.set('ligas')">
+            🏆 Mis Ligas & Podios ({{ myLeagues().length }})
+          </button>
+          <button 
+            type="button"
+            [class.active]="activeTab() === 'global'" 
+            (click)="activeTab.set('global')">
+            📊 Tabla Global
+          </button>
+          <button 
+            type="button"
+            [class.active]="activeTab() === 'historial'" 
+            (click)="activeTab.set('historial')">
+            📜 Historial & Puntos
+          </button>
         </div>
-      </header>
+      </div>
 
-      <!-- NAVIGATION TABS -->
-      <nav class="dashboard-tabs" aria-label="Secciones del Dashboard">
-        <button 
-          class="tab-btn" 
-          [class.active]="activeTab() === 'prediction'" 
-          (click)="setTab('prediction')"
-          type="button">
-          🏎️ Pronóstico Actual
-        </button>
-        <button 
-          class="tab-btn" 
-          [class.active]="activeTab() === 'leagues'" 
-          (click)="setTab('leagues')"
-          type="button">
-          🏆 Mis Ligas & Podios
-        </button>
-        <button 
-          class="tab-btn" 
-          [class.active]="activeTab() === 'leaderboard'" 
-          (click)="setTab('leaderboard')"
-          type="button">
-          🌍 Campeonato Global
-        </button>
-        <button 
-          class="tab-btn" 
-          [class.active]="activeTab() === 'history'" 
-          (click)="setTab('history')"
-          type="button">
-          📊 Historial & Puntos
-        </button>
-      </nav>
+      <!-- ========================================== -->
+      <!-- TAB 1: PRONÓSTICO GP                       -->
+      <!-- ========================================== -->
+      @if (activeTab() === 'pronostico') {
+        <section class="tab-content">
+          <div class="section-hero">
+            <div>
+              <span class="badge-round">ROUND {{ session()?.round || 18 }} // {{ session()?.circuit || 'COTA' }}</span>
+              <h2>Configuración de Pronósticos Oficiales</h2>
+              <p class="subtitle">Asigná los 3 puestos de podio sin duplicar, poleman, duelo de la fecha y telemetría de carrera.</p>
+            </div>
+            <div class="points-badge">
+              <span class="dim">POTENCIAL MÁXIMO:</span>
+              <span class="pts-val">+125 PTS</span>
+            </div>
+          </div>
 
-      @if (loading()) {
-        <p role="status" class="empty">Cargando datos del paddock…</p>
-      }
-      @if (error()) {
-        <div class="notice error" role="alert">{{ error() }}</div>
-      }
+          @if (isLocked()) {
+            <div class="alert-box error" style="margin-bottom: 1rem;">
+              🔒 <strong>PRONÓSTICOS BLOQUEADOS:</strong> La sesión oficial ya ha comenzado. El pronóstico se encuentra en modo solo lectura.
+            </div>
+          }
 
-      @if (!loading() && ready()) {
-        <!-- ========================================== -->
-        <!-- TAB 1: PRONÓSTICO ACTUAL                  -->
-        <!-- ========================================== -->
-        @if (activeTab() === 'prediction') {
-          <article class="prediction-box">
-            <div class="box-header">
-              <div>
-                <span class="round-badge">PRÓXIMO EVENTO EN DISPUTA</span>
-                <h2 style="font-size: 28px; margin-top: 10px;">{{ nextSession()?.name || 'Gran Premio de Fórmula 1' }}</h2>
-                <p class="eyebrow" style="margin-top: 6px;">
-                  Circuito: <strong style="color: #fff;">{{ nextSession()?.circuit || 'Circuito Oficial' }}</strong> · Fecha: {{ nextSession()?.raceDate || 'Próximamente' }}
-                </p>
+          @if (saveSuccess()) {
+            <div class="alert-box success" style="margin-bottom: 1rem;">
+              ✓ ¡Pronóstico guardado exitosamente en el servidor y la base de datos!
+            </div>
+          }
+
+          @if (saveError()) {
+            <div class="alert-box error" style="margin-bottom: 1rem;">
+              ⚠️ {{ saveError() }}
+            </div>
+          }
+
+          <!-- 1. PODIO TOP 3 ESCALONADO -->
+          <div class="spotlight-card">
+            <div class="card-title-row">
+              <h3>PODIO OFICIAL DE CARRERA</h3>
+              <span class="mono-pts">+58 PTS TOTALES</span>
+            </div>
+            
+            <div class="podium-grid">
+              <!-- P1: GANADOR (ORO) -->
+              <div class="podium-col gold-border">
+                <div class="podium-header gold">🥇 P1 WINNER (+25 PTS)</div>
+                <label class="field-label">Vencedor del Gran Premio</label>
+                <select 
+                  [(ngModel)]="prediction.p1DriverId" 
+                  [disabled]="isLocked()" 
+                  class="driver-select">
+                  @for (d of drivers; track d.id) {
+                    <option [value]="d.id">{{ d.name }} (#{{ d.number }} • {{ d.team }})</option>
+                  }
+                </select>
               </div>
-              <div class="lock-status">
-                @if (isLocked()) {
-                  <span class="status-pill locked">🔒 LOCK TIME SUPERADO · PRONÓSTICOS CERRADOS</span>
-                } @else {
-                  <span class="status-pill open">
-                    ⏱️ ABIERTO HASTA {{ nextSession()?.startsAt ? (nextSession()?.startsAt | date: 'dd/MM HH:mm' : '-0300') + ' hs (Arg)' : 'INICIO DE SESIÓN' }}
-                  </span>
-                }
+
+              <!-- P2: SEGUNDO LUGAR (PLATA) -->
+              <div class="podium-col silver-border">
+                <div class="podium-header silver">🥈 P2 SEGUNDO (+18 PTS)</div>
+                <label class="field-label">Segundo Clasificado</label>
+                <select 
+                  [(ngModel)]="prediction.p2DriverId" 
+                  [disabled]="isLocked()" 
+                  class="driver-select">
+                  @for (d of drivers; track d.id) {
+                    <option [value]="d.id">{{ d.name }} (#{{ d.number }} • {{ d.team }})</option>
+                  }
+                </select>
+              </div>
+
+              <!-- P3: TERCER LUGAR (BRONCE) -->
+              <div class="podium-col bronze-border">
+                <div class="podium-header bronze">🥉 P3 TERCERO (+15 PTS)</div>
+                <label class="field-label">Tercer Clasificado</label>
+                <select 
+                  [(ngModel)]="prediction.p3DriverId" 
+                  [disabled]="isLocked()" 
+                  class="driver-select">
+                  @for (d of drivers; track d.id) {
+                    <option [value]="d.id">{{ d.name }} (#{{ d.number }} • {{ d.team }})</option>
+                  }
+                </select>
               </div>
             </div>
 
-            @if (predictionSuccess()) {
-              <div class="notice success" role="alert">
-                ✓ ¡Pronóstico guardado exitosamente para este Gran Premio!
+            @if (isPodiumDuplicate()) {
+              <div class="alert-box error">
+                ⚠️ Atención: No podés seleccionar al mismo piloto en dos posiciones del podio a la vez.
               </div>
             }
-            @if (predictionError()) {
-              <div class="notice error" role="alert">{{ predictionError() }}</div>
-            }
+          </div>
 
-            <form [formGroup]="predForm" (ngSubmit)="savePrediction()">
-              <div class="form-grid">
-                
-                <!-- 1. PODIO OFICIAL (P1, P2, P3) -->
-                <div class="form-card">
-                  <h3>🏆 Podio Oficial</h3>
-                  <p class="muted" style="margin: 0; font-size: 12px;">
-                    1 acierto = <strong>3 pts</strong> · 2 aciertos = <strong>7 pts</strong> · Podio exacto = <strong>10 pts</strong>
-                  </p>
-
-                  <div>
-                    <label class="field-label" for="p1">🥇 1º Puesto (Ganador)</label>
-                    <select id="p1" formControlName="p1" class="driver-select" [attr.disabled]="isLocked() ? true : null">
-                      <option value="" disabled>Seleccioná piloto P1</option>
-                      @for (driver of drivers; track driver.id) {
-                        <option [value]="driver.id">#{{ driver.number }} {{ driver.name }} ({{ driver.team }})</option>
-                      }
-                    </select>
-                  </div>
-
-                  <div>
-                    <label class="field-label" for="p2">🥈 2º Puesto</label>
-                    <select id="p2" formControlName="p2" class="driver-select" [attr.disabled]="isLocked() ? true : null">
-                      <option value="" disabled>Seleccioná piloto P2</option>
-                      @for (driver of drivers; track driver.id) {
-                        <option [value]="driver.id">#{{ driver.number }} {{ driver.name }} ({{ driver.team }})</option>
-                      }
-                    </select>
-                  </div>
-
-                  <div>
-                    <label class="field-label" for="p3">🥉 3º Puesto</label>
-                    <select id="p3" formControlName="p3" class="driver-select" [attr.disabled]="isLocked() ? true : null">
-                      <option value="" disabled>Seleccioná piloto P3</option>
-                      @for (driver of drivers; track driver.id) {
-                        <option [value]="driver.id">#{{ driver.number }} {{ driver.name }} ({{ driver.team }})</option>
-                      }
-                    </select>
-                  </div>
-                </div>
-
-                <!-- 2. POLE POSITION & DUELO DE PILOTOS -->
-                <div class="form-card">
-                  <h3>⚡ Pole & Duelo del Fin de Semana</h3>
-                  
-                  <div>
-                    <label class="field-label" for="pole">⚡ Pole Position Oficial (+4 pts)</label>
-                    <select id="pole" formControlName="pole" class="driver-select" [attr.disabled]="isLocked() ? true : null">
-                      <option value="">Seleccioná piloto en Pole</option>
-                      @for (driver of drivers; track driver.id) {
-                        <option [value]="driver.id">#{{ driver.number }} {{ driver.name }} ({{ driver.team }})</option>
-                      }
-                    </select>
-                  </div>
-
-                  <div>
-                    <label class="field-label">⚔️ Duelo de Pilotos (+3 pts)</label>
-                    <p class="muted" style="margin: 2px 0 10px; font-size: 11px;">Elegí cuál de los dos terminará en mejor posición:</p>
-                    
-                    <div class="duel-grid">
-                      <button 
-                        type="button" 
-                        class="duel-btn"
-                        [class.selected]="predForm.get('duel')?.value === nextSession()?.matchupDriver1"
-                        [disabled]="isLocked()"
-                        (click)="selectDuelDriver(nextSession()?.matchupDriver1)">
-                        <span class="duel-tag">PILOTO A</span>
-                        <span class="duel-driver-name">{{ formatDriverName(nextSession()?.matchupDriver1) }}</span>
-                        @if (predForm.get('duel')?.value === nextSession()?.matchupDriver1) {
-                          <span style="color: var(--cyan); font-size: 11px; font-weight: 700;">✓ Seleccionado</span>
-                        }
-                      </button>
-
-                      <button 
-                        type="button" 
-                        class="duel-btn"
-                        [class.selected]="predForm.get('duel')?.value === nextSession()?.matchupDriver2"
-                        [disabled]="isLocked()"
-                        (click)="selectDuelDriver(nextSession()?.matchupDriver2)">
-                        <span class="duel-tag">PILOTO B</span>
-                        <span class="duel-driver-name">{{ formatDriverName(nextSession()?.matchupDriver2) }}</span>
-                        @if (predForm.get('duel')?.value === nextSession()?.matchupDriver2) {
-                          <span style="color: var(--cyan); font-size: 11px; font-weight: 700;">✓ Seleccionado</span>
-                        }
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- 3. INCIDENTES DE CARRERA -->
-                <div class="form-card">
-                  <h3>🚩 Incidentes de Carrera</h3>
-
-                  <div>
-                    <label class="field-label" for="safetyCars">🟡 Safety Cars (VSC + SC) (+6 pts)</label>
-                    <p class="muted" style="margin: 2px 0 8px; font-size: 11px;">Cantidad exacta de apariciones en carrera:</p>
-                    <div class="number-input-wrapper">
-                      <input 
-                        id="safetyCars" 
-                        type="number" 
-                        min="0" 
-                        max="20" 
-                        formControlName="safetyCars" 
-                        class="number-input" 
-                        [readonly]="isLocked()" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label class="field-label" for="dnfs">🚩 Abandonos (DNF / DNS) (+6 pts)</label>
-                    <p class="muted" style="margin: 2px 0 8px; font-size: 11px;">Autos que no finalizan la carrera:</p>
-                    <div class="number-input-wrapper">
-                      <input 
-                        id="dnfs" 
-                        type="number" 
-                        min="0" 
-                        max="20" 
-                        formControlName="dnfs" 
-                        class="number-input" 
-                        [readonly]="isLocked()" />
-                    </div>
-                  </div>
-                </div>
+          <!-- 2. POLE POSITION Y DUELO DIRECTO -->
+          <div class="grid-two-cols">
+            <div class="spotlight-card">
+              <div class="card-title-row">
+                <h4>🏁 Pole Position (Sábado)</h4>
+                <span class="cyan-pts">+20 PTS</span>
               </div>
+              <label class="dim">Piloto más veloz en Q3</label>
+              <select 
+                [(ngModel)]="prediction.poleDriverId" 
+                [disabled]="isLocked()" 
+                class="driver-select">
+                @for (d of drivers; track d.id) {
+                  <option [value]="d.id">{{ d.name }} ({{ d.team }})</option>
+                }
+              </select>
+            </div>
 
-              <div style="margin-top: 32px; display: flex; justify-content: flex-end;">
+            <div class="spotlight-card">
+              <div class="card-title-row">
+                <h4>⚔️ Duelo Directo de la Fecha</h4>
+                <span class="mono-pts">+15 PTS</span>
+              </div>
+              <label class="dim">{{ getDriverName(matchupDriver1()) }} vs {{ getDriverName(matchupDriver2()) }}</label>
+              <div class="duel-selector">
                 <button 
-                  class="button" 
-                  type="submit" 
-                  [disabled]="isLocked() || savingPrediction() || predForm.invalid">
-                  {{ isLocked() ? '🔒 Pronósticos Bloqueados (Lock Time)' : (savingPrediction() ? 'Guardando pronóstico…' : '💾 Guardar Pronóstico Oficial') }}
+                  type="button"
+                  [class.selected]="prediction.duelWinnerId === matchupDriver1()" 
+                  [disabled]="isLocked()"
+                  (click)="prediction.duelWinnerId = matchupDriver1()">
+                  {{ getDriverName(matchupDriver1()) }}
+                </button>
+                <button 
+                  type="button"
+                  [class.selected]="prediction.duelWinnerId === matchupDriver2()" 
+                  [disabled]="isLocked()"
+                  (click)="prediction.duelWinnerId = matchupDriver2()">
+                  {{ getDriverName(matchupDriver2()) }}
                 </button>
               </div>
-            </form>
-          </article>
-        }
-
-        <!-- ========================================== -->
-        <!-- TAB 2: MIS LIGAS PRIVADAS & PODIOS        -->
-        <!-- ========================================== -->
-        @if (activeTab() === 'leagues') {
-          <section>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
-              <div>
-                <h2>Ligas Privadas & Competencia</h2>
-                <p class="muted" style="margin: 4px 0 0;">Competí en ligas privadas protegidas con contraseña o abiertas por link de invitación.</p>
-              </div>
-              <span class="round-badge">{{ leagues().length }} ligas unidas</span>
             </div>
+          </div>
 
-            <!-- SUB-NAVEGACIÓN INTERNA DE LIGAS -->
-            <div class="dashboard-tabs" style="margin-bottom: 24px; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
-              <button 
-                type="button" 
-                class="tab-btn" 
-                [class.active]="leaguesSubTab() === 'my-leagues'" 
-                (click)="setLeaguesSubTab('my-leagues')">
-                🏆 Mis Ligas ({{ leagues().length }})
-              </button>
-              <button 
-                type="button" 
-                class="tab-btn" 
-                [class.active]="leaguesSubTab() === 'create'" 
-                (click)="setLeaguesSubTab('create')">
-                ➕ Crear Nueva Liga
-              </button>
-              <button 
-                type="button" 
-                class="tab-btn" 
-                [class.active]="leaguesSubTab() === 'join'" 
-                (click)="setLeaguesSubTab('join')">
-                🔗 Unirse por Link / Clave
-              </button>
+          <!-- 3. SLIDERS / CONTADORES TELEMETRÍA -->
+          <div class="spotlight-card">
+            <div class="card-title-row">
+              <h4>INCIDENCIAS DE CARRERA</h4>
+              <span class="mono-pts">+32 PTS</span>
             </div>
+            <div class="counters-grid">
+              <div class="counter-item">
+                <label>¿Aparición de Safety Car (SC)? (0 a 10)</label>
+                <div class="stepper">
+                  <button type="button" [disabled]="isLocked()" (click)="decrementSC()">-</button>
+                  <span class="count-num">{{ prediction.safetyCars }}</span>
+                  <button type="button" [disabled]="isLocked()" (click)="incrementSC()">+</button>
+                </div>
+              </div>
+              <div class="counter-item">
+                <label>Cantidad de Abandonos (DNFs) (0 a 20)</label>
+                <div class="stepper">
+                  <button type="button" [disabled]="isLocked()" (click)="decrementDNFs()">-</button>
+                  <span class="count-num">{{ prediction.dnfs }}</span>
+                  <button type="button" [disabled]="isLocked()" (click)="incrementDNFs()">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
 
-            @if (joinSuccess()) {
-              <div class="notice success" role="alert" style="margin-bottom: 20px;">
-                ✓ {{ joinSuccess() }}
-              </div>
-            }
-            @if (createSuccess()) {
-              <div class="notice success" role="alert" style="margin-bottom: 20px;">
-                ✓ {{ createSuccess() }}
-              </div>
-            }
-            @if (error()) {
-              <div class="notice error" role="alert" style="margin-bottom: 20px;">
-                ⚠️ {{ error() }}
-              </div>
-            }
+          <!-- BOTÓN DE GUARDADO CON FEEDBACK -->
+          <div class="submit-bar">
+            <button 
+              class="button" 
+              type="button"
+              [disabled]="isPodiumDuplicate() || isSaving() || isLocked()" 
+              (click)="savePrediction()">
+              @if (isSaving()) {
+                <span>Sincronizando con base de datos…</span>
+              } @else if (saveSuccess()) {
+                <span>✓ ¡Pronóstico Guardado en Servidor!</span>
+              } @else {
+                <span>🏁 Guardar Mi Pronóstico</span>
+              }
+            </button>
+          </div>
+        </section>
+      }
 
-            <!-- --------------------------------------- -->
-            <!-- SUB-TAB 1: MIS LIGAS                   -->
-            <!-- --------------------------------------- -->
-            @if (leaguesSubTab() === 'my-leagues') {
-              @if (leagues().length > 0) {
-                <div class="league-selector-list" style="margin-bottom: 24px;">
-                  @for (l of leagues(); track l.id) {
+      <!-- ========================================== -->
+      <!-- TAB 2: MIS LIGAS PRIVADAS (SIN BUSCADOR)   -->
+      <!-- ========================================== -->
+      @if (activeTab() === 'ligas') {
+        <section class="tab-content">
+          <!-- SUB-NAVEGACIÓN INTERNA -->
+          <div class="sub-nav-leagues">
+            <button 
+              type="button"
+              [class.active]="leagueSubTab() === 'list'" 
+              (click)="leagueSubTab.set('list')">
+              🏆 Mis Ligas ({{ myLeagues().length }})
+            </button>
+            <button 
+              type="button"
+              [class.active]="leagueSubTab() === 'create'" 
+              (click)="leagueSubTab.set('create')">
+              ➕ Crear Nueva Liga
+            </button>
+            <button 
+              type="button"
+              [class.active]="leagueSubTab() === 'join'" 
+              (click)="leagueSubTab.set('join')">
+              🔗 Unirse por Link / Clave
+            </button>
+          </div>
+
+          @if (leagueSuccess()) {
+            <div class="alert-box success">
+              ✓ {{ leagueSuccess() }}
+            </div>
+          }
+
+          @if (leagueError()) {
+            <div class="alert-box error">
+              ⚠️ {{ leagueError() }}
+            </div>
+          }
+
+          <!-- SUB-TAB 1: LISTADO DE MIS LIGAS -->
+          @if (leagueSubTab() === 'list') {
+            @if (myLeagues().length > 0) {
+              <!-- SELECTOR DE LIGAS SI PERTENECE A MÁS DE UNA -->
+              @if (myLeagues().length > 1) {
+                <div class="league-pills-row">
+                  @for (l of myLeagues(); track l.id) {
                     <button 
-                      type="button" 
-                      class="league-pill"
-                      [class.active]="selectedLeague()?.id === l.id"
+                      type="button"
+                      class="league-chip" 
+                      [class.active]="selectedLeague()?.id === l.id" 
                       (click)="selectLeague(l)">
-                      <span>🏆 {{ l.name }}</span>
-                      @if (l.hasPassword) {
-                        <span style="font-size: 11px; margin-left: 4px;">🔒</span>
-                      }
+                      🏆 {{ l.name }}
+                      @if (l.hasPassword) { <span style="font-size: 11px;">🔒</span> }
                     </button>
                   }
                 </div>
-
-                @if (selectedLeague()) {
-                  <article class="spotlight-card" style="margin-bottom: 36px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
-                      <div>
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                          <span class="round-badge">CLASIFICACIÓN EN VIVO</span>
-                          @if (selectedLeague()?.hasPassword) {
-                            <span class="badge" style="background: rgba(245, 176, 0, 0.15); color: var(--gold); border: 1px solid rgba(245, 176, 0, 0.3); font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full);">🔒 Protegida con Contraseña</span>
-                          } @else {
-                            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full);">🌐 Acceso Libre</span>
-                          }
-                        </div>
-                        <h2 style="font-size: 28px; margin-top: 10px;">{{ selectedLeague()?.name }}</h2>
-                        @if (selectedLeague()?.description) {
-                          <p class="muted" style="margin: 4px 0 0;">{{ selectedLeague()?.description }}</p>
-                        }
-                      </div>
-
-                      @if (selectedLeague()?.inviteCode) {
-                        <div style="background: rgba(0,0,0,0.4); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--line); min-width: 300px;">
-                          <span class="eyebrow" style="font-size: 11px; margin-bottom: 8px; color: var(--cyan);">LINK DE INVITACIÓN OFICIAL</span>
-                          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-                            <input 
-                              type="text" 
-                              readonly 
-                              [value]="getInviteUrl(selectedLeague()?.inviteCode)" 
-                              style="font-size: 12px; font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.5); padding: 6px 10px;" />
-                          </div>
-                          <div style="display: flex; gap: 8px;">
-                            <button class="button small" (click)="copyInviteUrl(selectedLeague()?.inviteCode)">
-                              {{ copiedLink() ? '✓ Link Copiado' : '🔗 Copiar Link' }}
-                            </button>
-                            <button class="button small quiet" (click)="copyInviteCode(selectedLeague()?.inviteCode)">
-                              {{ copied() ? '✓ Código Copiado' : '📋 Código' }}
-                            </button>
-                          </div>
-                        </div>
-                      }
-                    </div>
-
-                    <!-- PODIO TOP 3 DE LA LIGA -->
-                    @if (leagueLeaderboard().length >= 3) {
-                      <div class="podium-container">
-                        <div class="podium-col rank-2">
-                          <div class="podium-avatar">🥈</div>
-                          <div class="podium-user-name">{{ leagueLeaderboard()[1].displayName }}</div>
-                          <div class="podium-points">{{ leagueLeaderboard()[1].totalScore }} pts</div>
-                          <div class="podium-pedestal">2</div>
-                        </div>
-
-                        <div class="podium-col rank-1">
-                          <div style="font-size: 24px; margin-bottom: -10px;">👑</div>
-                          <div class="podium-avatar">🥇</div>
-                          <div class="podium-user-name">{{ leagueLeaderboard()[0].displayName }}</div>
-                          <div class="podium-points" style="color: var(--gold); font-size: 15px;">{{ leagueLeaderboard()[0].totalScore }} pts</div>
-                          <div class="podium-pedestal">1</div>
-                        </div>
-
-                        <div class="podium-col rank-3">
-                          <div class="podium-avatar">🥉</div>
-                          <div class="podium-user-name">{{ leagueLeaderboard()[2].displayName }}</div>
-                          <div class="podium-points">{{ leagueLeaderboard()[2].totalScore }} pts</div>
-                          <div class="podium-pedestal">3</div>
-                        </div>
-                      </div>
-                    }
-
-                    <!-- TABLA DE PARTICIPANTES DE LA LIGA -->
-                    <h3 style="margin: 28px 0 16px; font-size: 18px;">Participantes de la Liga ({{ leagueLeaderboard().length }})</h3>
-                    @if (leagueLeaderboard().length > 0) {
-                      <table class="leaderboard-table">
-                        <thead>
-                          <tr>
-                            <th>Pos</th>
-                            <th>Jugador / Escudería</th>
-                            <th>Puntos Totales</th>
-                            <th>Pronósticos Enviados</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          @for (entry of leagueLeaderboard(); track entry.userId) {
-                            <tr>
-                              <td>#{{ entry.rank }}</td>
-                              <td><strong style="color: #fff;">{{ entry.displayName }}</strong></td>
-                              <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--cyan);">
-                                {{ entry.totalScore }} pts
-                              </td>
-                              <td>{{ entry.predictionsCount }} carreras</td>
-                            </tr>
-                          }
-                        </tbody>
-                      </table>
-                    } @else {
-                      <p class="empty">Aún no hay puntuaciones registradas en esta liga privada.</p>
-                    }
-                  </article>
-                }
-              } @else {
-                <div class="spotlight-card" style="text-align: center; padding: 48px 24px; margin-bottom: 32px;">
-                  <div style="font-size: 44px; margin-bottom: 12px;">🏁</div>
-                  <h2>Aún no pertenecés a ninguna liga privada</h2>
-                  <p class="lead" style="max-width: 520px; margin: 8px auto 24px;">
-                    Creá tu propia liga privada protegida con contraseña o ingresá mediante el link de invitación provisto por tus amigos.
-                  </p>
-                  <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                    <button class="button" (click)="setLeaguesSubTab('create')">➕ Crear Nueva Liga</button>
-                    <button class="button quiet" (click)="setLeaguesSubTab('join')">🔗 Unirme por Link o Código</button>
-                  </div>
-                </div>
               }
 
-              <!-- FORMULARIOS RÁPIDOS: CREAR Y UNIRSE A LIGA -->
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 24px;">
-                <!-- CREAR LIGA -->
-                <div class="form-card">
-                  <h3>➕ Crear Nueva Liga Privada</h3>
-                  <form [formGroup]="createLeagueForm" (ngSubmit)="create()">
-                    <label class="field-label" for="league-name-quick">Nombre de la liga *</label>
-                    <input 
-                      id="league-name-quick" 
-                      formControlName="name" 
-                      placeholder="Ej: Gran Premio de Amigos" 
-                      style="margin: 8px 0 16px;" 
-                      required />
-
-                    <label class="field-label" for="league-pwd-quick">🔒 Contraseña de Acceso (opcional)</label>
-                    <input 
-                      id="league-pwd-quick" 
-                      type="password"
-                      formControlName="password" 
-                      placeholder="Opcional: protejé tu liga con contraseña" 
-                      style="margin: 8px 0 16px;" />
-
-                    <button class="button" type="submit" [disabled]="leagueNameControl.invalid || saving()">
-                      {{ saving() ? 'Creando liga en base de datos…' : '🏁 Crear Liga' }}
-                    </button>
-                  </form>
+              <!-- CAJA DE INVITACIÓN DIRECTA DE LA LIGA SELECCIONADA -->
+              <div class="invite-strip">
+                <div>
+                  <span class="badge-red">ENLACE OFICIAL DE ACCESO RÁPIDO</span>
+                  <p style="margin-top: 4px; font-size: 0.95rem;">
+                    Compartí este enlace con tus amigos para que se sumen a <strong>{{ selectedLeague()?.name }}</strong>:
+                  </p>
                 </div>
-
-                <!-- UNIRSE A LIGA -->
-                <div class="form-card">
-                  <h3>🔗 Unirse con Código o Link</h3>
-                  <label class="field-label" for="invite-input-quick">Link o Código de Invitación</label>
+                <div class="copy-group">
                   <input 
-                    id="invite-input-quick" 
-                    [formControl]="inviteLinkInput" 
-                    placeholder="Ej: https://.../join/345c4e89... o 345c4e89-..." 
-                    style="margin: 8px 0 16px;" />
-
-                  <label class="field-label" for="invite-pwd-quick">Contraseña (si la liga la requiere)</label>
-                  <input 
-                    id="invite-pwd-quick" 
-                    type="password"
-                    [formControl]="invitePasswordInput" 
-                    placeholder="Contraseña de acceso" 
-                    style="margin: 8px 0 16px;" />
-
-                  <button class="button quiet" type="button" (click)="joinByInvite()" [disabled]="inviteLinkInput.invalid || joiningInProgress()">
-                    🚀 Unirme a la Liga
+                    type="text" 
+                    readonly 
+                    [value]="getInviteUrl(selectedLeague()?.inviteCode)" 
+                    class="copy-input"/>
+                  <button class="button small" type="button" (click)="copyInviteUrl()">
+                    {{ copySuccess() ? '✓ Copiado' : '🔗 Copiar Link' }}
                   </button>
                 </div>
               </div>
-            }
 
-
-            <!-- --------------------------------------- -->
-            <!-- SUB-TAB 3: CREAR NUEVA LIGA CON CLAVE  -->
-            <!-- --------------------------------------- -->
-            @if (leaguesSubTab() === 'create') {
-              <div class="form-card" style="max-width: 640px; margin: 0 auto;">
-                <div style="margin-bottom: 20px;">
-                  <span class="round-badge">CREAR LIGA OFICIAL</span>
-                  <h3 style="font-size: 24px; margin-top: 8px;">➕ Crear Nueva Liga Privada</h3>
-                  <p class="muted" style="margin: 4px 0 0;">Configurá el nombre, la descripción y una contraseña de seguridad para tu liga:</p>
-                </div>
-
-                <form [formGroup]="createLeagueForm" (ngSubmit)="create()">
-                  <div style="margin-bottom: 16px;">
-                    <label class="field-label" for="league-name-input">Nombre de la liga *</label>
-                    <input 
-                      id="league-name-input" 
-                      formControlName="name" 
-                      placeholder="Ej: Apex Champions League 2026" 
-                      style="margin-top: 6px; width: 100%;" 
-                      required />
-                    @if (leagueNameControl.touched && leagueNameControl.invalid) {
-                      <span class="error-text" style="color: var(--red-bright); font-size: 12px; margin-top: 4px; display: block;">El nombre es obligatorio (hasta 100 caracteres).</span>
-                    }
-                  </div>
-
-                  <div style="margin-bottom: 16px;">
-                    <label class="field-label" for="league-desc-input">Descripción (opcional)</label>
-                    <input 
-                      id="league-desc-input" 
-                      formControlName="desc" 
-                      placeholder="Ej: Torneo privado de amigos de la oficina" 
-                      style="margin-top: 6px; width: 100%;" />
-                  </div>
-
-                  <div style="margin-bottom: 24px;">
-                    <label class="field-label" for="league-password-input">
-                      🔒 Contraseña de Acceso (opcional)
-                    </label>
-                    <input 
-                      id="league-password-input" 
-                      type="password" 
-                      formControlName="password" 
-                      placeholder="Establecé una clave para proteger el ingreso (ej: f1argentina)" 
-                      style="margin-top: 6px; width: 100%;" />
-                    <span class="muted" style="font-size: 12px; display: block; margin-top: 4px;">
-                      Si definís una contraseña, solo quienes conozcan la clave podrán unirse a tu liga.
+              <!-- PODIO TOP 3 DE LA LIGA -->
+              <div class="spotlight-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <h3 class="podium-title" style="margin: 0;">👑 Podio de la Liga: {{ selectedLeague()?.name }}</h3>
+                  @if (selectedLeague()?.hasPassword) {
+                    <span style="font-size: 0.8rem; background: rgba(245, 176, 0, 0.15); color: var(--gold); border: 1px solid rgba(245, 176, 0, 0.3); padding: 3px 8px; border-radius: var(--radius-sm);">
+                      🔒 Protegida con Contraseña
                     </span>
+                  }
+                </div>
+
+                @if (leagueLeaderboard().length >= 1) {
+                  <div class="league-podium-pedestals">
+                    <!-- P2: PLATA -->
+                    <div class="pedestal silver-ped">
+                      <div class="pos-badge">🥈 P2</div>
+                      <div class="pilot-name">{{ leagueLeaderboard()[1]?.displayName || 'Esperando rival' }}</div>
+                      <div class="pilot-pts">{{ leagueLeaderboard()[1]?.totalScore || 0 }} pts</div>
+                    </div>
+
+                    <!-- P1: ORO -->
+                    <div class="pedestal gold-ped">
+                      <div class="crown">👑</div>
+                      <div class="pos-badge">🥇 P1</div>
+                      <div class="pilot-name">{{ leagueLeaderboard()[0]?.displayName || 'Líder' }}</div>
+                      <div class="pilot-pts">{{ leagueLeaderboard()[0]?.totalScore || 0 }} pts</div>
+                    </div>
+
+                    <!-- P3: BRONCE -->
+                    <div class="pedestal bronze-ped">
+                      <div class="pos-badge">🥉 P3</div>
+                      <div class="pilot-name">{{ leagueLeaderboard()[2]?.displayName || 'Esperando rival' }}</div>
+                      <div class="pilot-pts">{{ leagueLeaderboard()[2]?.totalScore || 0 }} pts</div>
+                    </div>
                   </div>
+                }
 
-                  <button class="button" type="submit" [disabled]="createLeagueForm.invalid || saving()" style="width: 100%; padding: 14px;">
-                    {{ saving() ? 'Guardando liga en base de datos…' : '🏁 Crear Liga y Persistir en Base de Datos' }}
-                  </button>
-                </form>
+                <!-- TABLA DE POSICIONES DE LA LIGA -->
+                <h4 style="margin: 1.5rem 0 1rem; font-size: 1.05rem;">Participantes de la Liga ({{ leagueLeaderboard().length }})</h4>
+                @if (leagueLeaderboard().length > 0) {
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Corredor / Usuario</th>
+                        <th>Puntos Totales</th>
+                        <th>Pronósticos</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (entry of leagueLeaderboard(); track entry.userId) {
+                        <tr>
+                          <td><strong>#{{ entry.rank }}</strong></td>
+                          <td style="color: #fff; font-weight: 600;">{{ entry.displayName }}</td>
+                          <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
+                          <td>{{ entry.predictionsCount }} carreras</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                } @else {
+                  <p class="dim" style="padding: 1rem 0;">Aún no hay puntuaciones registradas en esta liga privada.</p>
+                }
+              </div>
+            } @else {
+              <!-- EMPTY STATE CUANDO NO TIENE LIGAS -->
+              <div class="spotlight-card" style="text-align: center; padding: 3rem 1.5rem;">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">🏁</div>
+                <h2>Aún no pertenecés a ninguna liga privada</h2>
+                <p class="dim" style="max-width: 500px; margin: 0.5rem auto 1.5rem;">
+                  Creá tu propia liga privada con contraseña o ingresá mediante el link de invitación que te compartieron tus amigos.
+                </p>
+                <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+                  <button class="button" type="button" (click)="leagueSubTab.set('create')">➕ Crear Nueva Liga</button>
+                  <button class="button quiet" type="button" (click)="leagueSubTab.set('join')">🔗 Unirme por Link o Código</button>
+                </div>
               </div>
             }
+          }
 
-            <!-- --------------------------------------- -->
-            <!-- SUB-TAB 4: UNIRSE POR LINK O CLAVE     -->
-            <!-- --------------------------------------- -->
-            @if (leaguesSubTab() === 'join') {
-              <div class="form-card" style="max-width: 640px; margin: 0 auto;">
-                <div style="margin-bottom: 20px;">
-                  <span class="round-badge">ACCESO A LIGA PRIVADA</span>
-                  <h3 style="font-size: 24px; margin-top: 8px;">🔗 Unirse por Link de Invitación o Código</h3>
-                  <p class="muted" style="margin: 4px 0 0;">Pegá el link completo o el código de invitación que te compartió el administrador:</p>
-                </div>
-
-                <div style="margin-bottom: 16px;">
-                  <label class="field-label" for="invite-url-input">Link completo o Código UUID *</label>
-                  <input 
-                    id="invite-url-input" 
-                    [formControl]="inviteLinkInput" 
-                    placeholder="Ej: https://dacs-nine.vercel.app/join/345c4e89... o 345c4e89-506f-4f9d..." 
-                    style="margin-top: 6px; width: 100%;" />
-                </div>
-
-                <div style="margin-bottom: 24px;">
-                  <label class="field-label" for="invite-pwd-input">Contraseña de la Liga (si está protegida)</label>
-                  <input 
-                    id="invite-pwd-input" 
-                    type="password" 
-                    [formControl]="invitePasswordInput" 
-                    placeholder="Ingresá la clave de acceso si la liga la requiere" 
-                    style="margin-top: 6px; width: 100%;" />
-                </div>
-
-                <button class="button" type="button" (click)="joinByInvite()" [disabled]="inviteLinkInput.invalid || joiningInProgress()" style="width: 100%; padding: 14px;">
-                  {{ joiningInProgress() ? 'Verificando y uniéndote…' : '🚀 Unirme a la Liga' }}
-                </button>
+          <!-- SUB-TAB 2: CREAR NUEVA LIGA -->
+          @if (leagueSubTab() === 'create') {
+            <div class="spotlight-card form-box">
+              <h3>Crear Nueva Liga Privada</h3>
+              <p class="dim">Tu liga será 100% confidencial. Nadie podrá buscarla en listas públicas; solo ingresarán quienes reciban tu link o código de invitación.</p>
+              
+              <div class="form-group">
+                <label>Nombre de la Liga (requerido) *</label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="newLeagueName" 
+                  placeholder="Ej: Escudería Amigos F1" 
+                  class="form-input"/>
               </div>
-            }
-          </section>
-        }
 
-        <!-- ========================================== -->
-        <!-- TAB 3: CAMPEONATO GLOBAL & PODIO           -->
-        <!-- ========================================== -->
-        @if (activeTab() === 'leaderboard') {
-          <section>
-            <div class="section-heading">
+              <div class="form-group">
+                <label>Descripción (opcional)</label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="newLeagueDescription" 
+                  placeholder="Ej: Torneo privado de amigos del trabajo" 
+                  class="form-input"/>
+              </div>
+
+              <div class="form-group">
+                <label>🔒 Contraseña de Acceso (opcional)</label>
+                <input 
+                  type="password" 
+                  [(ngModel)]="newLeaguePassword" 
+                  placeholder="Dejar vacío si es de acceso directo con link" 
+                  class="form-input"/>
+                <span class="dim" style="font-size: 0.8rem; margin-top: 4px;">Si definís una contraseña, los usuarios deberán ingresarla al unirse.</span>
+              </div>
+
+              <button 
+                class="button" 
+                type="button" 
+                [disabled]="!newLeagueName.trim() || isCreatingLeague()" 
+                (click)="createLeague()">
+                {{ isCreatingLeague() ? 'Creando en base de datos…' : '🏁 Crear Liga y Persistir' }}
+              </button>
+            </div>
+          }
+
+          <!-- SUB-TAB 3: UNIRSE POR LINK O CLAVE -->
+          @if (leagueSubTab() === 'join') {
+            <div class="spotlight-card form-box">
+              <h3>Unirse a una Liga Privada</h3>
+              <p class="dim">Pegá el link completo de invitación o el código UUID proporcionado por el creador de la liga.</p>
+              
+              <div class="form-group">
+                <label>Link o Código de Invitación *</label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="joinCode" 
+                  placeholder="Ej: https://.../join/345c4e89... o 345c4e89-..." 
+                  class="form-input"/>
+              </div>
+
+              <div class="form-group">
+                <label>Contraseña (si la liga la requiere)</label>
+                <input 
+                  type="password" 
+                  [(ngModel)]="joinPassword" 
+                  placeholder="Contraseña de acceso" 
+                  class="form-input"/>
+              </div>
+
+              <button 
+                class="button" 
+                type="button" 
+                [disabled]="!joinCode.trim() || isJoiningLeague()" 
+                (click)="joinLeague()">
+                {{ isJoiningLeague() ? 'Verificando e ingresando…' : '🚀 Unirme a la Liga' }}
+              </button>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- ========================================== -->
+      <!-- TAB 3: TABLA GLOBAL                        -->
+      <!-- ========================================== -->
+      @if (activeTab() === 'global') {
+        <section class="tab-content">
+          <div class="spotlight-card">
+            <div class="card-title-row">
               <div>
-                <p class="eyebrow"><span class="red-dot"></span> TEMPORADA 2026</p>
-                <h2>Tabla de Posiciones Global</h2>
+                <h3>📊 Clasificación Global de la Comunidad</h3>
+                <p class="dim" style="margin-top: 4px;">Puntos acumulados en tiempo real por todos los corredores de ApexPredict.</p>
               </div>
-              <span class="muted">{{ leaderboard().length }} competidores activos</span>
+              <span class="mono-pts">{{ globalLeaderboard().length }} Pilotos Registrados</span>
             </div>
 
-            <!-- PODIO TOP 3 GLOBAL -->
-            @if (leaderboard().length >= 3) {
-              <div class="podium-container">
-                <!-- 2ND PLACE -->
-                <div class="podium-col rank-2">
-                  <div class="podium-avatar">🥈</div>
-                  <div class="podium-user-name">{{ leaderboard()[1].displayName }}</div>
-                  <div class="podium-points">{{ leaderboard()[1].totalScore }} pts</div>
-                  <div class="podium-pedestal">2</div>
+            @if (globalLeaderboard().length >= 3) {
+              <div class="league-podium-pedestals">
+                <div class="pedestal silver-ped">
+                  <div class="pos-badge">🥈 P2</div>
+                  <div class="pilot-name">{{ globalLeaderboard()[1]?.displayName }}</div>
+                  <div class="pilot-pts">{{ globalLeaderboard()[1]?.totalScore }} pts</div>
                 </div>
 
-                <!-- 1ST PLACE -->
-                <div class="podium-col rank-1">
-                  <div style="font-size: 24px; margin-bottom: -10px;">👑</div>
-                  <div class="podium-avatar">🥇</div>
-                  <div class="podium-user-name">{{ leaderboard()[0].displayName }}</div>
-                  <div class="podium-points" style="color: var(--gold); font-size: 15px;">{{ leaderboard()[0].totalScore }} pts</div>
-                  <div class="podium-pedestal">1</div>
+                <div class="pedestal gold-ped">
+                  <div class="crown">👑</div>
+                  <div class="pos-badge">🥇 P1</div>
+                  <div class="pilot-name">{{ globalLeaderboard()[0]?.displayName }}</div>
+                  <div class="pilot-pts">{{ globalLeaderboard()[0]?.totalScore }} pts</div>
                 </div>
 
-                <!-- 3RD PLACE -->
-                <div class="podium-col rank-3">
-                  <div class="podium-avatar">🥉</div>
-                  <div class="podium-user-name">{{ leaderboard()[2].displayName }}</div>
-                  <div class="podium-points">{{ leaderboard()[2].totalScore }} pts</div>
-                  <div class="podium-pedestal">3</div>
+                <div class="pedestal bronze-ped">
+                  <div class="pos-badge">🥉 P3</div>
+                  <div class="pilot-name">{{ globalLeaderboard()[2]?.displayName }}</div>
+                  <div class="pilot-pts">{{ globalLeaderboard()[2]?.totalScore }} pts</div>
                 </div>
               </div>
             }
 
-            <!-- TABLA COMPLETA -->
-            @if (leaderboard().length > 0) {
-              <table class="leaderboard-table">
+            @if (globalLeaderboard().length > 0) {
+              <table class="data-table" style="margin-top: 1.5rem;">
                 <thead>
                   <tr>
-                    <th>Posición</th>
-                    <th>Jugador / Piloto</th>
-                    <th>Puntaje Acumulado</th>
+                    <th>Pos</th>
+                    <th>Corredor / Escudería</th>
+                    <th>Puntos Totales</th>
                     <th>Pronósticos Realizados</th>
                   </tr>
                 </thead>
                 <tbody>
-                  @for (entry of leaderboard(); track entry.userId) {
+                  @for (entry of globalLeaderboard(); track entry.userId) {
                     <tr>
-                      <td>#{{ entry.rank }}</td>
-                      <td><strong style="color: #fff;">{{ entry.displayName }}</strong></td>
-                      <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--cyan);">
-                        {{ entry.totalScore }} pts
-                      </td>
+                      <td><strong>#{{ entry.rank }}</strong></td>
+                      <td style="color: #fff; font-weight: 600;">{{ entry.displayName }}</td>
+                      <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
                       <td>{{ entry.predictionsCount }} carreras</td>
                     </tr>
                   }
                 </tbody>
               </table>
             } @else {
-              <p class="empty">Aún no hay puntuaciones registradas en el campeonato global.</p>
+              <p class="dim" style="padding: 2rem 0; text-align: center;">Cargando clasificación global…</p>
             }
+          </div>
+        </section>
+      }
 
-            <!-- CAMPEONATO MUNDIAL DE PILOTOS F1 2026 (JOLPICA API) -->
-            <div class="section-heading" style="margin-top: 48px;">
+      <!-- ========================================== -->
+      <!-- TAB 4: HISTORIAL                           -->
+      <!-- ========================================== -->
+      @if (activeTab() === 'historial') {
+        <section class="tab-content">
+          <div class="spotlight-card">
+            <div class="card-title-row">
               <div>
-                <p class="eyebrow"><span class="red-dot"></span> OFICIAL F1 · JOLPICA ERGAST API</p>
-                <h2>Mundial de Pilotos 2026</h2>
+                <h3>📜 Historial de Pronósticos & Aciertos</h3>
+                <p class="dim" style="margin-top: 4px;">Detalle de puntos y aciertos obtenidos en los Grandes Premios ya disputados.</p>
               </div>
-              <span class="muted">{{ f1Standings().length }} pilotos oficiales</span>
             </div>
 
-            @if (f1Standings().length > 0) {
-              <table class="leaderboard-table">
-                <thead>
-                  <tr>
-                    <th>Posición</th>
-                    <th>Piloto</th>
-                    <th>Escudería</th>
-                    <th>Puntos</th>
-                    <th>Victorias</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (d of f1Standings(); track d.driverId) {
-                    <tr>
-                      <td>#{{ d.position }}</td>
-                      <td>
-                        <strong style="color: #fff;">{{ d.name }}</strong>
-                        <span class="muted" style="margin-left: 6px; font-size: 11px;">{{ d.code }}</span>
-                      </td>
-                      <td>{{ d.team }}</td>
-                      <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--cyan);">
-                        {{ d.points }} pts
-                      </td>
-                      <td>{{ d.wins }} 🏆</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            }
-          </section>
-        }
-
-        <!-- ========================================== -->
-        <!-- TAB 4: HISTORIAL & DESGLOSE DE PUNTOS      -->
-        <!-- ========================================== -->
-        @if (activeTab() === 'history') {
-          <section>
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow"><span class="red-dot"></span> REGISTRO OFICIAL</p>
-                <h2>Historial de Pronósticos & Puntuaciones</h2>
-              </div>
-              <span class="muted">{{ history().length }} carreras disputadas</span>
-            </div>
-
-            @if (history().length > 0) {
+            @if (historyItems().length > 0) {
               <div class="history-grid">
-                @for (item of history(); track item.predictionId || item.sessionId) {
-                  <article class="history-card">
-                    <div class="history-card-header">
+                @for (h of historyItems(); track h.sessionId) {
+                  <div class="history-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                       <div>
-                        <span class="round-badge">{{ item.circuit }}</span>
-                        <h3 style="font-size: 22px; margin-top: 6px;">{{ item.sessionName }}</h3>
-                        <p class="muted" style="margin: 4px 0 0;">
-                          Fecha de carrera: {{ item.raceDate || (item.startsAt | date: 'dd/MM/yyyy' : '-0300') }}
-                        </p>
+                        <span class="badge-round" style="font-size: 0.7rem;">CARRERA COMPLETADA</span>
+                        <h4 style="margin: 6px 0 2px; font-size: 1.15rem;">{{ h.sessionName }}</h4>
+                        <p class="dim" style="font-size: 0.85rem; margin: 0;">{{ h.circuit }}</p>
                       </div>
-
-                      <div style="display: flex; align-items: center; gap: 12px;">
-                        @if (item.score !== null) {
-                          <div class="score-badge scored">
-                            <span>🏆 +{{ item.score }} PTS</span>
-                          </div>
-                        } @else {
-                          <div class="score-badge pending">
-                            <span>⏱️ PENDIENTE DE RESULTADOS</span>
-                          </div>
-                        }
+                      <div style="text-align: right;">
+                        <span style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 800; color: var(--gold);">
+                          {{ h.score != null ? h.score : 0 }} pts
+                        </span>
                       </div>
                     </div>
 
-                    <!-- DESGLOSE POR TIPO DE PREDICCIÓN -->
-                    <div class="breakdown-grid">
-                      <!-- 1. PODIO -->
-                      <div class="breakdown-box">
-                        <span class="cat-title">🏆 Podio Seleccionado</span>
-                        <div class="cat-picks">
-                          1º {{ formatDriverName(item.podium[0]) }}<br />
-                          2º {{ formatDriverName(item.podium[1]) }}<br />
-                          3º {{ formatDriverName(item.podium[2]) }}
-                        </div>
-                        @if (item.scoreBreakdown) {
-                          <span class="cat-score" [class.hit]="item.scoreBreakdown.podiumPoints > 0" [class.miss]="item.scoreBreakdown.podiumPoints === 0">
-                            {{ item.scoreBreakdown.podiumHits }} aciertos · +{{ item.scoreBreakdown.podiumPoints }} pts
-                          </span>
-                        } @else {
-                          <span class="cat-score miss">Regla: 3, 7 o 10 pts</span>
-                        }
+                    @if (h.scoreBreakdown) {
+                      <div class="score-breakdown-tags" style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 6px;">
+                        <span class="chip-score" [class.hit]="h.scoreBreakdown.podiumHits > 0">
+                          Podio: +{{ h.scoreBreakdown.podiumPoints }} pts ({{ h.scoreBreakdown.podiumHits }}/3)
+                        </span>
+                        <span class="chip-score" [class.hit]="h.scoreBreakdown.poleHit">
+                          Pole: {{ h.scoreBreakdown.poleHit ? '+20 pts ✓' : '0 pts' }}
+                        </span>
+                        <span class="chip-score" [class.hit]="h.scoreBreakdown.duelHit">
+                          Duelo: {{ h.scoreBreakdown.duelHit ? '+15 pts ✓' : '0 pts' }}
+                        </span>
+                        <span class="chip-score" [class.hit]="h.scoreBreakdown.safetyCarHit">
+                          Safety Car: {{ h.scoreBreakdown.safetyCarHit ? '+16 pts ✓' : '0 pts' }}
+                        </span>
+                        <span class="chip-score" [class.hit]="h.scoreBreakdown.dnfHit">
+                          DNFs: {{ h.scoreBreakdown.dnfHit ? '+16 pts ✓' : '0 pts' }}
+                        </span>
                       </div>
-
-                      <!-- 2. POLE POSITION -->
-                      <div class="breakdown-box">
-                        <span class="cat-title">⚡ Pole Position</span>
-                        <div class="cat-picks">
-                          {{ item.polePositionDriverId ? formatDriverName(item.polePositionDriverId) : 'Sin selección' }}
-                        </div>
-                        @if (item.scoreBreakdown) {
-                          <span class="cat-score" [class.hit]="item.scoreBreakdown.poleHit" [class.miss]="!item.scoreBreakdown.poleHit">
-                            {{ item.scoreBreakdown.poleHit ? '✓ Acertó · +4 pts' : '✗ No acertó · 0 pts' }}
-                          </span>
-                        } @else {
-                          <span class="cat-score miss">Premio: 4 pts</span>
-                        }
-                      </div>
-
-                      <!-- 3. DUELO DE PILOTOS -->
-                      <div class="breakdown-box">
-                        <span class="cat-title">⚔️ Duelo de Pilotos</span>
-                        <div class="cat-picks">
-                          Elegido: <strong>{{ item.duelDriverPick ? formatDriverName(item.duelDriverPick) : 'Sin pick' }}</strong>
-                        </div>
-                        @if (item.scoreBreakdown) {
-                          <span class="cat-score" [class.hit]="item.scoreBreakdown.duelHit" [class.miss]="!item.scoreBreakdown.duelHit">
-                            {{ item.scoreBreakdown.duelHit ? '✓ Acertó · +3 pts' : '✗ No acertó · 0 pts' }}
-                          </span>
-                        } @else {
-                          <span class="cat-score miss">Premio: 3 pts</span>
-                        }
-                      </div>
-
-                      <!-- 4. SAFETY CARS -->
-                      <div class="breakdown-box">
-                        <span class="cat-title">🟡 Safety Cars</span>
-                        <div class="cat-picks">
-                          Estimados: <strong>{{ item.safetyCarCount ?? 0 }}</strong>
-                        </div>
-                        @if (item.scoreBreakdown) {
-                          <span class="cat-score" [class.hit]="item.scoreBreakdown.safetyCarHit" [class.miss]="!item.scoreBreakdown.safetyCarHit">
-                            {{ item.scoreBreakdown.safetyCarHit ? '✓ Exacto · +6 pts' : '✗ Falló · 0 pts' }}
-                          </span>
-                        } @else {
-                          <span class="cat-score miss">Premio: 6 pts</span>
-                        }
-                      </div>
-
-                      <!-- 5. ABANDONOS (DNF) -->
-                      <div class="breakdown-box">
-                        <span class="cat-title">🚩 Abandonos (DNF)</span>
-                        <div class="cat-picks">
-                          Estimados: <strong>{{ item.dnfCount ?? 0 }}</strong>
-                        </div>
-                        @if (item.scoreBreakdown) {
-                          <span class="cat-score" [class.hit]="item.scoreBreakdown.dnfHit" [class.miss]="!item.scoreBreakdown.dnfHit">
-                            {{ item.scoreBreakdown.dnfHit ? '✓ Exacto · +6 pts' : '✗ Falló · 0 pts' }}
-                          </span>
-                        } @else {
-                          <span class="cat-score miss">Premio: 6 pts</span>
-                        }
-                      </div>
-                    </div>
-                  </article>
-                }
-              </div>
-              <!-- HISTORIAL OFICIAL DE ÚLTIMA CARRERA (JOLPICA API) -->
-              <div class="spotlight-card" style="margin-bottom: 28px;">
-                <span class="round-badge">RESULTADOS OFICIALES · JOLPICA API</span>
-                <h3 style="font-size: 24px; margin-top: 8px;">{{ lastRaceInfo()?.raceName || 'Gran Premio de Singapur (Ronda 17)' }}</h3>
-                <p class="eyebrow" style="margin-top: 4px; color: var(--cyan);">
-                  Circuito: {{ lastRaceInfo()?.circuit || 'Marina Bay Street Circuit' }} · Fecha: {{ lastRaceInfo()?.date || '2026-10-04' }}
-                </p>
-
-                @if (lastRaceInfo()?.results && lastRaceInfo()!.results.length >= 3) {
-                  <div style="margin-top: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px;">
-                      <span style="font-size: 24px;">🥇 1º Puesto</span>
-                      <div style="font-size: 18px; font-weight: 700; color: #fff; margin-top: 4px;">{{ lastRaceInfo()!.results[0].driverName }}</div>
-                      <div class="muted" style="font-size: 12px;">{{ lastRaceInfo()!.results[0].team }} · +{{ lastRaceInfo()!.results[0].points }} pts</div>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px;">
-                      <span style="font-size: 24px;">🥈 2º Puesto</span>
-                      <div style="font-size: 18px; font-weight: 700; color: #fff; margin-top: 4px;">{{ lastRaceInfo()!.results[1].driverName }}</div>
-                      <div class="muted" style="font-size: 12px;">{{ lastRaceInfo()!.results[1].team }} · +{{ lastRaceInfo()!.results[1].points }} pts</div>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 16px;">
-                      <span style="font-size: 24px;">🥉 3º Puesto</span>
-                      <div style="font-size: 18px; font-weight: 700; color: #fff; margin-top: 4px;">{{ lastRaceInfo()!.results[2].driverName }}</div>
-                      <div class="muted" style="font-size: 12px;">{{ lastRaceInfo()!.results[2].team }} · +{{ lastRaceInfo()!.results[2].points }} pts</div>
-                    </div>
+                    }
                   </div>
                 }
               </div>
-
-              <div class="spotlight-card" style="text-align: center; padding: 48px 24px;">
-                <div style="font-size: 40px; margin-bottom: 12px;">📊</div>
-                <h2>Tus pronósticos para el próximo GP</h2>
-                <p class="lead" style="max-width: 480px; margin: 8px auto 20px;">
-                  El desglose de aciertos y puntuación obtenida se computará automáticamente al concluir la carrera del domingo.
-                </p>
-                <button class="button" (click)="setTab('prediction')">Ver mi pronóstico actual</button>
+            } @else {
+              <div style="text-align: center; padding: 3rem 1rem;">
+                <p class="dim" style="font-size: 1rem;">Aún no se han puntuado Grandes Premios para tu usuario.</p>
+                <p class="dim" style="font-size: 0.85rem; margin-top: 4px;">Cuando finalice el GP oficial de este fin de semana, acá verás el desglose completo de tus aciertos.</p>
               </div>
             }
-          </section>
-        }
+          </div>
+        </section>
       }
-    </section>
+    </div>
   `,
+  styles: [`
+    .dashboard-page {
+      max-width: 1440px;
+      margin: 1.5rem auto 4rem;
+      padding: 0 1.5rem;
+    }
+    .cockpit-header {
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 2rem;
+    }
+    .tabs-bar {
+      display: flex;
+      gap: 1.5rem;
+      overflow-x: auto;
+    }
+    .tabs-bar button {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      font-weight: 600;
+      padding: 0.85rem 0.5rem;
+      cursor: pointer;
+      position: relative;
+      white-space: nowrap;
+      transition: color 0.2s;
+    }
+    .tabs-bar button:hover {
+      color: #fff;
+    }
+    .tabs-bar button.active {
+      color: #ffffff;
+    }
+    .tabs-bar button.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--red);
+    }
+    .tab-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    .section-hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(135deg, rgba(225, 6, 0, 0.12) 0%, var(--surface) 100%);
+      border: 1px solid var(--line-accent);
+      border-radius: var(--radius-md);
+      padding: 1.5rem 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .badge-round {
+      background: var(--red);
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      display: inline-block;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+      font-size: 0.95rem;
+    }
+    .points-badge {
+      text-align: right;
+    }
+    .points-badge .dim {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      font-weight: 700;
+    }
+    .points-badge .pts-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      color: var(--gold);
+      margin-left: 0.5rem;
+    }
+    .card-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+    .mono-pts {
+      font-family: var(--font-mono);
+      color: var(--gold);
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .cyan-pts {
+      font-family: var(--font-mono);
+      color: var(--cyan);
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .podium-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+    .podium-col {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem;
+    }
+    .gold-border { border-top: 4px solid var(--gold); }
+    .silver-border { border-top: 4px solid var(--silver); }
+    .bronze-border { border-top: 4px solid var(--bronze); }
+    .podium-header {
+      font-size: 0.82rem;
+      font-weight: 800;
+      margin-bottom: 0.6rem;
+    }
+    .podium-header.gold { color: var(--gold); }
+    .podium-header.silver { color: var(--silver); }
+    .podium-header.bronze { color: var(--bronze); }
+    .field-label {
+      font-size: 0.82rem;
+      color: var(--text-dim);
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+    .driver-select {
+      width: 100%;
+      background: #0d1015;
+      border: 1px solid var(--line-strong);
+      color: #fff;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-ui);
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+      cursor: pointer;
+    }
+    .driver-select:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .alert-box {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+    }
+    .alert-box.error {
+      background: rgba(225, 6, 0, 0.15);
+      border: 1px solid var(--red);
+      color: #ffb4ab;
+    }
+    .alert-box.success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--green);
+      color: #a7f3d0;
+    }
+    .grid-two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .duel-selector {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+    .duel-selector button {
+      flex: 1;
+      background: #0d1015;
+      border: 1px solid var(--line);
+      color: var(--text-muted);
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .duel-selector button:hover:not(:disabled) {
+      border-color: var(--line-strong);
+      color: #fff;
+    }
+    .duel-selector button.selected {
+      background: var(--red);
+      color: #fff;
+      border-color: var(--red);
+    }
+    .duel-selector button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .counters-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 0.6rem;
+    }
+    .stepper button {
+      width: 38px;
+      height: 38px;
+      background: #0d1015;
+      border: 1px solid var(--line-strong);
+      color: #fff;
+      font-size: 1.25rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .stepper button:hover:not(:disabled) {
+      background: var(--surface-hover);
+      border-color: var(--red);
+    }
+    .stepper button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .count-num {
+      font-size: 1.6rem;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      min-width: 32px;
+      text-align: center;
+    }
+    .submit-bar {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0.5rem;
+    }
+    /* LIGAS */
+    .sub-nav-leagues {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    .sub-nav-leagues button {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text-muted);
+      padding: 0.6rem 1.15rem;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .sub-nav-leagues button:hover {
+      color: #fff;
+    }
+    .sub-nav-leagues button.active {
+      background: var(--surface-card);
+      color: #fff;
+      border-color: var(--line-strong);
+    }
+    .league-pills-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .league-chip {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+    }
+    .league-chip.active {
+      background: rgba(225, 6, 0, 0.15);
+      border-color: var(--red);
+      color: #fff;
+    }
+    .invite-strip {
+      background: var(--surface);
+      border: 1px solid var(--line-accent);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .badge-red {
+      font-size: 0.72rem;
+      color: var(--red);
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+    .copy-group {
+      display: flex;
+      gap: 0.5rem;
+    }
+    .copy-input {
+      background: #0d1015;
+      border: 1px solid var(--line-strong);
+      color: #fff;
+      padding: 0.5rem 0.8rem;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      border-radius: var(--radius-sm);
+      width: 360px;
+    }
+    .league-podium-pedestals {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 1.5rem;
+      margin: 2rem 0;
+    }
+    .pedestal {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 1.5rem 1rem;
+      text-align: center;
+      width: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .gold-ped {
+      min-height: 190px;
+      border-top: 5px solid var(--gold);
+    }
+    .silver-ped {
+      min-height: 160px;
+      border-top: 5px solid var(--silver);
+    }
+    .bronze-ped {
+      min-height: 140px;
+      border-top: 5px solid var(--bronze);
+    }
+    .pos-badge {
+      font-weight: 800;
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+    .pilot-name {
+      font-weight: 700;
+      font-size: 1.05rem;
+    }
+    .pilot-pts {
+      font-family: var(--font-mono);
+      color: var(--gold);
+      font-size: 0.95rem;
+      margin-top: 0.35rem;
+    }
+    .crown {
+      font-size: 1.5rem;
+      margin-bottom: 0.2rem;
+    }
+    .form-box {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin: 1.25rem 0;
+    }
+    .form-input {
+      background: #0d1015;
+      border: 1px solid var(--line-strong);
+      color: #fff;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+    .data-table th, .data-table td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+    .data-table th {
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.25rem;
+    }
+    .history-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem;
+    }
+    .chip-score {
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      padding: 3px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--line);
+    }
+    .chip-score.hit {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #a7f3d0;
+      font-weight: 600;
+    }
+    .dim {
+      color: var(--text-dim);
+    }
+    @media (max-width: 768px) {
+      .podium-grid, .grid-two-cols, .counters-grid {
+        grid-template-columns: 1fr;
+      }
+      .league-podium-pedestals {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .pedestal {
+        width: 100%;
+        min-height: auto;
+      }
+      .invite-strip {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: flex-start;
+      }
+      .copy-input {
+        width: 100%;
+      }
+      .history-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  `]
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
-  readonly drivers: DriverOption[] = F1_DRIVERS;
-  readonly activeTab = signal<DashboardTab>('prediction');
+  readonly drivers: F1Driver[] = F1_DRIVERS;
+  readonly activeTab = signal<'pronostico' | 'ligas' | 'global' | 'historial'>('pronostico');
+  readonly leagueSubTab = signal<'list' | 'create' | 'join'>('list');
 
-  // Sub-navegación dentro de Ligas: Mis Ligas, Crear y Unirme
-  readonly leaguesSubTab = signal<'my-leagues' | 'create' | 'join'>('my-leagues');
-  readonly joiningInProgress = signal(false);
+  // Sesión F1 activa
+  readonly session = signal<NextSession | null>(null);
+  readonly isLocked = computed(() => this.session()?.isLocked ?? false);
+  readonly matchupDriver1 = computed(() => this.session()?.matchupDriver1 || 'norris');
+  readonly matchupDriver2 = computed(() => this.session()?.matchupDriver2 || 'verstappen');
 
-  // Formulario Crear Liga con Contraseña
-  readonly leagueNameControl = new FormControl('', {
-    nonNullable: true,
-    validators: [Validators.required, Validators.maxLength(100), Validators.pattern(/\S/)],
-  });
-  readonly leagueDescControl = new FormControl('', { nonNullable: true, validators: [Validators.maxLength(255)] });
-  readonly leaguePasswordControl = new FormControl('', { nonNullable: true, validators: [Validators.maxLength(100)] });
-  readonly createLeagueForm = new FormGroup({
-    name: this.leagueNameControl,
-    desc: this.leagueDescControl,
-    password: this.leaguePasswordControl,
-  });
+  // Estado del pronóstico
+  prediction: PredictionPayload = {
+    p1DriverId: 'verstappen',
+    p2DriverId: 'norris',
+    p3DriverId: 'leclerc',
+    poleDriverId: 'norris',
+    duelWinnerId: 'norris',
+    safetyCars: 1,
+    dnfs: 2
+  };
 
-  // Formulario Unirse por Link o Clave
-  readonly inviteLinkInput = new FormControl('', { nonNullable: true, validators: [Validators.required] });
-  readonly invitePasswordInput = new FormControl('', { nonNullable: true });
-
-  // Mensajes de éxito y estado
-  readonly joinSuccess = signal('');
-  readonly createSuccess = signal('');
-  readonly copiedLink = signal(false);
-  readonly copied = signal(false);
-
-  // Formulario de predicciones
-  readonly predForm = new FormGroup({
-    p1: new FormControl('', [Validators.required]),
-    p2: new FormControl('', [Validators.required]),
-    p3: new FormControl('', [Validators.required]),
-    pole: new FormControl(''),
-    duel: new FormControl(''),
-    safetyCars: new FormControl(0, [Validators.min(0)]),
-    dnfs: new FormControl(0, [Validators.min(0)]),
-  });
-
-  readonly leagues = signal<League[]>([]);
+  // Ligas privadas
+  readonly myLeagues = signal<League[]>([]);
   readonly selectedLeague = signal<League | null>(null);
   readonly leagueLeaderboard = signal<LeaderboardEntry[]>([]);
-  readonly leaderboard = signal<LeaderboardEntry[]>([]);
-  readonly f1Standings = signal<JolpicaDriverStanding[]>([]);
-  readonly lastRaceInfo = signal<{ raceName: string; round: number; circuit: string; date: string; results: JolpicaRaceResult[] } | null>(null);
-  readonly history = signal<PredictionHistoryItem[]>([]);
 
-  readonly nextSession = signal<NextSession | null>(null);
-  readonly currentPrediction = signal<PredictionDetail | null>(null);
+  // Clasificación Global e Historial
+  readonly globalLeaderboard = signal<LeaderboardEntry[]>([]);
+  readonly historyItems = signal<PredictionHistoryItem[]>([]);
 
-  readonly isLocked = signal(false);
-  readonly loading = signal(true);
-  readonly saving = signal(false);
-  readonly savingPrediction = signal(false);
-  readonly ready = signal(false);
+  // Estados de feedback de la UI
+  readonly isSaving = signal(false);
+  readonly saveSuccess = signal(false);
+  readonly saveError = signal('');
+  readonly copySuccess = signal(false);
 
-  readonly error = signal('');
-  readonly predictionError = signal('');
-  readonly predictionSuccess = signal(false);
+  readonly isCreatingLeague = signal(false);
+  readonly isJoiningLeague = signal(false);
+  readonly leagueSuccess = signal('');
+  readonly leagueError = signal('');
+
+  // Formularios de ligas
+  newLeagueName = '';
+  newLeagueDescription = '';
+  newLeaguePassword = '';
+  joinCode = '';
+  joinPassword = '';
 
   ngOnInit() {
-    this.loadDashboardData();
+    this.loadNextSession();
+    this.loadUserLeagues();
+    this.loadGlobalLeaderboard();
+    this.loadHistory();
 
-    // Si el usuario ingresó por un link directo de invitación (/join/:inviteCode)
-    const inviteParam = this.route.snapshot.paramMap.get('inviteCode');
-    if (inviteParam) {
-      this.activeTab.set('leagues');
-      this.leaguesSubTab.set('join');
-      this.inviteLinkInput.setValue(inviteParam);
+    // Comprobar parámetros de ruta (ej: /join/:inviteCode)
+    const routeInvite = this.route.snapshot.paramMap.get('inviteCode');
+    if (routeInvite) {
+      this.activeTab.set('ligas');
+      this.leagueSubTab.set('join');
+      this.joinCode = routeInvite;
     }
 
-    // Cargar perfil y ligas del usuario desde el backend
-    this.api
-      .profile()
-      .pipe(
-        switchMap(() => this.api.leagues()),
-        catchError(() => {
-          return this.api.leagues().pipe(catchError(() => of([])));
-        })
-      )
-      .subscribe({
-        next: (leagues) => {
-          this.leagues.set(leagues);
-          if (leagues.length > 0 && !this.selectedLeague()) {
-            this.selectLeague(leagues[0]);
+    // Comprobar query params (ej: ?tab=ligas o ?tab=global)
+    this.route.queryParamMap.subscribe((params) => {
+      const tabParam = params.get('tab');
+      if (tabParam === 'ligas') {
+        this.activeTab.set('ligas');
+      } else if (tabParam === 'global') {
+        this.activeTab.set('global');
+      } else if (tabParam === 'historial') {
+        this.activeTab.set('historial');
+      }
+    });
+  }
+
+  private loadNextSession() {
+    this.api.nextSession().subscribe({
+      next: (sess) => {
+        this.session.set(sess);
+        // Si no se asignó duelo, usa el por defecto
+        if (!this.prediction.duelWinnerId) {
+          this.prediction.duelWinnerId = sess.matchupDriver1 || 'norris';
+        }
+        this.loadCurrentPrediction(sess.id);
+      },
+      error: () => {
+        // En caso de caída de backend, mantiene datos de contingencia
+      }
+    });
+  }
+
+  private loadCurrentPrediction(sessionId: string) {
+    this.api.currentPrediction().subscribe({
+      next: (pred) => {
+        if (pred && pred.sessionId === sessionId) {
+          if (pred.podium && pred.podium.length >= 3) {
+            this.prediction.p1DriverId = pred.podium[0];
+            this.prediction.p2DriverId = pred.podium[1];
+            this.prediction.p3DriverId = pred.podium[2];
           }
-        },
-        error: () => {},
-      });
+          if (pred.polePositionDriverId) {
+            this.prediction.poleDriverId = pred.polePositionDriverId;
+          }
+          if (pred.duelDriverPick) {
+            this.prediction.duelWinnerId = pred.duelDriverPick;
+          }
+          if (pred.safetyCarCount != null) {
+            this.prediction.safetyCars = pred.safetyCarCount;
+          }
+          if (pred.dnfCount != null) {
+            this.prediction.dnfs = pred.dnfCount;
+          }
+        }
+      },
+      error: () => {}
+    });
   }
 
-  setTab(tab: DashboardTab) {
-    this.activeTab.set(tab);
-    if (tab === 'history') {
-      this.loadHistory();
-    }
-    if (tab === 'leaderboard') {
-      this.api.globalLeaderboard().subscribe({
-        next: (lb) => this.leaderboard.set(lb),
-        error: () => {}
-      });
-    }
-  }
-
-  setLeaguesSubTab(subTab: 'my-leagues' | 'create' | 'join') {
-    this.leaguesSubTab.set(subTab);
-    this.error.set('');
-    this.joinSuccess.set('');
-    this.createSuccess.set('');
+  private loadUserLeagues() {
+    this.api.leagues().subscribe({
+      next: (leagues) => {
+        this.myLeagues.set(leagues);
+        if (leagues.length > 0 && !this.selectedLeague()) {
+          this.selectLeague(leagues[0]);
+        }
+      },
+      error: () => {
+        this.myLeagues.set([]);
+      }
+    });
   }
 
   selectLeague(league: League) {
     this.selectedLeague.set(league);
     this.api.leagueLeaderboard(league.id).subscribe({
-      next: (lb) => this.leagueLeaderboard.set(lb),
-      error: () => this.leagueLeaderboard.set([]),
+      next: (lb) => {
+        this.leagueLeaderboard.set(lb);
+      },
+      error: () => {
+        this.leagueLeaderboard.set([]);
+      }
     });
   }
 
-  isUserMemberOf(leagueId: string): boolean {
-    return this.leagues().some(l => l.id === leagueId);
+  private loadGlobalLeaderboard() {
+    this.api.globalLeaderboard().subscribe({
+      next: (lb) => {
+        this.globalLeaderboard.set(lb);
+        // Sincronizar puntos de usuario actual en navbar si coincide
+        const myName = this.auth.username()?.toLowerCase();
+        if (myName) {
+          const me = lb.find(u => u.displayName.toLowerCase().includes(myName));
+          if (me) {
+            this.auth.userPoints.set(me.totalScore);
+          }
+        }
+      },
+      error: () => {
+        this.globalLeaderboard.set([]);
+      }
+    });
+  }
+
+  private loadHistory() {
+    this.api.predictionHistory().subscribe({
+      next: (items) => {
+        this.historyItems.set(items || []);
+      },
+      error: () => {
+        this.historyItems.set([]);
+      }
+    });
+  }
+
+  isPodiumDuplicate(): boolean {
+    const { p1DriverId, p2DriverId, p3DriverId } = this.prediction;
+    return p1DriverId === p2DriverId || p1DriverId === p3DriverId || p2DriverId === p3DriverId;
+  }
+
+  incrementSC() {
+    if (this.isLocked()) return;
+    if (this.prediction.safetyCars < 10) this.prediction.safetyCars++;
+  }
+
+  decrementSC() {
+    if (this.isLocked()) return;
+    if (this.prediction.safetyCars > 0) this.prediction.safetyCars--;
+  }
+
+  incrementDNFs() {
+    if (this.isLocked()) return;
+    if (this.prediction.dnfs < 20) this.prediction.dnfs++;
+  }
+
+  decrementDNFs() {
+    if (this.isLocked()) return;
+    if (this.prediction.dnfs > 0) this.prediction.dnfs--;
+  }
+
+  getDriverName(id?: string | null): string {
+    if (!id) return 'Piloto';
+    const found = this.drivers.find(d => d.id === id);
+    return found ? `${found.name} (${found.team})` : id;
+  }
+
+  savePrediction() {
+    if (this.isPodiumDuplicate() || this.isSaving() || this.isLocked()) return;
+    
+    const sess = this.session();
+    if (!sess?.id) {
+      this.saveError.set('No se encontró sesión activa de Fórmula 1.');
+      return;
+    }
+
+    this.isSaving.set(true);
+    this.saveError.set('');
+    this.saveSuccess.set(false);
+
+    const payload = {
+      podium: [this.prediction.p1DriverId, this.prediction.p2DriverId, this.prediction.p3DriverId],
+      polePositionDriverId: this.prediction.poleDriverId,
+      duelDriverPick: this.prediction.duelWinnerId,
+      safetyCarCount: this.prediction.safetyCars,
+      dnfCount: this.prediction.dnfs
+    };
+
+    this.api.submitPrediction(sess.id, payload).subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.saveSuccess.set(true);
+        setTimeout(() => this.saveSuccess.set(false), 4000);
+      },
+      error: (err) => {
+        this.isSaving.set(false);
+        this.saveError.set(err.error?.message || err.error?.description || 'Error al persistir el pronóstico en la base de datos.');
+      }
+    });
   }
 
   getInviteUrl(code?: string): string {
-    return code ? `${window.location.origin}/join/${code}` : '';
+    if (!code) return '';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://dacs-nine.vercel.app';
+    return `${origin}/join/${code}`;
   }
 
-  copyInviteUrl(code?: string) {
+  copyInviteUrl() {
+    const code = this.selectedLeague()?.inviteCode;
     if (!code) return;
-    navigator.clipboard.writeText(this.getInviteUrl(code)).then(() => {
-      this.copiedLink.set(true);
-      setTimeout(() => this.copiedLink.set(false), 2000);
+    const url = this.getInviteUrl(code);
+    navigator.clipboard.writeText(url).then(() => {
+      this.copySuccess.set(true);
+      setTimeout(() => this.copySuccess.set(false), 2000);
     });
   }
 
-  copyInviteCode(code?: string) {
-    if (!code) return;
-    navigator.clipboard.writeText(code).then(() => {
-      this.copied.set(true);
-      setTimeout(() => this.copied.set(false), 2000);
+  createLeague() {
+    const name = this.newLeagueName.trim();
+    if (!name || this.isCreatingLeague()) return;
+
+    this.isCreatingLeague.set(true);
+    this.leagueError.set('');
+    this.leagueSuccess.set('');
+
+    const desc = this.newLeagueDescription.trim() || undefined;
+    const pwd = this.newLeaguePassword.trim() || undefined;
+
+    this.api.createLeague(name, desc, pwd).subscribe({
+      next: (created) => {
+        this.isCreatingLeague.set(false);
+        this.myLeagues.update((prev) => [created, ...prev]);
+        this.selectLeague(created);
+        this.newLeagueName = '';
+        this.newLeagueDescription = '';
+        this.newLeaguePassword = '';
+        this.leagueSuccess.set(`¡Liga "${created.name}" creada y persistida con éxito en la base de datos!`);
+        this.leagueSubTab.set('list');
+        setTimeout(() => this.leagueSuccess.set(''), 5000);
+      },
+      error: (err) => {
+        this.isCreatingLeague.set(false);
+        this.leagueError.set(err.error?.message || err.error?.description || 'No se pudo crear la liga.');
+      }
     });
   }
 
-  joinByInvite() {
-    let raw = this.inviteLinkInput.value?.trim() || '';
-    if (!raw) return;
+  joinLeague() {
+    let raw = this.joinCode.trim();
+    if (!raw || this.isJoiningLeague()) return;
 
-    // Acepta URLs completas (ej: https://.../join/UUID) o el UUID directamente
     if (raw.includes('/join/')) {
       raw = raw.substring(raw.lastIndexOf('/join/') + 6);
     }
@@ -1016,217 +1354,26 @@ export class DashboardComponent implements OnInit {
       raw = raw.substring(raw.lastIndexOf('/') + 1);
     }
     const inviteCode = raw.trim();
+    const pwd = this.joinPassword.trim() || undefined;
 
-    this.joiningInProgress.set(true);
-    this.error.set('');
-
-    const pwd = this.invitePasswordInput.value?.trim() || undefined;
+    this.isJoiningLeague.set(true);
+    this.leagueError.set('');
+    this.leagueSuccess.set('');
 
     this.api.joinLeague(inviteCode, pwd).subscribe({
-      next: (league) => {
-        this.joiningInProgress.set(false);
-        this.refreshUserLeagues(league.id);
-        this.inviteLinkInput.reset();
-        this.invitePasswordInput.reset();
-        this.joinSuccess.set(`¡Te uniste con éxito a la liga "${league.name}"!`);
-        this.leaguesSubTab.set('my-leagues');
-        setTimeout(() => this.joinSuccess.set(''), 5000);
+      next: (joined) => {
+        this.isJoiningLeague.set(false);
+        this.loadUserLeagues();
+        this.selectLeague(joined);
+        this.joinCode = '';
+        this.joinPassword = '';
+        this.leagueSuccess.set(`¡Te uniste con éxito a la liga "${joined.name}"!`);
+        this.leagueSubTab.set('list');
+        setTimeout(() => this.leagueSuccess.set(''), 5000);
       },
       error: (err) => {
-        this.joiningInProgress.set(false);
-        this.error.set(err.error?.message || err.error?.description || 'Código o link de invitación no válido o contraseña incorrecta.');
-      }
-    });
-  }
-
-  create() {
-    if (this.leagueNameControl.invalid || this.saving()) return;
-    this.saving.set(true);
-    this.error.set('');
-    this.createSuccess.set('');
-
-    const name = this.leagueNameControl.value.trim();
-    const desc = this.leagueDescControl.value.trim() || undefined;
-    const pwd = this.leaguePasswordControl.value.trim() || undefined;
-
-    const call$ = (desc || pwd) ? this.api.createLeague(name, desc, pwd) : this.api.createLeague(name);
-    call$.subscribe({
-      next: (league) => {
-        this.leagues.update((prev) => [league, ...prev]);
-        this.selectLeague(league);
-        this.createLeagueForm.reset();
-        this.saving.set(false);
-        this.createSuccess.set(`¡Liga "${league.name}" creada y guardada con éxito en la base de datos!`);
-        this.leaguesSubTab.set('my-leagues');
-        setTimeout(() => this.createSuccess.set(''), 5000);
-      },
-      error: (err) => {
-        this.saving.set(false);
-        this.error.set(err.error?.message || err.error?.description || 'No pudimos crear la liga en la base de datos. Intente nuevamente.');
-      },
-    });
-  }
-
-  private refreshUserLeagues(selectLeagueId?: string) {
-    this.api.leagues().subscribe({
-      next: (list) => {
-        this.leagues.set(list);
-        if (selectLeagueId) {
-          const found = list.find(l => l.id === selectLeagueId);
-          if (found) this.selectLeague(found);
-        } else if (list.length > 0 && !this.selectedLeague()) {
-          this.selectLeague(list[0]);
-        }
-      }
-    });
-  }
-
-  selectDuelDriver(driverId?: string | null) {
-    if (this.isLocked() || !driverId) return;
-    this.predForm.patchValue({ duel: driverId });
-  }
-
-  formatDriverName(driverId?: string | null): string {
-    if (!driverId) return 'Piloto';
-    const found = this.drivers.find(d => d.id.toLowerCase() === driverId.toLowerCase());
-    return found ? found.name : driverId.charAt(0).toUpperCase() + driverId.slice(1);
-  }
-
-  private loadDashboardData() {
-    this.api.nextSession().subscribe({
-      next: (session) => {
-        this.nextSession.set(session);
-        if (session) {
-          this.isLocked.set(session.isLocked);
-          this.loadCurrentPrediction();
-        }
-      },
-      error: () => {}
-    });
-
-    this.api.globalLeaderboard().subscribe({
-      next: (lb) => this.leaderboard.set(lb),
-      error: () => {}
-    });
-
-    this.api.jolpicaDriverStandings().subscribe({
-      next: (standings) => this.f1Standings.set(standings),
-      error: () => {}
-    });
-
-    this.api.jolpicaLastResults().subscribe({
-      next: (last) => this.lastRaceInfo.set(last),
-      error: () => {}
-    });
-
-    this.loadHistory();
-
-    this.loading.set(false);
-    this.ready.set(true);
-  }
-
-  private loadCurrentPrediction() {
-    const session = this.nextSession();
-    if (session) {
-      try {
-        const saved = localStorage.getItem(`apexpredict_pred_${session.season}_${session.round}`);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          this.predForm.patchValue({
-            p1: parsed.podium?.[0] || '',
-            p2: parsed.podium?.[1] || '',
-            p3: parsed.podium?.[2] || '',
-            pole: parsed.polePositionDriverId || '',
-            duel: parsed.duelDriverPick || '',
-            safetyCars: parsed.safetyCarCount || 0,
-            dnfs: parsed.dnfCount || 0,
-          });
-        }
-      } catch {}
-    }
-
-    this.api.currentPrediction().subscribe({
-      next: (pred) => {
-        this.currentPrediction.set(pred);
-        if (pred) {
-          this.isLocked.set(pred.isLocked);
-          if (pred.podium && pred.podium.length >= 3) {
-            this.predForm.patchValue({
-              p1: pred.podium[0],
-              p2: pred.podium[1],
-              p3: pred.podium[2],
-              pole: pred.polePositionDriverId || '',
-              duel: pred.duelDriverPick || '',
-              safetyCars: pred.safetyCarCount || 0,
-              dnfs: pred.dnfCount || 0,
-            });
-          }
-        }
-      },
-      error: () => {}
-    });
-  }
-
-  private loadHistory() {
-    this.api.predictionHistory().subscribe({
-      next: (items) => this.history.set(items),
-      error: () => {}
-    });
-  }
-
-  savePrediction() {
-    if (this.isLocked() || this.predForm.invalid || this.savingPrediction()) return;
-    const session = this.nextSession();
-    if (!session) return;
-
-    const val = this.predForm.value;
-    if (val.p1 === val.p2 || val.p1 === val.p3 || val.p2 === val.p3) {
-      this.predictionError.set('Los pilotos del podio (1º, 2º y 3º puesto) deben ser diferentes.');
-      return;
-    }
-
-    this.savingPrediction.set(true);
-    this.predictionError.set('');
-    this.predictionSuccess.set(false);
-
-    const safetyCarsVal = val.safetyCars != null ? Number(val.safetyCars) : 0;
-    const dnfsVal = val.dnfs != null ? Number(val.dnfs) : 0;
-    const payload = {
-      podium: [val.p1!, val.p2!, val.p3!],
-      polePositionDriverId: val.pole ? val.pole : null,
-      duelDriverPick: val.duel ? val.duel : null,
-      safetyCarCount: safetyCarsVal,
-      safetyCars: safetyCarsVal,
-      dnfCount: dnfsVal,
-      dnfs: dnfsVal,
-    };
-
-    // Respaldo en almacenamiento local
-    try {
-      localStorage.setItem(`apexpredict_pred_${session.season}_${session.round}`, JSON.stringify(payload));
-    } catch {}
-
-    this.api.submitPrediction(session.id, payload).subscribe({
-      next: (res) => {
-        this.savingPrediction.set(false);
-        this.predictionSuccess.set(true);
-        this.predictionError.set('');
-        this.currentPrediction.set(res);
-        this.loadHistory();
-        this.api.globalLeaderboard().subscribe({ next: (lb) => this.leaderboard.set(lb) });
-        if (this.selectedLeague()) {
-          this.api.leagueLeaderboard(this.selectedLeague()!.id).subscribe({ next: (lb) => this.leagueLeaderboard.set(lb) });
-        }
-      },
-      error: (err) => {
-        this.savingPrediction.set(false);
-        if (err.status === 423) {
-          this.isLocked.set(true);
-          this.predictionError.set('Lock Time alcanzado: La sesión ha comenzado y se bloquearon los pronósticos.');
-        } else {
-          const msg = err.error?.message || err.error?.description || 'Error al persistir el pronóstico en la base de datos. Verifique su conexión.';
-          this.predictionError.set(msg);
-        }
+        this.isJoiningLeague.set(false);
+        this.leagueError.set(err.error?.message || err.error?.description || 'Código o link no válido o contraseña incorrecta.');
       }
     });
   }

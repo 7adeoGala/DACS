@@ -6,8 +6,10 @@ import { AppRole } from '../models/api.models';
 export class AuthService {
   private readonly keycloak = inject(Keycloak);
   readonly authenticated = signal(false);
+  readonly isAuthenticated = this.authenticated;
   readonly available = signal(true);
   readonly username = signal('');
+  readonly userPoints = signal(0);
   readonly roles = signal<readonly string[]>([]);
 
   async initialize(): Promise<void> {
