@@ -68,10 +68,8 @@ public class PlayerService {
 
     @Transactional(readOnly = true)
     public List<LeagueView> searchLeagues(String issuer, String subject, String query) {
-        User user = users.findByIssuerAndSubject(issuer, subject).orElse(null);
-        return leagues.searchLeagues(query).stream()
-            .map(l -> toLeagueView(l, user, null))
-            .toList();
+        // Las ligas privadas son estrictamente confidenciales: no son buscables ni visibles públicamente.
+        return List.of();
     }
 
     @Transactional
@@ -141,7 +139,7 @@ public class PlayerService {
         var league = leagues.findByInviteCode(inviteCode)
             .orElseThrow(() -> new IllegalArgumentException("Código de invitación inválido: " + inviteCode));
 
-        if (password != null && !password.isBlank() && !league.verifyPassword(password)) {
+        if (league.hasPassword() && !league.verifyPassword(password)) {
             throw new IllegalArgumentException("Contraseña de la liga incorrecta.");
         }
 

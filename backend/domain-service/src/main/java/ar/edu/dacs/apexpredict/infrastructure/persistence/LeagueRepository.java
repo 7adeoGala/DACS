@@ -11,6 +11,6 @@ public interface LeagueRepository extends JpaRepository<League, UUID> {
 
     Optional<League> findByInviteCode(UUID inviteCode);
 
-    @Query("select l from League l where :query is null or :query = '' or lower(l.name) like lower(concat('%', :query, '%')) order by l.createdAt desc")
+    @Query("select l from League l where (l.password is null or l.password = '') and (:query is null or :query = '' or lower(l.name) like lower(concat('%', :query, '%'))) order by l.createdAt desc")
     List<League> searchLeagues(@Param("query") String query);
 }
