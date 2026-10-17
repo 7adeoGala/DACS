@@ -29,7 +29,7 @@ feign:
         url: ${F1_CONNECTOR_URL:http://f1-connector:9002/conector}
 apexpredict:
   security:
-    issuer: https://dacs2026.local/auth/realms/apexpredict
-    jwk-set-uri: https://dacs2026.local/auth/realms/apexpredict/protocol/openid-connect/certs
+    issuer: ${KEYCLOAK_ISSUER:https://dacs2026.local/auth/realms/apexpredict}
+    jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:https://dacs2026.local/auth/realms/apexpredict/protocol/openid-connect/certs}
     audience: apexpredict-bff
     cors-origins: ${CORS_ORIGINS:http://localhost:4200,https://localhost:4200,https://dacs2026.local}
