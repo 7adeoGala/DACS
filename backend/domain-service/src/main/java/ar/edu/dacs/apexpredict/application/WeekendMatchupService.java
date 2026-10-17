@@ -34,16 +34,22 @@ public class WeekendMatchupService {
     @Transactional
     public WeekendMatchup getOrGenerateMatchup(Session session) {
         return matchups.findBySession(session).orElseGet(() -> {
-            // Generación determinista con semilla basada en temporada y ronda para reproducibilidad,
-            // o aleatoria persistida inmediatamente en BD para que todos los usuarios tengan los mismos 2.
-            long seed = ((long) session.getSeason() * 1000L) + session.getRound();
-            Random rng = new Random(seed);
+            String driver1;
+            String driver2;
 
-            List<String> pool = new ArrayList<>(DEFAULT_DRIVER_POOL);
-            Collections.shuffle(pool, rng);
+            if (session.getRound() == 18) {
+                driver1 = "norris";
+                driver2 = "verstappen";
+            } else {
+                long seed = ((long) session.getSeason() * 1000L) + session.getRound();
+                Random rng = new Random(seed);
 
-            String driver1 = pool.get(0);
-            String driver2 = pool.get(1);
+                List<String> pool = new ArrayList<>(DEFAULT_DRIVER_POOL);
+                Collections.shuffle(pool, rng);
+
+                driver1 = pool.get(0);
+                driver2 = pool.get(1);
+            }
 
             WeekendMatchup newMatchup = new WeekendMatchup(session, driver1, driver2);
             return matchups.save(newMatchup);

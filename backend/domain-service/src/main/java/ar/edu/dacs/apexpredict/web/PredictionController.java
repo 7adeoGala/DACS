@@ -2,6 +2,7 @@ package ar.edu.dacs.apexpredict.web;
 
 import ar.edu.dacs.apexpredict.application.PredictionService;
 import ar.edu.dacs.apexpredict.application.ScoringService;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -154,7 +155,11 @@ public class PredictionController {
 
         String polePositionDriverId,
         String duelDriverPick,
+
+        @JsonAlias({"safetyCars", "safety_cars", "safety_car_count"})
         Integer safetyCarCount,
+
+        @JsonAlias({"dnfs", "dnf_count", "dnfsCount"})
         Integer dnfCount
     ) {}
 }

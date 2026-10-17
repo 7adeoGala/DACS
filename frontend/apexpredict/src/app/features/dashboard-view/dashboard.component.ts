@@ -1372,12 +1372,16 @@ export class DashboardComponent implements OnInit {
     this.predictionError.set('');
     this.predictionSuccess.set(false);
 
+    const safetyCarsVal = val.safetyCars != null ? Number(val.safetyCars) : 0;
+    const dnfsVal = val.dnfs != null ? Number(val.dnfs) : 0;
     const payload = {
       podium: [val.p1!, val.p2!, val.p3!],
       polePositionDriverId: val.pole ? val.pole : null,
       duelDriverPick: val.duel ? val.duel : null,
-      safetyCars: val.safetyCars ?? 0,
-      dnfCount: val.dnfs ?? 0,
+      safetyCarCount: safetyCarsVal,
+      safetyCars: safetyCarsVal,
+      dnfCount: dnfsVal,
+      dnfs: dnfsVal,
     };
 
     // Respaldo en almacenamiento local

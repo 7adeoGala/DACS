@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of, timeout } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Finish,
@@ -119,10 +119,27 @@ export class ApiService {
   }
 
   nextSession(): Observable<NextSession> {
-    return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/next.json').pipe(
-      map(data => this.mapJolpicaNextSession(data)),
+    return this.http.get<NextSession>(`${this.base}/sessions/next`).pipe(
+      switchMap(backendSession => {
+        return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/next.json').pipe(
+          map(jolpicaData => {
+            const jolpicaMapped = this.mapJolpicaNextSession(jolpicaData);
+            return {
+              ...jolpicaMapped,
+              id: backendSession.id || jolpicaMapped.id,
+              name: backendSession.name || jolpicaMapped.name,
+              circuit: backendSession.circuit || jolpicaMapped.circuit,
+              matchupDriver1: backendSession.matchupDriver1 || 'norris',
+              matchupDriver2: backendSession.matchupDriver2 || 'verstappen',
+            };
+          }),
+          catchError(() => of(backendSession))
+        );
+      }),
       catchError(() => {
-        return this.http.get<NextSession>(`${this.base}/sessions/next`);
+        return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/next.json').pipe(
+          map(data => this.mapJolpicaNextSession(data))
+        );
       })
     );
   }

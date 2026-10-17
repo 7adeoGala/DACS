@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class DomainExceptionHandler {
@@ -51,12 +52,25 @@ public class DomainExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(ResponseStatusException ex) {
+        int status = ex.getStatusCode().value();
+        String desc = ex.getReason() != null ? ex.getReason() : (ex.getMessage() != null ? ex.getMessage() : "Error en la solicitud.");
+        return ResponseEntity.status(ex.getStatusCode()).body(Map.of(
+            "status", status,
+            "code", "backend_" + status,
+            "description", desc,
+            "message", ex.getStatusCode().toString()
+        ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
+        String detail = ex.getMessage() != null ? ex.getMessage() : "Ocurrio un error interno en el servidor de dominio.";
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
             "status", 500,
             "code", "backend_500",
-            "description", "Ocurrio un error interno en el servidor de dominio.",
+            "description", detail,
             "message", "Internal Server Error"
         ));
     }
