@@ -2,7 +2,7 @@ export const environment = {
   production: true,
   apiUrl: 'https://dacs-pmkx.onrender.com/bff',
   keycloak: {
-    url: 'https://dacs2026.local/auth',
+    url: 'https://dacs-3-dswy.onrender.com/auth',
     realm: 'apexpredict',
     clientId: 'apexpredict-web',
   },

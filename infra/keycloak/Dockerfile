@@ -17,7 +17,7 @@ ENV KC_DB=postgres \
     KC_HTTP_HOST=0.0.0.0 \
     KC_HTTP_RELATIVE_PATH=/auth \
     KC_PROXY_HEADERS=xforwarded \
-    JAVA_OPTS_APPEND="-Xms128m -Xmx256m -XX:MaxRAMPercentage=50 -XX:MetaspaceSize=96m -XX:MaxMetaspaceSize=160m -XX:+UseSerialGC"
+    JAVA_OPTS_APPEND="-Xms128m -Xmx256m -XX:MaxRAMPercentage=50 -XX:MetaspaceSize=96m -XX:MaxMetaspaceSize=160m"
 
 EXPOSE 8080
 
