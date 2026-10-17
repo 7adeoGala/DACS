@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Finish,
@@ -10,7 +11,9 @@ import {
   PredictionDetail,
   SubmitPrediction,
   LeaderboardEntry,
-  PredictionHistoryItem
+  PredictionHistoryItem,
+  JolpicaDriverStanding,
+  JolpicaRaceResult
 } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -18,8 +21,31 @@ export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl;
 
-  calendar(season: number) {
-    return this.http.get<Race[]>(`${this.base}/calendar/${season}`);
+  calendar(season: number): Observable<Race[]> {
+    return this.http.get<Race[]>(`${this.base}/calendar/${season}`).pipe(
+      map(races => {
+        if (!races || races.length === 0) {
+          throw new Error('Empty backend calendar, falling back to Jolpica');
+        }
+        return races;
+      }),
+      catchError(() => {
+        return this.http.get<any>(`https://api.jolpi.ca/ergast/f1/${season}.json`).pipe(
+          map(data => {
+            const list = data?.MRData?.RaceTable?.Races || [];
+            return list.map((r: any) => ({
+              season: parseInt(r.season, 10),
+              round: parseInt(r.round, 10),
+              name: r.raceName,
+              circuit: r.Circuit?.circuitName || 'Circuito Oficial',
+              country: r.Circuit?.Location?.country || 'Internacional',
+              date: r.date,
+              startsAt: r.time ? `${r.date}T${r.time}` : `${r.date}T14:00:00Z`
+            }));
+          })
+        );
+      })
+    );
   }
 
   results(season: number, round: number) {
@@ -54,8 +80,91 @@ export class ApiService {
     return this.http.get<LeaderboardEntry[]>(`${this.base}/leagues/${leagueId}/leaderboard`);
   }
 
-  nextSession() {
-    return this.http.get<NextSession>(`${this.base}/sessions/next`);
+  nextSession(): Observable<NextSession> {
+    return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/next.json').pipe(
+      map(data => this.mapJolpicaNextSession(data)),
+      catchError(() => {
+        return this.http.get<NextSession>(`${this.base}/sessions/next`);
+      })
+    );
+  }
+
+  private mapJolpicaNextSession(data: any): NextSession {
+    const race = data?.MRData?.RaceTable?.Races?.[0];
+    if (!race) {
+      throw new Error('No race found in Jolpica');
+    }
+    const fp1 = race.FirstPractice ? `${race.FirstPractice.date}T${race.FirstPractice.time}` : null;
+    const fp2 = race.SecondPractice ? `${race.SecondPractice.date}T${race.SecondPractice.time}` : null;
+    const fp3 = race.ThirdPractice ? `${race.ThirdPractice.date}T${race.ThirdPractice.time}` : (race.Sprint ? `${race.Sprint.date}T${race.Sprint.time}` : null);
+    const qualifying = race.Qualifying ? `${race.Qualifying.date}T${race.Qualifying.time}` : null;
+    const startsAt = race.time ? `${race.date}T${race.time}` : `${race.date}T14:00:00Z`;
+
+    return {
+      id: `jolpica-${race.season}-${race.round}`,
+      season: parseInt(race.season, 10),
+      round: parseInt(race.round, 10),
+      name: race.raceName,
+      circuit: race.Circuit?.circuitName || 'Circuit of the Americas',
+      type: 'RACE',
+      raceDate: race.date,
+      startsAt,
+      isLocked: new Date() > new Date(startsAt),
+      matchupDriver1: 'norris',
+      matchupDriver2: 'verstappen',
+      circuitId: race.Circuit?.circuitId || 'americas',
+      locality: race.Circuit?.Location?.locality || 'Austin',
+      country: race.Circuit?.Location?.country || 'USA',
+      fp1,
+      fp2,
+      fp3,
+      qualifying
+    };
+  }
+
+  jolpicaDriverStandings(): Observable<JolpicaDriverStanding[]> {
+    return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/driverStandings.json').pipe(
+      map(data => {
+        const list = data?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [];
+        return list.map((s: any) => ({
+          position: s.position,
+          points: s.points,
+          wins: s.wins,
+          driverId: s.Driver?.driverId || '',
+          code: s.Driver?.code || '',
+          name: `${s.Driver?.givenName || ''} ${s.Driver?.familyName || ''}`.trim(),
+          nationality: s.Driver?.nationality || '',
+          team: s.Constructors?.[0]?.name || 'F1 Team'
+        }));
+      }),
+      catchError(() => of([]))
+    );
+  }
+
+  jolpicaLastResults(): Observable<{ raceName: string; round: number; circuit: string; date: string; results: JolpicaRaceResult[] }> {
+    return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/last/results.json').pipe(
+      map(data => {
+        const race = data?.MRData?.RaceTable?.Races?.[0];
+        if (!race) throw new Error('No last race');
+        const results = (race.Results || []).map((r: any) => ({
+          position: r.position,
+          driverId: r.Driver?.driverId || '',
+          driverName: `${r.Driver?.givenName || ''} ${r.Driver?.familyName || ''}`.trim(),
+          team: r.Constructor?.name || '',
+          status: r.status,
+          points: r.points,
+          grid: r.grid,
+          laps: r.laps
+        }));
+        return {
+          raceName: race.raceName,
+          round: parseInt(race.round, 10),
+          circuit: race.Circuit?.circuitName || '',
+          date: race.date,
+          results
+        };
+      })
+    );
   }
 
   currentPrediction() {

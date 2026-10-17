@@ -81,24 +81,30 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
           </div>
         </div>
 
-        <!-- HORARIOS ESTIMADOS DEL FIN DE SEMANA -->
+        <!-- HORARIOS OFICIALES DEL FIN DE SEMANA (JOLPICA API) -->
         <div class="schedule-list">
           <div class="schedule-row">
             <span class="sess-name">🟢 Práctica Libre 1 (FP1)</span>
-            <span class="sess-time">Viernes · 08:30 UTC</span>
+            <span class="sess-time">
+              {{ nextSession()?.fp1 ? (nextSession()?.fp1 | date: 'EEE dd/MM · HH:mm' : 'UTC') + ' UTC' : 'Viernes 23/10 · 17:30 UTC' }}
+            </span>
           </div>
           <div class="schedule-row">
             <span class="sess-name">🟢 Práctica Libre 2 (FP2)</span>
-            <span class="sess-time">Viernes · 12:00 UTC</span>
+            <span class="sess-time">
+              {{ nextSession()?.fp2 ? (nextSession()?.fp2 | date: 'EEE dd/MM · HH:mm' : 'UTC') + ' UTC' : 'Viernes 23/10 · 21:00 UTC' }}
+            </span>
           </div>
           <div class="schedule-row">
             <span class="sess-name">⚡ Clasificación Oficial</span>
-            <span class="sess-time">Sábado · 11:00 UTC</span>
+            <span class="sess-time">
+              {{ nextSession()?.qualifying ? (nextSession()?.qualifying | date: 'EEE dd/MM · HH:mm' : 'UTC') + ' UTC' : 'Sábado 24/10 · 21:00 UTC' }}
+            </span>
           </div>
           <div class="schedule-row active">
             <span class="sess-name">🏁 Gran Premio (Carrera)</span>
             <span class="sess-time">
-              {{ nextSession()?.startsAt ? (nextSession()?.startsAt | date: 'EEE dd/MM · HH:mm' : 'UTC') + ' UTC' : 'Domingo Oficial' }}
+              {{ nextSession()?.startsAt ? (nextSession()?.startsAt | date: 'EEE dd/MM · HH:mm' : 'UTC') + ' UTC' : 'Domingo 25/10 · 20:00 UTC' }}
             </span>
           </div>
         </div>
@@ -167,7 +173,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   readonly upcomingRaces = signal<Race[]>([]);
   readonly pastRaces = signal<Race[]>([]);
   readonly nextSession = signal<NextSession | null>(null);
-  readonly currentCircuit = signal<CircuitInfo>(DEFAULT_CIRCUIT);
+  readonly currentCircuit = signal<CircuitInfo>(F1_CIRCUITS['americas'] || DEFAULT_CIRCUIT);
 
   readonly showPast = signal<boolean>(false);
   readonly loading = signal(true);
@@ -183,18 +189,18 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     this.error.set('');
 
-    // Cargar siguiente sesión para el spotlight
+    // Cargar siguiente sesión desde Jolpica/Backend
     this.api.nextSession().subscribe({
       next: (session) => {
         this.nextSession.set(session);
-        this.resolveCircuit(session.name, session.circuit);
+        this.resolveCircuit(session.name, session.circuit, session.circuitId);
       },
       error: () => {
-        // En caso de que no haya sesión cargada en DB, usar valores predeterminados
+        this.resolveCircuit('United States', 'Circuit of the Americas', 'americas');
       }
     });
 
-    // Cargar calendario
+    // Cargar calendario completo
     this.api.calendar(this.season).subscribe({
       next: (races) => {
         this.allRaces.set(races);
@@ -210,7 +216,6 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   filterRaces(races: Race[]) {
     const now = new Date();
-    // Considerar como pasadas aquellas cuya fecha haya transcurrido
     const todayStr = now.toISOString().slice(0, 10);
 
     const upcoming: Race[] = [];
@@ -227,7 +232,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.upcomingRaces.set(upcoming);
     this.pastRaces.set(past);
 
-    // Si aún no se resolvió el circuito de la siguiente sesión, tomar la primera de upcoming
     if (!this.nextSession() && upcoming.length > 0) {
       const first = upcoming[0];
       this.resolveCircuit(first.name, first.circuit);
@@ -247,9 +251,21 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.showPast.update(v => !v);
   }
 
-  private resolveCircuit(gpName?: string, circuitName?: string) {
-    const search = `${gpName || ''} ${circuitName || ''}`.toLowerCase();
-    if (search.includes('albert') || search.includes('melbourne') || search.includes('australia')) {
+  private resolveCircuit(gpName?: string, circuitName?: string, circuitId?: string) {
+    const search = `${circuitId || ''} ${gpName || ''} ${circuitName || ''}`.toLowerCase();
+    if (search.includes('americas') || search.includes('cota') || search.includes('austin') || search.includes('united states') || search.includes('estados unidos')) {
+      this.currentCircuit.set(F1_CIRCUITS['americas']);
+    } else if (search.includes('rodriguez') || search.includes('mexic') || search.includes('hermanos')) {
+      this.currentCircuit.set(F1_CIRCUITS['rodriguez']);
+    } else if (search.includes('interlagos') || search.includes('brasil') || search.includes('brazil') || search.includes('pace') || search.includes('sao paulo')) {
+      this.currentCircuit.set(F1_CIRCUITS['interlagos']);
+    } else if (search.includes('vegas') || search.includes('strip')) {
+      this.currentCircuit.set(F1_CIRCUITS['vegas']);
+    } else if (search.includes('losail') || search.includes('lusail') || search.includes('qatar') || search.includes('catar')) {
+      this.currentCircuit.set(F1_CIRCUITS['losail']);
+    } else if (search.includes('yas') || search.includes('marina') || search.includes('abu dhabi') || search.includes('dabi')) {
+      this.currentCircuit.set(F1_CIRCUITS['yas_marina']);
+    } else if (search.includes('albert') || search.includes('melbourne') || search.includes('australia')) {
       this.currentCircuit.set(F1_CIRCUITS['albert_park']);
     } else if (search.includes('bahrain') || search.includes('sakhir') || search.includes('barein')) {
       this.currentCircuit.set(F1_CIRCUITS['bahrain']);
@@ -269,10 +285,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.currentCircuit.set(F1_CIRCUITS['spa']);
     } else if (search.includes('monza') || search.includes('italia') || search.includes('italy')) {
       this.currentCircuit.set(F1_CIRCUITS['monza']);
-    } else if (search.includes('interlagos') || search.includes('brasil') || search.includes('brazil') || search.includes('pace')) {
-      this.currentCircuit.set(F1_CIRCUITS['interlagos']);
     } else {
-      this.currentCircuit.set(DEFAULT_CIRCUIT);
+      this.currentCircuit.set(F1_CIRCUITS['americas'] || DEFAULT_CIRCUIT);
     }
   }
 }

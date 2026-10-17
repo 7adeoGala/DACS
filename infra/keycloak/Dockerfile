@@ -2,7 +2,8 @@ FROM quay.io/keycloak/keycloak:26.7.4 AS builder
 
 # Pre-compilar Quarkus en tiempo de build (aprovecha la RAM del builder de Render)
 ENV KC_DB=postgres \
-    KC_HTTP_RELATIVE_PATH=/auth
+    KC_HTTP_RELATIVE_PATH=/auth \
+    KC_DB_SCHEMA=keycloak
 
 RUN /opt/keycloak/bin/kc.sh build
 
@@ -17,6 +18,7 @@ ENV KC_DB=postgres \
     KC_HTTP_ENABLED=true \
     KC_HTTP_HOST=0.0.0.0 \
     KC_HTTP_RELATIVE_PATH=/auth \
+    KC_DB_SCHEMA=keycloak \
     KC_PROXY_HEADERS=xforwarded \
     JAVA_OPTS_APPEND="-Xms128m -Xmx256m -XX:MaxRAMPercentage=50 -XX:MetaspaceSize=96m -XX:MaxMetaspaceSize=160m"
 
