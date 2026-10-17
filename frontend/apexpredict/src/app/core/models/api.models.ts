@@ -80,6 +80,15 @@ export interface JolpicaDriverStanding {
   team: string;
 }
 
+export interface JolpicaConstructorStanding {
+  position: string;
+  points: string;
+  wins: string;
+  constructorId: string;
+  name: string;
+  nationality: string;
+}
+
 export interface JolpicaRaceResult {
   position: string;
   driverId: string;
@@ -156,6 +165,13 @@ export interface PredictionHistoryItem {
   matchupDriver1: string | null;
   matchupDriver2: string | null;
   scoreBreakdown?: ScoreBreakdown | null;
+  officialResults?: {
+    podium?: string[];
+    polePositionDriverId?: string;
+    duelWinnerId?: string;
+    safetyCarCount?: number;
+    dnfCount?: number;
+  } | null;
 }
 
 export interface F1Driver {

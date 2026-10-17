@@ -17,10 +17,10 @@ import { AuthService } from '../../../core/auth/auth.service';
 
         <!-- NAVEGACIÓN EN UN SOLO RENGLÓN CON ESPACIADO AMPLIO -->
         <nav class="nav-links">
-          <a routerLink="/" [class.active]="isCurrent('home')">GP Actual</a>
-          <a routerLink="/dashboard" [class.active]="isCurrent('pronostico')">Cockpit & Predicciones</a>
+          <a routerLink="/" [class.active]="isCurrent('inicio')">Inicio</a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'pronostico' }" [class.active]="isCurrent('predicciones')">Predicciones</a>
           <a routerLink="/dashboard" [queryParams]="{ tab: 'ligas' }" [class.active]="isCurrent('ligas')">Mis Ligas</a>
-          <a routerLink="/dashboard" [queryParams]="{ tab: 'global' }" [class.active]="isCurrent('global')">Posiciones F1</a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'posiciones' }" [class.active]="isCurrent('posiciones')">Posiciones</a>
           <a routerLink="/dashboard" [queryParams]="{ tab: 'historial' }" [class.active]="isCurrent('historial')">Historial</a>
         </nav>
 
@@ -173,9 +173,9 @@ export class NavbarComponent {
     });
   }
 
-  isCurrent(tab: 'home' | 'pronostico' | 'ligas' | 'global' | 'historial'): boolean {
+  isCurrent(tab: 'inicio' | 'predicciones' | 'ligas' | 'posiciones' | 'historial'): boolean {
     const url = this.currentUrl();
-    if (tab === 'home') {
+    if (tab === 'inicio') {
       return url === '/' || url === '' || url.startsWith('/?');
     }
     if (!url.startsWith('/dashboard') && !url.startsWith('/join')) {
@@ -184,14 +184,20 @@ export class NavbarComponent {
     if (tab === 'ligas') {
       return url.includes('tab=ligas') || url.startsWith('/join');
     }
-    if (tab === 'global') {
-      return url.includes('tab=global');
+    if (tab === 'posiciones') {
+      return url.includes('tab=posiciones') || url.includes('tab=global');
     }
     if (tab === 'historial') {
       return url.includes('tab=historial');
     }
-    if (tab === 'pronostico') {
-      return !url.includes('tab=ligas') && !url.includes('tab=global') && !url.includes('tab=historial');
+    if (tab === 'predicciones') {
+      return (
+        !url.includes('tab=ligas') &&
+        !url.includes('tab=posiciones') &&
+        !url.includes('tab=global') &&
+        !url.includes('tab=historial') &&
+        !url.startsWith('/join')
+      );
     }
     return false;
   }

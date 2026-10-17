@@ -13,6 +13,7 @@ import {
   LeaderboardEntry,
   PredictionHistoryItem,
   JolpicaDriverStanding,
+  JolpicaConstructorStanding,
   JolpicaRaceResult
 } from '../models/api.models';
 
@@ -198,6 +199,23 @@ export class ApiService {
           name: `${s.Driver?.givenName || ''} ${s.Driver?.familyName || ''}`.trim(),
           nationality: s.Driver?.nationality || '',
           team: s.Constructors?.[0]?.name || 'F1 Team'
+        }));
+      }),
+      catchError(() => of([]))
+    );
+  }
+
+  jolpicaConstructorStandings(): Observable<JolpicaConstructorStanding[]> {
+    return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/constructorStandings.json').pipe(
+      map(data => {
+        const list = data?.MRData?.StandingsTable?.StandingsLists?.[0]?.ConstructorStandings || [];
+        return list.map((s: any) => ({
+          position: s.position,
+          points: s.points,
+          wins: s.wins,
+          constructorId: s.Constructor?.constructorId || '',
+          name: s.Constructor?.name || '',
+          nationality: s.Constructor?.nationality || ''
         }));
       }),
       catchError(() => of([]))
