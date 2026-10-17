@@ -3,8 +3,9 @@ import { requireRole } from './core/auth/require-role.guard';
 export const routes: Routes = [
   {
     path: '',
-    title: 'ApexPredict · Formula 1',
-    loadComponent: () => import('./features/home/home.component').then((m) => m.HomeComponent),
+    title: 'ApexPredict — GP Actual & Telemetría',
+    loadComponent: () =>
+      import('./features/home/gp-spotlight.component').then((m) => m.GpSpotlightComponent),
   },
   {
     path: 'dashboard',

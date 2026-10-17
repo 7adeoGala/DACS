@@ -1,0 +1,350 @@
+<div class="gp-telemetry-container">
+  <!-- Paddock Subheader / Live Status Bar -->
+  <div class="paddock-status-bar">
+    <div class="status-left">
+      <span class="live-pulse-dot"></span>
+      <span class="track-status">PISTA ACTIVA // SPRINT ON TRACK</span>
+      <span class="divider">|</span>
+      <span class="pitwall-feed">PIT WALL LIVE TELEMETRY v4.19.8</span>
+    </div>
+    <div class="status-right">
+      <span class="db-sync"><span class="green-dot"></span> SUPABASE SYNC OK (23ms)</span>
+      <span class="session-id">SESSION ID: COTA_2026_R18_SP</span>
+    </div>
+  </div>
+
+  <!-- Hero Header del Gran Premio -->
+  <header class="gp-hero-header">
+    <div class="gp-title-group">
+      <div class="chips-row">
+        <span class="badge round-tag">ROUND 18 / 24</span>
+        <span class="badge sprint-tag">⚡ SPRINT RACE WEEKEND</span>
+        <span class="badge fia-tag">FIA HOMOLOGATION: GRADE 1</span>
+      </div>
+      <h1 class="gp-main-title">
+        <span class="flag">🇺🇸</span> AUSTIN GP <span class="highlight-cota">// COTA</span>
+      </h1>
+      <p class="gp-location">Circuit of The Americas • Travis County, Texas, Estados Unidos</p>
+    </div>
+
+    <div class="gp-lockout-card">
+      <div class="lockout-badge">
+        <span class="lock-dot"></span> ESTADO PADDOCK: <strong>LOCKOUT ACTIVO</strong>
+      </div>
+      <div class="lockout-time">
+        <span>CIERRE PREDICCIONES</span>
+        <strong>DOM 15:45 hs (Arg)</strong>
+      </div>
+    </div>
+  </header>
+
+  <!-- Grilla Principal: Cronograma, Circuito Vectorial y Countdown + Leaderboard -->
+  <div class="telemetry-main-grid">
+
+    <!-- Columna Izquierda: Cronograma Oficial ART -->
+    <aside class="sidebar-schedule">
+      <div class="schedule-card-header">
+        <div class="title-with-icon">
+          <span class="icon">🕒</span>
+          <div>
+            <h3>CRONOGRAMA ART</h3>
+            <span class="subtext">(UTC-3)</span>
+          </div>
+        </div>
+        <span class="weekend-tag">WEEKEND v18</span>
+      </div>
+
+      <div class="sessions-list">
+        @for (item of schedule(); track item.name) {
+          <div class="session-item" [ngClass]="item.status.toLowerCase()">
+            <div class="session-info">
+              <div class="session-title-row">
+                <span class="session-name">{{ item.name }}</span>
+                @if (item.status === 'COMPLETED') {
+                  <span class="badge-status completed">✓ FINALIZADA</span>
+                } @else if (item.status === 'LIVE') {
+                  <span class="badge-status live">🔴 EN VIVO</span>
+                } @else if (item.status === 'UPCOMING') {
+                  <span class="badge-status upcoming">PRÓXIMA</span>
+                } @else if (item.status === 'LOCKED') {
+                  <span class="badge-status locked">🔒 CIERRA EN 2d 14h</span>
+                }
+              </div>
+              <div class="session-time">{{ item.dateLabel }} • {{ item.timeArg }}</div>
+              @if (item.poleOrWinner) {
+                <div class="session-note">{{ item.poleOrWinner }}</div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Widget Meteo Paddock -->
+      <div class="meteo-widget">
+        <div class="meteo-header">
+          <span>🌡 METEO PADDOCK COTA</span>
+          <span class="radar-tag">RADAR SECO</span>
+        </div>
+        <div class="meteo-metrics">
+          <div class="metric">
+            <span class="lbl">Temp. Pista</span>
+            <span class="val">38°C</span>
+            <span class="sub">Asfalto C2/C3</span>
+          </div>
+          <div class="metric">
+            <span class="lbl">Temp. Ambiente</span>
+            <span class="val">26°C</span>
+            <span class="sub">Humedad 41%</span>
+          </div>
+          <div class="metric">
+            <span class="lbl">Viento</span>
+            <span class="val">12 km/h NE</span>
+            <span class="sub">Ráfagas T1: 18km/h</span>
+          </div>
+          <div class="metric">
+            <span class="lbl">Riesgo Lluvia</span>
+            <span class="val cyan">15%</span>
+            <span class="sub">Nubes dispersas</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Columna Central: Countdown, Botón CTA y Trazado SVG con DRS -->
+    <main class="center-stage">
+      <!-- Countdown Banner -->
+      <div class="countdown-banner">
+        <div class="countdown-left">
+          <div class="timer-title">
+            <span>⏱ TIEMPO RESTANTE PARA EL CIERRE DE PRONÓSTICO</span>
+            <span class="session-pill">SESSION #R18_LOCK</span>
+          </div>
+          <div class="countdown-boxes">
+            <div class="time-box"><span class="num">{{ days() }}</span><span class="label">DÍAS</span></div>
+            <div class="time-box"><span class="num">{{ hours() }}</span><span class="label">HORAS</span></div>
+            <div class="time-box"><span class="num">{{ minutes() }}</span><span class="label">MINUTOS</span></div>
+            <div class="time-box highlight"><span class="num">{{ seconds() }}</span><span class="label">SEGUNDOS</span></div>
+          </div>
+          <div class="sync-hint">
+            <span class="check-icon">✓</span> Tu pronóstico actual suma <strong>180 pts</strong> potenciales
+          </div>
+        </div>
+
+        <div class="countdown-right">
+          <a routerLink="/dashboard" class="btn-cta-predict">
+            <span class="btn-icon">⚡</span> EDITAR MI PRONÓSTICO
+          </a>
+        </div>
+      </div>
+
+      <!-- Vector Circuit Display SVG -->
+      <div class="circuit-display-card">
+        <div class="circuit-card-header">
+          <div>
+            <h3>CIRCUITO DE LAS AMÉRICAS // TRAZADO VECTORIAL</h3>
+            <p>2 Zonas DRS Activas • Subida de 41 metros hacia la Curva 1</p>
+          </div>
+          <div class="circuit-tags">
+            <span class="tag-drs">ZONA DRS</span>
+            <span class="tag-sector">SECTOR 1</span>
+          </div>
+        </div>
+
+        <div class="circuit-svg-wrapper">
+          <svg viewBox="0 0 800 360" class="track-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Asfalto COTA Vector -->
+            <path d="M 280,320 L 480,310 C 530,305 600,270 650,230 C 690,195 720,180 700,160 C 680,140 640,160 620,180 C 600,200 580,210 550,190 C 520,170 480,140 460,130 C 440,120 400,125 360,150 C 330,170 310,180 290,210 L 250,260 Z" stroke="rgba(255,255,255,0.22)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+            <!-- Trazado principal blanco con resplandor -->
+            <path d="M 280,320 L 480,310 C 530,305 600,270 650,230 C 690,195 720,180 700,160 C 680,140 640,160 620,180 C 600,200 580,210 550,190 C 520,170 480,140 460,130 C 440,120 400,125 360,150 C 330,170 310,180 290,210 L 250,260 Z" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+            <!-- Zona DRS 1 Recta Trasera (Electric Cyan) -->
+            <path d="M 480,310 C 530,305 600,270 650,230" stroke="#00f2fe" stroke-width="5" stroke-linecap="round" class="drs-path"/>
+            <!-- Curva 1 Vértice Rojo -->
+            <circle cx="280" cy="320" r="5" fill="#e10600"/>
+            <text x="295" y="325" fill="#f8fafc" font-size="11" font-family="'JetBrains Mono', monospace">START / FINISH</text>
+            <circle cx="250" cy="260" r="6" fill="#ffd166"/>
+            <text x="180" y="245" fill="#ffd166" font-size="10" font-family="'JetBrains Mono', monospace">T1 (Subida +41m)</text>
+            <text x="540" y="160" fill="#00f2fe" font-size="10" font-family="'JetBrains Mono', monospace">DRS 1 // T12</text>
+          </svg>
+          <div class="drs-detection-pill">PUNTO DE DETECCIÓN DRS: <strong>65m tras T11</strong></div>
+        </div>
+
+        <div class="circuit-stats-grid">
+          <div class="stat"><span class="lbl">LONGITUD TOTAL</span><span class="val">5.513 km</span><span class="sub">3.426 millas</span></div>
+          <div class="stat"><span class="lbl">VUELTAS DE CARRERA</span><span class="val">56</span><span class="sub">308.405 km tot.</span></div>
+          <div class="stat"><span class="lbl">NÚMERO DE CURVAS</span><span class="val">20</span><span class="sub">11 Izq • 9 Der</span></div>
+          <div class="stat"><span class="lbl">RÉCORD DE PISTA</span><span class="val gold">1:36.169</span><span class="sub">Ch. Leclerc (2019)</span></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Columna Derecha: Widget de Predicción y Leaderboard -->
+    <aside class="sidebar-user">
+      <!-- Tarjeta Resumen Pronóstico del Usuario -->
+      <div class="user-pred-card">
+        <div class="card-head">
+          <span>ESTADO DE PRONÓSTICO</span>
+          <span class="sync-badge">● Sincronizado</span>
+        </div>
+        <div class="user-info-row">
+          <div class="user-avatar-initials">{{ (auth.username() || 'TG').slice(0, 2).toUpperCase() }}</div>
+          <div>
+            <h4>{{ auth.username() || 'Tadeo Galaburri' }} <span class="verified">✓</span></h4>
+            <span class="user-handle">ARG · Apex Scuderia</span>
+          </div>
+        </div>
+        <div class="pred-summary-list">
+          <div class="summary-item"><span class="lbl">POLE SELECCIONADA:</span><span class="val-code cyan">M. VERSTAPPEN</span></div>
+          <div class="summary-item"><span class="lbl">P1 CARRERA:</span><span class="val-code gold">L. NORRIS</span></div>
+          <div class="summary-item"><span class="lbl">VUELTA RÁPIDA:</span><span class="val-code purple">C. LECLERC</span></div>
+          <div class="summary-item"><span class="lbl">SAFETY CAR?:</span><span class="val-code green">SÍ (2+ VECES)</span></div>
+        </div>
+        <div class="db-hash">
+          <span>DB: PostgreSQL (Supabase)</span>
+          <span class="hash-code">✓ HASH: #4f8e...9a</span>
+        </div>
+      </div>
+
+      <!-- Mini Leaderboard Liga Principal -->
+      <div class="league-preview-card">
+        <div class="card-head">
+          <span>LIGA PRINCIPAL</span>
+          <span class="badge-top5">TOP 5</span>
+        </div>
+        <h4>Paddock VIP Argentina</h4>
+        <div class="standings-mini-list">
+          @for (u of paddockStandings(); track u.username) {
+            <div class="standings-mini-item" [class.highlight-me]="u.isCurrentUser">
+              <span class="rank-pos">{{ u.rank }}</span>
+              <div class="driver-col">
+                <span class="user-name">{{ u.username }}</span>
+                <span class="city-name">{{ u.city }} • {{ u.points }} pts</span>
+              </div>
+              <span class="trend-badge" [class.up]="u.trendUp">{{ u.trend }}</span>
+            </div>
+          }
+        </div>
+        <a routerLink="/dashboard" class="btn-view-table">Ver Tabla Completa →</a>
+      </div>
+
+      <!-- COTA Crest Card -->
+      <div class="cota-photo-card">
+        <div class="photo-overlay">
+          <span class="photo-title">CURVA 1 // THE CREST</span>
+          <p>Frenada a ciegas tras subida empinada de 41 metros</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Sección Head-to-Head: Norris vs Verstappen -->
+  <section class="duel-section">
+    <div class="duel-header">
+      <div class="duel-badge">WORLD CHAMPIONSHIP FIGHT // DUELO OFICIAL HEAD-TO-HEAD</div>
+      <h2>LANDO NORRIS <span class="vs">VS</span> MAX VERSTAPPEN</h2>
+      <p class="duel-desc">Diferencia en el Campeonato WDC: 52 puntos. ¿Quién saldrá de Austin con ventaja?</p>
+      <div class="champ-pts-strip">
+        <span class="nor-pts">NOR: 279 PTS</span>
+        <span class="delta-pts">Δ -52</span>
+        <span class="ver-pts">VER: 331 PTS</span>
+      </div>
+    </div>
+
+    <div class="duel-battle-grid">
+      <!-- Columna Norris -->
+      <div class="driver-battle-side norris-side">
+        <div class="driver-meta">
+          <span class="team-tag">MCLAREN FORMULA 1 TEAM</span>
+          <h3>Lando NORRIS</h3>
+          <span class="car-number">CAR #4 • MCL38</span>
+        </div>
+        <div class="driver-stats-column">
+          <div class="stat-line"><span class="val">3</span><span class="lbl">Victorias 2024</span></div>
+          <div class="stat-line"><span class="val">11</span><span class="lbl">Podios Totales</span></div>
+          <div class="stat-line"><span class="val">6</span><span class="lbl">Pole Positions</span></div>
+          <div class="stat-line highlight"><span class="val gold">21 vtas</span><span class="lbl">Vueltas Lideradas en COTA</span></div>
+        </div>
+        <button type="button" class="btn-pick-driver norris-btn" [class.active]="duelPick() === 'norris'" (click)="selectDuelPick('norris')">
+          🏁 PREDECIR A NORRIS (P1)
+        </button>
+      </div>
+
+      <!-- Centro: Barras de Comparativa y Votos -->
+      <div class="battle-center-metrics">
+        <div class="metric-title">TELEMETRÍA COMPARADA</div>
+        <div class="compare-bar-group">
+          <div class="compare-labels"><span>10</span><span class="metric-name">QUALI HEAD-TO-HEAD</span><span>8</span></div>
+          <div class="duo-progress-bar">
+            <div class="progress-left nor" style="width: 55%;"></div>
+            <div class="progress-right ver" style="width: 45%;"></div>
+          </div>
+        </div>
+
+        <div class="compare-bar-group">
+          <div class="compare-labels"><span>8</span><span class="metric-name">DELANTE EN CARRERA</span><span>10</span></div>
+          <div class="duo-progress-bar">
+            <div class="progress-left nor" style="width: 44%;"></div>
+            <div class="progress-right ver" style="width: 56%;"></div>
+          </div>
+        </div>
+
+        <div class="compare-bar-group">
+          <div class="compare-labels"><span>1.98s</span><span class="metric-name">PIT STOP RÉCORD</span><span>1.90s</span></div>
+          <div class="duo-progress-bar">
+            <div class="progress-left nor" style="width: 49%;"></div>
+            <div class="progress-right ver" style="width: 51%;"></div>
+          </div>
+        </div>
+
+        <!-- Barra de Votos Comunidad Apex -->
+        <div class="community-vote-box">
+          <div class="vote-title-row">
+            <span>VOTO COMUNIDAD APEX</span>
+            <span class="vote-total">{{ totalDuelVotes() }} VOTOS</span>
+          </div>
+          <div class="vote-bar">
+            <div class="vote-fill-nor" [style.width.%]="norrisVotes()"></div>
+            <div class="vote-fill-ver" [style.width.%]="verstappenVotes()"></div>
+          </div>
+          <div class="vote-percentages">
+            <span class="nor-label">NOR: {{ norrisVotes() }}%</span>
+            <span class="ver-label">{{ verstappenVotes() }}% :VER</span>
+          </div>
+          <span class="vote-trend">📈 Tendencia última hora: Norris +4.2% tras Quali Sprint</span>
+        </div>
+      </div>
+
+      <!-- Columna Verstappen -->
+      <div class="driver-battle-side ver-side">
+        <div class="driver-meta">
+          <span class="team-tag">ORACLE RED BULL RACING</span>
+          <h3>Max VERSTAPPEN</h3>
+          <span class="car-number">CAR #1 • RB20</span>
+        </div>
+        <div class="driver-stats-column">
+          <div class="stat-line"><span class="val">7</span><span class="lbl">Victorias 2024</span></div>
+          <div class="stat-line"><span class="val">12</span><span class="lbl">Podios Totales</span></div>
+          <div class="stat-line"><span class="val">8</span><span class="lbl">Pole Positions</span></div>
+          <div class="stat-line highlight"><span class="val gold">3 (2021-23)</span><span class="lbl">Victorias Previas en COTA</span></div>
+        </div>
+        <button type="button" class="btn-pick-driver ver-btn" [class.active]="duelPick() === 'verstappen'" (click)="selectDuelPick('verstappen')">
+          🏆 PREDECIR A VERSTAPPEN (P1)
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Banner Inferior de Ayuda y CTA -->
+  <footer class="bottom-helper-banner">
+    <div class="helper-left">
+      <span class="icon">🏎</span>
+      <div>
+        <h4>¿Quieres configurar tus predicciones completas de Austin?</h4>
+        <p>Incluye Pole Position, Podio P1-P2-P3, Vuelta Rápida y Activaciones de Safety Car.</p>
+      </div>
+    </div>
+    <div class="helper-right">
+      <a routerLink="/dashboard" class="btn-rules">Ver Reglamento de Puntos</a>
+      <a routerLink="/dashboard" class="btn-primary-f1">Completar Parrilla 🎯</a>
+    </div>
+  </footer>
+</div>
