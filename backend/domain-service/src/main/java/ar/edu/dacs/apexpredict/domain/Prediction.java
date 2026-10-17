@@ -23,8 +23,7 @@ public class Prediction extends BaseEntity {
     @ElementCollection
     @CollectionTable(
         name = "prediction_picks",
-        joinColumns = @JoinColumn(name = "prediction_id"),
-        uniqueConstraints = @UniqueConstraint(columnNames = {"prediction_id", "driver_id"})
+        joinColumns = @JoinColumn(name = "prediction_id")
     )
     @OrderColumn(name = "position")
     @Column(name = "driver_id", nullable = false, length = 64)

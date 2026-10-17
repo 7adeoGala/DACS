@@ -1,0 +1,1 @@
+ALTER TABLE prediction_picks DROP CONSTRAINT IF EXISTS prediction_picks_prediction_id_driver_id_key;

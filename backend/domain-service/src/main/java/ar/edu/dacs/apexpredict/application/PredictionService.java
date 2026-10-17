@@ -274,8 +274,10 @@ public class PredictionService {
      */
     @Transactional(readOnly = true)
     public List<PredictionHistoryItem> getUserPredictionHistory(String issuer, String subject) {
-        User user = users.findByIssuerAndSubject(issuer, subject)
-            .orElseThrow(() -> new IllegalStateException("Perfil no inicializado."));
+        User user = users.findByIssuerAndSubject(issuer, subject).orElse(null);
+        if (user == null) {
+            return List.of();
+        }
 
         return predictions.findByUserOrderBySubmittedAtDesc(user).stream()
             .map(p -> {

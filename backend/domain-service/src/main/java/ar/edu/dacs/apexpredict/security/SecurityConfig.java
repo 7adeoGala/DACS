@@ -30,10 +30,10 @@ public class SecurityConfig {
             .sessionManagement(sessions -> sessions.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/ping").permitAll()
+                .requestMatchers(HttpMethod.GET, "/ping", "/leaderboard/global", "/sessions/next").permitAll()
                 .requestMatchers("/admin/**").hasRole("admin")
                 .requestMatchers("/me", "/leagues/**").hasAnyRole("player", "admin")
-                .requestMatchers(HttpMethod.GET, "/sessions/next", "/leaderboard/global", "/notifications",
+                .requestMatchers(HttpMethod.GET, "/notifications",
                     "/predictions/current", "/predictions/history", "/predictions/session/**").hasAnyRole("player", "admin")
                 .requestMatchers(HttpMethod.POST, "/predictions/session/**").hasAnyRole("player", "admin")
                 .anyRequest().denyAll())

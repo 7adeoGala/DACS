@@ -24,7 +24,7 @@ public interface PredictionRepository extends JpaRepository<Prediction, UUID> {
         FROM User u
         LEFT JOIN Prediction p ON p.user = u
         GROUP BY u.id, u.displayName
-        ORDER BY totalScore DESC, u.displayName ASC
+        ORDER BY totalScore DESC, COUNT(p.id) DESC, u.displayName ASC
     """)
     List<GlobalLeaderboardRow> getGlobalLeaderboard();
 
@@ -35,7 +35,7 @@ public interface PredictionRepository extends JpaRepository<Prediction, UUID> {
         LEFT JOIN Prediction p ON p.user = m.user
         WHERE m.league.id = :leagueId
         GROUP BY m.user.id, m.user.displayName
-        ORDER BY totalScore DESC, m.user.displayName ASC
+        ORDER BY totalScore DESC, COUNT(p.id) DESC, m.user.displayName ASC
     """)
     List<GlobalLeaderboardRow> getLeagueLeaderboard(@Param("leagueId") UUID leagueId);
 

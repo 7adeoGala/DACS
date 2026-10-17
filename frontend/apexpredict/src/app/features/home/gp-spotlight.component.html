@@ -130,7 +130,11 @@
           </div>
           <div class="sync-hint">
             @if (auth.authenticated()) {
-              <span class="check-icon">✓</span> Sesión activa · Pronóstico sincronizado
+              @if (currentPrediction()?.predictionId || (currentPrediction()?.podium && currentPrediction()!.podium.length > 0)) {
+                <span class="check-icon" style="color: var(--green);">✓</span> <strong>Pronóstico activo guardado en la base de datos</strong>
+              } @else {
+                <span class="check-icon">ℹ</span> Sesión iniciada · Podés registrar tu pronóstico para el GP
+              }
             } @else {
               <span class="check-icon">ℹ</span> Iniciá sesión para guardar y competir en ligas
             }
@@ -139,9 +143,15 @@
 
         <div class="countdown-right">
           @if (auth.authenticated()) {
-            <a routerLink="/dashboard" class="btn-cta-predict">
-              <span class="btn-icon">⚡</span> EDITAR MI PRONÓSTICO
-            </a>
+            @if (currentPrediction()?.predictionId || (currentPrediction()?.podium && currentPrediction()!.podium.length > 0)) {
+              <a routerLink="/dashboard" class="btn-cta-predict" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                <span class="btn-icon">✓</span> VER / EDITAR MI PRONÓSTICO
+              </a>
+            } @else {
+              <a routerLink="/dashboard" class="btn-cta-predict">
+                <span class="btn-icon">⚡</span> CARGAR MI PRONÓSTICO
+              </a>
+            }
           } @else {
             <button type="button" (click)="auth.login()" class="btn-cta-predict">
               <span class="btn-icon">⚡</span> INICIAR SESIÓN Y PREDECIR

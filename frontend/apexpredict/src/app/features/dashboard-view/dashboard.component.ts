@@ -7,7 +7,6 @@ import { AuthService } from '../../core/auth/auth.service';
 import { 
   F1_DRIVERS, 
   F1Driver, 
-  PredictionPayload, 
   League, 
   NextSession, 
   LeaderboardEntry, 
@@ -17,7 +16,7 @@ import {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DatePipe],
   template: `
     <div class="dashboard-page">
       <!-- HEADER DEL COCKPIT CON TABS PRINCIPALES -->
@@ -67,6 +66,24 @@ import {
             </div>
           </div>
 
+          <!-- AVISO DE PRONÓSTICO YA REGISTRADO EN BASE DE DATOS -->
+          @if (hasExistingPrediction()) {
+            <div class="alert-box success" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <div>
+                <strong>✓ Pronóstico Registrado en la Base de Datos:</strong> 
+                Tenés tu pronóstico activo guardado en el servidor para este GP.
+                @if (predictionSubmittedAt()) {
+                  <span class="dim" style="margin-left: 6px; font-size: 0.85rem;">
+                    (Último envío: {{ predictionSubmittedAt() | date:'d/MM HH:mm':'America/Argentina/Buenos_Aires' }} hs Arg)
+                  </span>
+                }
+              </div>
+              <span class="badge" style="background: rgba(16, 185, 129, 0.25); color: #fff; font-weight: 700; padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.78rem;">
+                ✓ SINCRONIZADO
+              </span>
+            </div>
+          }
+
           @if (isLocked()) {
             <div class="alert-box error" style="margin-bottom: 1rem;">
               🔒 <strong>PRONÓSTICOS BLOQUEADOS:</strong> La sesión oficial ya ha comenzado. El pronóstico se encuentra en modo solo lectura.
@@ -98,7 +115,8 @@ import {
                 <div class="podium-header gold">🥇 P1 WINNER (+25 PTS)</div>
                 <label class="field-label">Vencedor del Gran Premio</label>
                 <select 
-                  [(ngModel)]="prediction.p1DriverId" 
+                  [ngModel]="p1DriverId()" 
+                  (ngModelChange)="p1DriverId.set($event)"
                   [disabled]="isLocked()" 
                   class="driver-select">
                   @for (d of drivers; track d.id) {
@@ -112,7 +130,8 @@ import {
                 <div class="podium-header silver">🥈 P2 SEGUNDO (+18 PTS)</div>
                 <label class="field-label">Segundo Clasificado</label>
                 <select 
-                  [(ngModel)]="prediction.p2DriverId" 
+                  [ngModel]="p2DriverId()" 
+                  (ngModelChange)="p2DriverId.set($event)"
                   [disabled]="isLocked()" 
                   class="driver-select">
                   @for (d of drivers; track d.id) {
@@ -126,7 +145,8 @@ import {
                 <div class="podium-header bronze">🥉 P3 TERCERO (+15 PTS)</div>
                 <label class="field-label">Tercer Clasificado</label>
                 <select 
-                  [(ngModel)]="prediction.p3DriverId" 
+                  [ngModel]="p3DriverId()" 
+                  (ngModelChange)="p3DriverId.set($event)"
                   [disabled]="isLocked()" 
                   class="driver-select">
                   @for (d of drivers; track d.id) {
@@ -152,7 +172,8 @@ import {
               </div>
               <label class="dim">Piloto más veloz en Q3</label>
               <select 
-                [(ngModel)]="prediction.poleDriverId" 
+                [ngModel]="poleDriverId()" 
+                (ngModelChange)="poleDriverId.set($event)"
                 [disabled]="isLocked()" 
                 class="driver-select">
                 @for (d of drivers; track d.id) {
@@ -170,16 +191,16 @@ import {
               <div class="duel-selector">
                 <button 
                   type="button"
-                  [class.selected]="prediction.duelWinnerId === matchupDriver1()" 
+                  [class.selected]="duelWinnerId() === matchupDriver1()" 
                   [disabled]="isLocked()"
-                  (click)="prediction.duelWinnerId = matchupDriver1()">
+                  (click)="duelWinnerId.set(matchupDriver1())">
                   {{ getDriverName(matchupDriver1()) }}
                 </button>
                 <button 
                   type="button"
-                  [class.selected]="prediction.duelWinnerId === matchupDriver2()" 
+                  [class.selected]="duelWinnerId() === matchupDriver2()" 
                   [disabled]="isLocked()"
-                  (click)="prediction.duelWinnerId = matchupDriver2()">
+                  (click)="duelWinnerId.set(matchupDriver2())">
                   {{ getDriverName(matchupDriver2()) }}
                 </button>
               </div>
@@ -197,7 +218,7 @@ import {
                 <label>¿Aparición de Safety Car (SC)? (0 a 10)</label>
                 <div class="stepper">
                   <button type="button" [disabled]="isLocked()" (click)="decrementSC()">-</button>
-                  <span class="count-num">{{ prediction.safetyCars }}</span>
+                  <span class="count-num">{{ safetyCars() }}</span>
                   <button type="button" [disabled]="isLocked()" (click)="incrementSC()">+</button>
                 </div>
               </div>
@@ -205,7 +226,7 @@ import {
                 <label>Cantidad de Abandonos (DNFs) (0 a 20)</label>
                 <div class="stepper">
                   <button type="button" [disabled]="isLocked()" (click)="decrementDNFs()">-</button>
-                  <span class="count-num">{{ prediction.dnfs }}</span>
+                  <span class="count-num">{{ dnfs() }}</span>
                   <button type="button" [disabled]="isLocked()" (click)="incrementDNFs()">+</button>
                 </div>
               </div>
@@ -223,8 +244,10 @@ import {
                 <span>Sincronizando con base de datos…</span>
               } @else if (saveSuccess()) {
                 <span>✓ ¡Pronóstico Guardado en Servidor!</span>
+              } @else if (hasExistingPrediction()) {
+                <span>🔄 Actualizar Mi Pronóstico Oficial</span>
               } @else {
-                <span>🏁 Guardar Mi Pronóstico</span>
+                <span>🏁 Guardar Mi Pronóstico Oficial</span>
               }
             </button>
           </div>
@@ -325,8 +348,11 @@ import {
                     <!-- P2: PLATA -->
                     <div class="pedestal silver-ped">
                       <div class="pos-badge">🥈 P2</div>
-                      <div class="pilot-name">{{ leagueLeaderboard()[1]?.displayName || 'Esperando rival' }}</div>
+                      <div class="pilot-name">{{ leagueLeaderboard()[1]?.displayName || 'Esperando corredor' }}</div>
                       <div class="pilot-pts">{{ leagueLeaderboard()[1]?.totalScore || 0 }} pts</div>
+                      <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                        {{ (leagueLeaderboard()[1]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                      </span>
                     </div>
 
                     <!-- P1: ORO -->
@@ -335,13 +361,19 @@ import {
                       <div class="pos-badge">🥇 P1</div>
                       <div class="pilot-name">{{ leagueLeaderboard()[0]?.displayName || 'Líder' }}</div>
                       <div class="pilot-pts">{{ leagueLeaderboard()[0]?.totalScore || 0 }} pts</div>
+                      <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                        {{ (leagueLeaderboard()[0]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                      </span>
                     </div>
 
                     <!-- P3: BRONCE -->
                     <div class="pedestal bronze-ped">
                       <div class="pos-badge">🥉 P3</div>
-                      <div class="pilot-name">{{ leagueLeaderboard()[2]?.displayName || 'Esperando rival' }}</div>
+                      <div class="pilot-name">{{ leagueLeaderboard()[2]?.displayName || 'Esperando corredor' }}</div>
                       <div class="pilot-pts">{{ leagueLeaderboard()[2]?.totalScore || 0 }} pts</div>
+                      <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                        {{ (leagueLeaderboard()[2]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                      </span>
                     </div>
                   </div>
                 }
@@ -355,16 +387,27 @@ import {
                         <th>Pos</th>
                         <th>Corredor / Usuario</th>
                         <th>Puntos Totales</th>
-                        <th>Pronósticos</th>
+                        <th>Estado de Pronóstico</th>
                       </tr>
                     </thead>
                     <tbody>
                       @for (entry of leagueLeaderboard(); track entry.userId) {
                         <tr>
                           <td><strong>#{{ entry.rank }}</strong></td>
-                          <td style="color: #fff; font-weight: 600;">{{ entry.displayName }}</td>
+                          <td style="color: #fff; font-weight: 600;">
+                            {{ entry.displayName }}
+                            @if (auth.username() && entry.displayName.toLowerCase().includes(auth.username().toLowerCase())) {
+                              <span style="font-size: 0.75rem; color: var(--cyan); margin-left: 4px;">(Tú)</span>
+                            }
+                          </td>
                           <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
-                          <td>{{ entry.predictionsCount }} carreras</td>
+                          <td>
+                            @if (entry.predictionsCount > 0) {
+                              <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">🟢 Pronóstico Enviado</span>
+                            } @else {
+                              <span class="dim" style="font-size: 0.85rem;">⏳ Sin pronóstico aún</span>
+                            }
+                          </td>
                         </tr>
                       }
                     </tbody>
@@ -478,7 +521,7 @@ import {
             <div class="card-title-row">
               <div>
                 <h3>📊 Clasificación Global de la Comunidad</h3>
-                <p class="dim" style="margin-top: 4px;">Puntos acumulados en tiempo real por todos los corredores de ApexPredict.</p>
+                <p class="dim" style="margin-top: 4px;">Puntos y pronósticos registrados en tiempo real por todos los corredores de ApexPredict.</p>
               </div>
               <span class="mono-pts">{{ globalLeaderboard().length }} Pilotos Registrados</span>
             </div>
@@ -489,6 +532,9 @@ import {
                   <div class="pos-badge">🥈 P2</div>
                   <div class="pilot-name">{{ globalLeaderboard()[1]?.displayName }}</div>
                   <div class="pilot-pts">{{ globalLeaderboard()[1]?.totalScore }} pts</div>
+                  <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                    {{ (globalLeaderboard()[1]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                  </span>
                 </div>
 
                 <div class="pedestal gold-ped">
@@ -496,12 +542,18 @@ import {
                   <div class="pos-badge">🥇 P1</div>
                   <div class="pilot-name">{{ globalLeaderboard()[0]?.displayName }}</div>
                   <div class="pilot-pts">{{ globalLeaderboard()[0]?.totalScore }} pts</div>
+                  <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                    {{ (globalLeaderboard()[0]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                  </span>
                 </div>
 
                 <div class="pedestal bronze-ped">
                   <div class="pos-badge">🥉 P3</div>
                   <div class="pilot-name">{{ globalLeaderboard()[2]?.displayName }}</div>
                   <div class="pilot-pts">{{ globalLeaderboard()[2]?.totalScore }} pts</div>
+                  <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                    {{ (globalLeaderboard()[2]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                  </span>
                 </div>
               </div>
             }
@@ -520,9 +572,20 @@ import {
                   @for (entry of globalLeaderboard(); track entry.userId) {
                     <tr>
                       <td><strong>#{{ entry.rank }}</strong></td>
-                      <td style="color: #fff; font-weight: 600;">{{ entry.displayName }}</td>
+                      <td style="color: #fff; font-weight: 600;">
+                        {{ entry.displayName }}
+                        @if (auth.username() && entry.displayName.toLowerCase().includes(auth.username().toLowerCase())) {
+                          <span style="font-size: 0.75rem; color: var(--cyan); margin-left: 4px;">(Tú)</span>
+                        }
+                      </td>
                       <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
-                      <td>{{ entry.predictionsCount }} carreras</td>
+                      <td>
+                        @if (entry.predictionsCount > 0) {
+                          <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">🟢 {{ entry.predictionsCount }} Carrera (Enviado)</span>
+                        } @else {
+                          <span class="dim" style="font-size: 0.85rem;">⏳ 0 Carreras</span>
+                        }
+                      </td>
                     </tr>
                   }
                 </tbody>
@@ -542,8 +605,8 @@ import {
           <div class="spotlight-card">
             <div class="card-title-row">
               <div>
-                <h3>📜 Historial de Pronósticos & Aciertos</h3>
-                <p class="dim" style="margin-top: 4px;">Detalle de puntos y aciertos obtenidos en los Grandes Premios ya disputados.</p>
+                <h3>📜 Historial & Pronósticos del Usuario</h3>
+                <p class="dim" style="margin-top: 4px;">Detalle de tus pronósticos guardados y puntos asignados por fecha.</p>
               </div>
             </div>
 
@@ -553,19 +616,43 @@ import {
                   <div class="history-card">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                       <div>
-                        <span class="badge-round" style="font-size: 0.7rem;">CARRERA COMPLETADA</span>
+                        @if (h.score != null) {
+                          <span class="badge-round" style="font-size: 0.7rem; background: var(--green);">CARRERA PUNTUADA</span>
+                        } @else {
+                          <span class="badge-round" style="font-size: 0.7rem; background: var(--gold); color: #000;">🟡 PRONÓSTICO REGISTRADO — EN ESPERA</span>
+                        }
                         <h4 style="margin: 6px 0 2px; font-size: 1.15rem;">{{ h.sessionName }}</h4>
                         <p class="dim" style="font-size: 0.85rem; margin: 0;">{{ h.circuit }}</p>
                       </div>
                       <div style="text-align: right;">
                         <span style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 800; color: var(--gold);">
-                          {{ h.score != null ? h.score : 0 }} pts
+                          {{ h.score != null ? h.score : '--' }} pts
                         </span>
                       </div>
                     </div>
 
+                    <!-- DETALLE DE PICKS GUARDADOS -->
+                    @if (h.podium && h.podium.length >= 3) {
+                      <div style="margin: 1rem 0 0.5rem; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--line);">
+                        <div style="font-size: 0.82rem; margin-bottom: 4px;">
+                          <strong>Podio Elegido:</strong> 🥇 {{ getDriverName(h.podium[0]) }} • 🥈 {{ getDriverName(h.podium[1]) }} • 🥉 {{ getDriverName(h.podium[2]) }}
+                        </div>
+                        <div style="font-size: 0.82rem; color: var(--text-dim);">
+                          Pole: <strong style="color: var(--cyan);">{{ getDriverName(h.polePositionDriverId) }}</strong> • 
+                          Duelo: <strong style="color: #fff;">{{ getDriverName(h.duelDriverPick) }}</strong> • 
+                          SC: <strong style="color: #fff;">{{ h.safetyCarCount }}</strong> • 
+                          DNFs: <strong style="color: #fff;">{{ h.dnfCount }}</strong>
+                        </div>
+                        @if (h.submittedAt) {
+                          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 6px;">
+                            Registrado: {{ h.submittedAt | date:'d/MM/yyyy HH:mm':'America/Argentina/Buenos_Aires' }} hs Arg
+                          </div>
+                        }
+                      </div>
+                    }
+
                     @if (h.scoreBreakdown) {
-                      <div class="score-breakdown-tags" style="margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 6px;">
+                      <div class="score-breakdown-tags" style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 6px;">
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.podiumHits > 0">
                           Podio: +{{ h.scoreBreakdown.podiumPoints }} pts ({{ h.scoreBreakdown.podiumHits }}/3)
                         </span>
@@ -588,8 +675,8 @@ import {
               </div>
             } @else {
               <div style="text-align: center; padding: 3rem 1rem;">
-                <p class="dim" style="font-size: 1rem;">Aún no se han puntuado Grandes Premios para tu usuario.</p>
-                <p class="dim" style="font-size: 0.85rem; margin-top: 4px;">Cuando finalice el GP oficial de este fin de semana, acá verás el desglose completo de tus aciertos.</p>
+                <p class="dim" style="font-size: 1rem;">Aún no se han registrado pronósticos finalizados para tu usuario.</p>
+                <p class="dim" style="font-size: 0.85rem; margin-top: 4px;">Cuando cargues tu pronóstico para el próximo GP, acá podrás consultar tus selecciones y el desglose de puntos.</p>
               </div>
             }
           </div>
@@ -1055,7 +1142,7 @@ import {
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
-  private readonly auth = inject(AuthService);
+  public readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
   readonly drivers: F1Driver[] = F1_DRIVERS;
@@ -1068,16 +1155,25 @@ export class DashboardComponent implements OnInit {
   readonly matchupDriver1 = computed(() => this.session()?.matchupDriver1 || 'norris');
   readonly matchupDriver2 = computed(() => this.session()?.matchupDriver2 || 'verstappen');
 
-  // Estado del pronóstico
-  prediction: PredictionPayload = {
-    p1DriverId: 'verstappen',
-    p2DriverId: 'norris',
-    p3DriverId: 'leclerc',
-    poleDriverId: 'norris',
-    duelWinnerId: 'norris',
-    safetyCars: 1,
-    dnfs: 2
-  };
+  // Estado reactivo del pronóstico con Signals
+  readonly p1DriverId = signal<string>('verstappen');
+  readonly p2DriverId = signal<string>('norris');
+  readonly p3DriverId = signal<string>('leclerc');
+  readonly poleDriverId = signal<string>('norris');
+  readonly duelWinnerId = signal<string>('norris');
+  readonly safetyCars = signal<number>(1);
+  readonly dnfs = signal<number>(2);
+
+  readonly hasExistingPrediction = signal<boolean>(false);
+  readonly predictionSubmittedAt = signal<string | null>(null);
+
+  // Validación de podio duplicado reactiva
+  readonly isPodiumDuplicate = computed(() => {
+    const p1 = this.p1DriverId();
+    const p2 = this.p2DriverId();
+    const p3 = this.p3DriverId();
+    return p1 === p2 || p1 === p3 || p2 === p3;
+  });
 
   // Ligas privadas
   readonly myLeagues = signal<League[]>([]);
@@ -1108,6 +1204,7 @@ export class DashboardComponent implements OnInit {
 
   ngOnInit() {
     this.loadNextSession();
+    this.loadCurrentPrediction();
     this.loadUserLeagues();
     this.loadGlobalLeaderboard();
     this.loadHistory();
@@ -1137,38 +1234,39 @@ export class DashboardComponent implements OnInit {
     this.api.nextSession().subscribe({
       next: (sess) => {
         this.session.set(sess);
-        // Si no se asignó duelo, usa el por defecto
-        if (!this.prediction.duelWinnerId) {
-          this.prediction.duelWinnerId = sess.matchupDriver1 || 'norris';
+        // Si no se asignó duelo, usa el por defecto de la sesión
+        if (!this.duelWinnerId() && sess.matchupDriver1) {
+          this.duelWinnerId.set(sess.matchupDriver1);
         }
-        this.loadCurrentPrediction(sess.id);
       },
-      error: () => {
-        // En caso de caída de backend, mantiene datos de contingencia
-      }
+      error: () => {}
     });
   }
 
-  private loadCurrentPrediction(sessionId: string) {
+  private loadCurrentPrediction() {
     this.api.currentPrediction().subscribe({
       next: (pred) => {
-        if (pred && pred.sessionId === sessionId) {
+        if (pred) {
           if (pred.podium && pred.podium.length >= 3) {
-            this.prediction.p1DriverId = pred.podium[0];
-            this.prediction.p2DriverId = pred.podium[1];
-            this.prediction.p3DriverId = pred.podium[2];
+            this.p1DriverId.set(pred.podium[0]);
+            this.p2DriverId.set(pred.podium[1]);
+            this.p3DriverId.set(pred.podium[2]);
           }
           if (pred.polePositionDriverId) {
-            this.prediction.poleDriverId = pred.polePositionDriverId;
+            this.poleDriverId.set(pred.polePositionDriverId);
           }
           if (pred.duelDriverPick) {
-            this.prediction.duelWinnerId = pred.duelDriverPick;
+            this.duelWinnerId.set(pred.duelDriverPick);
           }
           if (pred.safetyCarCount != null) {
-            this.prediction.safetyCars = pred.safetyCarCount;
+            this.safetyCars.set(pred.safetyCarCount);
           }
           if (pred.dnfCount != null) {
-            this.prediction.dnfs = pred.dnfCount;
+            this.dnfs.set(pred.dnfCount);
+          }
+          if (pred.predictionId || pred.submittedAt || (pred.podium && pred.podium.length > 0)) {
+            this.hasExistingPrediction.set(true);
+            this.predictionSubmittedAt.set(pred.submittedAt || null);
           }
         }
       },
@@ -1180,8 +1278,10 @@ export class DashboardComponent implements OnInit {
     this.api.leagues().subscribe({
       next: (leagues) => {
         this.myLeagues.set(leagues);
-        if (leagues.length > 0 && !this.selectedLeague()) {
-          this.selectLeague(leagues[0]);
+        if (leagues.length > 0) {
+          const current = this.selectedLeague();
+          const match = current ? leagues.find(l => l.id === current.id) : null;
+          this.selectLeague(match || leagues[0]);
         }
       },
       error: () => {
@@ -1232,29 +1332,24 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  isPodiumDuplicate(): boolean {
-    const { p1DriverId, p2DriverId, p3DriverId } = this.prediction;
-    return p1DriverId === p2DriverId || p1DriverId === p3DriverId || p2DriverId === p3DriverId;
-  }
-
   incrementSC() {
     if (this.isLocked()) return;
-    if (this.prediction.safetyCars < 10) this.prediction.safetyCars++;
+    if (this.safetyCars() < 10) this.safetyCars.update(v => v + 1);
   }
 
   decrementSC() {
     if (this.isLocked()) return;
-    if (this.prediction.safetyCars > 0) this.prediction.safetyCars--;
+    if (this.safetyCars() > 0) this.safetyCars.update(v => v - 1);
   }
 
   incrementDNFs() {
     if (this.isLocked()) return;
-    if (this.prediction.dnfs < 20) this.prediction.dnfs++;
+    if (this.dnfs() < 20) this.dnfs.update(v => v + 1);
   }
 
   decrementDNFs() {
     if (this.isLocked()) return;
-    if (this.prediction.dnfs > 0) this.prediction.dnfs--;
+    if (this.dnfs() > 0) this.dnfs.update(v => v - 1);
   }
 
   getDriverName(id?: string | null): string {
@@ -1267,27 +1362,31 @@ export class DashboardComponent implements OnInit {
     if (this.isPodiumDuplicate() || this.isSaving() || this.isLocked()) return;
     
     const sess = this.session();
-    if (!sess?.id) {
-      this.saveError.set('No se encontró sesión activa de Fórmula 1.');
-      return;
-    }
+    const sessionId = sess?.id || 'f0c23d70-f7ca-411d-b827-7a9d45037100';
 
     this.isSaving.set(true);
     this.saveError.set('');
     this.saveSuccess.set(false);
 
     const payload = {
-      podium: [this.prediction.p1DriverId, this.prediction.p2DriverId, this.prediction.p3DriverId],
-      polePositionDriverId: this.prediction.poleDriverId,
-      duelDriverPick: this.prediction.duelWinnerId,
-      safetyCarCount: this.prediction.safetyCars,
-      dnfCount: this.prediction.dnfs
+      podium: [this.p1DriverId(), this.p2DriverId(), this.p3DriverId()],
+      polePositionDriverId: this.poleDriverId(),
+      duelDriverPick: this.duelWinnerId(),
+      safetyCarCount: this.safetyCars(),
+      dnfCount: this.dnfs()
     };
 
-    this.api.submitPrediction(sess.id, payload).subscribe({
-      next: () => {
+    this.api.submitPrediction(sessionId, payload).subscribe({
+      next: (res) => {
         this.isSaving.set(false);
         this.saveSuccess.set(true);
+        this.hasExistingPrediction.set(true);
+        this.predictionSubmittedAt.set(res?.submittedAt || new Date().toISOString());
+        this.loadHistory();
+        this.loadGlobalLeaderboard();
+        if (this.selectedLeague()) {
+          this.selectLeague(this.selectedLeague()!);
+        }
         setTimeout(() => this.saveSuccess.set(false), 4000);
       },
       error: (err) => {
