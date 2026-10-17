@@ -14,11 +14,12 @@ import {
   JolpicaDriverStanding,
   JolpicaConstructorStanding
 } from '../../core/models/api.models';
+import { PodiumPickerComponent, PodiumSelection } from './components/podium-picker/podium-picker.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe],
+  imports: [CommonModule, FormsModule, DatePipe, PodiumPickerComponent],
   template: `
     <div class="dashboard-page">
 
@@ -76,125 +77,13 @@ import {
             </div>
           }
 
-          <!-- 1. PODIO TOP 3 ESCALONADO -->
-          <div class="spotlight-card podium-card-wrapper">
-            <div class="card-title-row">
-              <div>
-                <h3>PODIO OFICIAL DE CARRERA</h3>
-                <p class="dim" style="font-size: 0.84rem; margin: 2px 0 0;">
-                  Tocá o hacé clic en cualquier posición para seleccionar al piloto desde la grilla interactiva.
-                </p>
-              </div>
-              <span class="mono-pts">+58 PTS TOTALES</span>
-            </div>
-            
-            <div class="podium-grid">
-              <!-- P1: GANADOR (ORO) -->
-              <div class="podium-col gold-border">
-                <div class="podium-col-header">
-                  <span class="podium-badge gold">🥇 P1 WINNER</span>
-                  <span class="pts-tag gold">+25 PTS</span>
-                </div>
-                <div class="podium-slot-label">Vencedor del Gran Premio</div>
-                
-                @if (getDriver(p1DriverId()); as d) {
-                  <div class="driver-template-card gold-slot" 
-                       [style.--driver-color]="d.teamColor"
-                       (click)="openDriverPicker('p1')"
-                       [class.disabled-card]="isLocked()">
-                    <div class="dtc-header">
-                      <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
-                        {{ d.team }}
-                      </span>
-                      <div class="dtc-badges">
-                        <span class="dtc-code">{{ d.code }}</span>
-                        <span class="dtc-num">#{{ d.number }}</span>
-                      </div>
-                    </div>
-                    <div class="dtc-main">
-                      <div class="dtc-name">{{ d.name }}</div>
-                    </div>
-                    <div class="dtc-action">
-                      <span>Cambiar Piloto</span>
-                      <span class="action-icon">⇄</span>
-                    </div>
-                  </div>
-                }
-              </div>
+          <!-- 1. PODIO OFICIAL DE CARRERA (P1, P2, P3) - COMPONENTE MODULAR -->
+          <app-podium-picker 
+            [(p1DriverId)]="p1DriverId"
+            [(p2DriverId)]="p2DriverId"
+            [(p3DriverId)]="p3DriverId"
+            (onSavePodium)="handleSavePodium($event)" />
 
-              <!-- P2: SEGUNDO LUGAR (PLATA) -->
-              <div class="podium-col silver-border">
-                <div class="podium-col-header">
-                  <span class="podium-badge silver">🥈 P2 SEGUNDO</span>
-                  <span class="pts-tag silver">+18 PTS</span>
-                </div>
-                <div class="podium-slot-label">Segundo Clasificado</div>
-                
-                @if (getDriver(p2DriverId()); as d) {
-                  <div class="driver-template-card silver-slot" 
-                       [style.--driver-color]="d.teamColor"
-                       (click)="openDriverPicker('p2')"
-                       [class.disabled-card]="isLocked()">
-                    <div class="dtc-header">
-                      <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
-                        {{ d.team }}
-                      </span>
-                      <div class="dtc-badges">
-                        <span class="dtc-code">{{ d.code }}</span>
-                        <span class="dtc-num">#{{ d.number }}</span>
-                      </div>
-                    </div>
-                    <div class="dtc-main">
-                      <div class="dtc-name">{{ d.name }}</div>
-                    </div>
-                    <div class="dtc-action">
-                      <span>Cambiar Piloto</span>
-                      <span class="action-icon">⇄</span>
-                    </div>
-                  </div>
-                }
-              </div>
-
-              <!-- P3: TERCER LUGAR (BRONCE) -->
-              <div class="podium-col bronze-border">
-                <div class="podium-col-header">
-                  <span class="podium-badge bronze">🥉 P3 TERCERO</span>
-                  <span class="pts-tag bronze">+15 PTS</span>
-                </div>
-                <div class="podium-slot-label">Tercer Clasificado</div>
-                
-                @if (getDriver(p3DriverId()); as d) {
-                  <div class="driver-template-card bronze-slot" 
-                       [style.--driver-color]="d.teamColor"
-                       (click)="openDriverPicker('p3')"
-                       [class.disabled-card]="isLocked()">
-                    <div class="dtc-header">
-                      <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
-                        {{ d.team }}
-                      </span>
-                      <div class="dtc-badges">
-                        <span class="dtc-code">{{ d.code }}</span>
-                        <span class="dtc-num">#{{ d.number }}</span>
-                      </div>
-                    </div>
-                    <div class="dtc-main">
-                      <div class="dtc-name">{{ d.name }}</div>
-                    </div>
-                    <div class="dtc-action">
-                      <span>Cambiar Piloto</span>
-                      <span class="action-icon">⇄</span>
-                    </div>
-                  </div>
-                }
-              </div>
-            </div>
-
-            @if (isPodiumDuplicate()) {
-              <div class="alert-box error" style="margin-top: 1rem;">
-                ⚠️ Atención: No podés seleccionar al mismo piloto en dos posiciones del podio a la vez.
-              </div>
-            }
-          </div>
 
           <!-- 2. POLE POSITION Y DUELO DIRECTO -->
           <div class="grid-two-cols">
@@ -2532,6 +2421,13 @@ export class DashboardComponent implements OnInit {
     if (!id) return 'Piloto';
     const found = this.drivers.find(d => d.id === id);
     return found ? `${found.name} (${found.team})` : id;
+  }
+
+  handleSavePodium(podium: PodiumSelection) {
+    this.p1DriverId.set(podium.p1);
+    this.p2DriverId.set(podium.p2);
+    this.p3DriverId.set(podium.p3);
+    this.savePrediction();
   }
 
   savePrediction() {
