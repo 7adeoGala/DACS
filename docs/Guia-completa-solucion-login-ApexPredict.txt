@@ -1,0 +1,1104 @@
+﻿GUÍA COMPLETA PARA SOLUCIONAR LOGIN Y REGISTRO DE DACS / APEXPREDICT
+=================================================================
+
+Fecha de elaboración: 16 de octubre de 2026, Argentina.
+Proyecto: DACS / ApexPredict.
+Formato: texto UTF-8, apto para compartir como archivo adjunto.
+
+PROPÓSITO
+
+Este documento explica cómo corregir el error de Keycloak:
+
+    We are sorry...
+    Invalid parameter: redirect_uri
+
+También explica cómo revisar los siguientes pasos del inicio de sesión:
+retorno a la aplicación, conexión al BFF, acceso al servicio de dominio,
+persistencia del perfil y carga del dashboard.
+
+La guía contiene direcciones y nombres de configuración del proyecto.
+No contiene contraseñas, tokens ni credenciales administrativas.
+
+IMPORTANTE SOBRE EL ESTADO DE LA INFORMACIÓN
+
+Las comprobaciones HTTP que se detallan más adelante corresponden a la
+investigación anterior de esta conversación. No se repitieron todas al crear
+este archivo. Hay que volver a comprobarlas después de aplicar los cambios.
+
+El código corregido está en el commit local:
+
+    51b69d55e090bc585135f45eefc58f7c9613290f
+    Mensaje: DeployGPT
+
+En una revisión anterior, main y la referencia local origin/main apuntaban a
+ese commit. Eso no demuestra que Vercel y los servicios de Render estén
+ejecutando ese código: el commit desplegado debe confirmarse en cada panel.
+
+No se pudo verificar la configuración administrativa persistida de Keycloak,
+las variables reales de Render ni un login completo en producción. La
+automatización del navegador se detuvo al no poder identificar su URL actual.
+Por lo tanto, este documento no afirma que producción ya esté reparada.
+
+
+ÍNDICE
+------
+
+  1. Qué está fallando y por qué el cambio anterior no bastó
+  2. Direcciones del proyecto y función de cada servicio
+  3. Qué poner en Name, Username, Client ID, Key y Value
+  4. Preparación antes de cambiar configuraciones
+  5. Entrar al administrador de Keycloak
+  6. Corregir redirect_uri en el cliente existente
+  7. Verificar registro, roles, PKCE y audiencias
+  8. Probar login y registro después del cambio de Keycloak
+  9. Corregir y verificar las conexiones del BFF en Render
+ 10. Revisar el servicio de dominio y Supabase si aparece otro error
+ 11. Verificar el código desplegado y el frontend de Vercel
+ 12. Prueba completa de punta a punta
+ 13. Diagnóstico según el error observado
+ 14. Comprobaciones opcionales desde PowerShell
+ 15. Qué se corrigió y qué pruebas ya se ejecutaron
+ 16. Reversión y registro de los cambios
+ 17. Lista final de aceptación
+ 18. Plantilla para enviar resultados a otra persona
+ 19. Referencias
+
+
+1. QUÉ ESTÁ FALLANDO Y POR QUÉ EL CAMBIO ANTERIOR NO BASTÓ
+------------------------------------------------------
+
+El botón Iniciar sesión envía al navegador a Keycloak. En esa solicitud hay
+un parámetro llamado redirect_uri. Indica a qué dirección debe volver el
+usuario después de autenticarse.
+
+Para esta aplicación, el retorno esperado es:
+
+    https://dacs-nine.vercel.app/dashboard
+
+Keycloak compara ese destino con las direcciones permitidas en el cliente
+apexpredict-web del realm apexpredict. Si no está autorizado, rechaza la
+solicitud antes de mostrar el formulario o comprobar una contraseña.
+
+Por eso, cambiar el nombre de usuario, crear un jugador o modificar la
+contraseña no resuelve el error redirect_uri de la captura.
+
+En el diagnóstico inicial aparecía este patrón incorrecto:
+
+    https://*.vercel.app/*
+
+La corrección preparada para este proyecto es usar el hostname concreto:
+
+    https://dacs-nine.vercel.app/*
+
+Existe una diferencia fundamental entre dos lugares:
+
+  A. Archivo del repositorio:
+     infra/keycloak/apexpredict-realm.json
+
+  B. Configuración del cliente guardada en la base de datos de Keycloak.
+
+El archivo A ya se corrigió. Falta comprobar y, si corresponde, actualizar B.
+El arranque con --import-realm omite un realm que ya existe. Por eso, publicar
+el JSON y reiniciar Keycloak no aplica necesariamente el cambio a ese realm.
+La documentación oficial explica este comportamiento en la referencia [1].
+
+Además, se detectaron otros dos problemas independientes:
+
+  - El bundle público anterior apuntaba al servicio de dominio como si fuera
+    el BFF. La URL del código se corrigió; falta confirmar el bundle servido.
+  - El BFF devolvía 502 al consultar sus dependencias. Los servicios directos
+    respondían 200. Se necesitan las variables y los logs de Render para
+    determinar por qué fallan esos saltos.
+
+Orden de trabajo recomendado:
+
+    Keycloak -> conexiones del BFF -> despliegues -> prueba completa.
+
+
+2. DIRECCIONES DEL PROYECTO Y FUNCIÓN DE CADA SERVICIO
+---------------------------------------------------
+
+Aplicación pública:
+    https://dacs-nine.vercel.app/
+
+Panel de Vercel:
+    https://vercel.com/tadeocdu-5859s-projects/dacs
+
+Proyecto de Render:
+    https://dashboard.render.com/project/prj-db994ijbc2fs73er6p8g
+
+Proyecto de Supabase:
+    https://supabase.com/dashboard/project/xffnnfwivgeemzsqgtgn
+
+Repositorio GitHub:
+    https://github.com/7adeoGala/DACS
+
+Keycloak Admin:
+    https://dacs-3-dswy.onrender.com/auth/admin/
+
+Servicios identificados mediante sus respuestas públicas:
+
+  Keycloak:
+    https://dacs-3-dswy.onrender.com
+    Administra usuarios, sesiones y tokens.
+
+  BFF:
+    https://dacs-2-crv9.onrender.com/bff
+    Es la API que debe consumir Angular.
+
+  Servicio de dominio:
+    https://dacs-pmkx.onrender.com/backend
+    Aplica las operaciones de negocio y accede a PostgreSQL.
+
+  Conector F1:
+    https://dacs-1-v4ik.onrender.com/conector
+    Consulta los datos externos de Fórmula 1.
+
+Flujo esperado:
+
+    Navegador / Angular
+        -> Keycloak para iniciar sesión
+        -> BFF con el token del usuario
+        -> servicio de dominio con ese mismo token
+        -> PostgreSQL de Supabase
+
+El BFF también consulta al conector F1.
+
+Supabase aporta PostgreSQL en el flujo revisado. No se encontró uso de
+Supabase Auth para el login de esta aplicación. Los ajustes de redirect_uri
+que nos ocupan están en Keycloak.
+
+
+3. QUÉ PONER EN NAME, USERNAME, CLIENT ID, KEY Y VALUE
+---------------------------------------------------
+
+Los campos dependen de la pantalla que estés viendo.
+
+3.1. Registro de un jugador de ApexPredict
+
+  Name / First name / Nombre:
+    Tu nombre. Ejemplo: Tadeo.
+
+  Last name / Apellido, si aparece:
+    Tu apellido.
+
+  Username / Nombre de usuario:
+    Un identificador que elegís y que debe estar disponible.
+    Ejemplo ilustrativo: tadeo_prueba.
+
+  Email:
+    Tu correo.
+
+  Password y Confirm password:
+    La contraseña elegida y su confirmación.
+    El JSON del proyecto exige al menos 10 caracteres; el formulario real
+    puede exigir más si la política persistida es diferente.
+
+Este registro crea un jugador. No sirve para obtener acceso administrativo
+a Keycloak, Render, Vercel ni Supabase.
+
+3.2. Inicio de sesión en Keycloak Admin
+
+  Username:
+    El nombre de la cuenta administrativa que ya existe.
+
+  Password:
+    La contraseña vigente de esa cuenta.
+
+No hay un valor confirmado de producción en este documento. No se debe
+suponer que el usuario es admin ni que la contraseña coincide con el .env
+de la computadora de desarrollo.
+
+3.3. Configuración del cliente de Keycloak
+
+  Client ID:
+    apexpredict-web
+    Es el identificador técnico que Angular usa para autenticarse.
+
+  Name:
+    ApexPredict Angular
+    Es un nombre descriptivo. Si ya tiene otro nombre descriptivo, no hace
+    falta cambiarlo para resolver redirect_uri.
+
+  Realm:
+    apexpredict
+
+Esta pantalla no necesita el Username de un jugador.
+
+3.4. Variables en Render
+
+  Key o Name:
+    El nombre de la variable. Ejemplo: DOMAIN_SERVICE_URL
+
+  Value:
+    El contenido de esa variable.
+    Ejemplo: https://dacs-pmkx.onrender.com/backend
+
+Al crear una variable, no poner el nombre y el valor juntos dentro de Key.
+En los campos separados tampoco agregar comillas ni el signo igual.
+
+Ejemplo correcto:
+    Key:   DOMAIN_SERVICE_URL
+    Value: https://dacs-pmkx.onrender.com/backend
+
+
+4. PREPARACIÓN ANTES DE CAMBIAR CONFIGURACIONES
+--------------------------------------------
+
+4.1. Abrir los paneles usando los enlaces de la sección 2.
+4.2. Confirmar que se está trabajando sobre DACS y los hostnames indicados.
+4.3. Anotar el commit desplegado que muestra Vercel y cada servicio de Render.
+4.4. Guardar un registro privado de los campos no secretos que se modificarán:
+     callbacks, orígenes y URLs entre servicios.
+4.5. Cambiar una parte por vez y comprobar su resultado.
+
+No hace falta borrar usuarios, recrear el realm, vaciar tablas ni reiniciar
+la base de datos para corregir una dirección de retorno.
+
+No enviar contraseñas, access tokens, refresh tokens, cookies ni cadenas de
+conexión con contraseña en capturas o mensajes compartidos.
+
+
+5. ENTRAR AL ADMINISTRADOR DE KEYCLOAK
+-----------------------------------
+
+5.1. En Render, abrir el servicio que publica:
+
+    https://dacs-3-dswy.onrender.com
+
+5.2. Entrar a Environment.
+
+5.3. Buscar los nombres de las variables administrativas iniciales:
+
+    KC_BOOTSTRAP_ADMIN_USERNAME
+    KC_BOOTSTRAP_ADMIN_PASSWORD
+
+Si el despliegue se configuró con nombres antiguos, podrían figurar:
+
+    KEYCLOAK_ADMIN
+    KEYCLOAK_ADMIN_PASSWORD
+
+La existencia de una variable no demuestra que siga siendo la credencial
+vigente. Puede haberse cambiado la cuenta después de la inicialización.
+El Dockerfile versionado no fija una contraseña administrativa.
+
+5.4. Abrir:
+
+    https://dacs-3-dswy.onrender.com/auth/admin/
+
+5.5. Ingresar con el administrador existente y su contraseña vigente.
+
+5.6. Si la contraseña inicial nunca se cambió, los valores de bootstrap
+pueden servir para identificar ese acceso. Si no funcionan, consultar a
+quien creó o administró la instancia.
+
+5.7. Si no hay credenciales válidas, detener esta etapa. Cambiar variables
+de bootstrap y redeployar no restablece automáticamente una cuenta existente.
+La recuperación administrativa tiene un procedimiento específico, con
+condiciones operativas propias; no debe improvisarse borrando el realm.
+Ver referencia [2].
+
+Resultado esperado:
+    Se abre la consola de administración de Keycloak.
+
+
+6. CORREGIR REDIRECT_URI EN EL CLIENTE EXISTENTE
+----------------------------------------------
+
+6.1. En el selector de realm de Keycloak, elegir:
+
+    apexpredict
+
+Si la consola abre primero en master, cambiar al realm apexpredict para
+editar el cliente de la aplicación.
+
+6.2. Entrar a Clients.
+
+6.3. Buscar y abrir:
+
+    apexpredict-web
+
+Si no aparece, comprobar primero el realm seleccionado. No crear un cliente
+duplicado como primer intento.
+
+6.4. Entrar a Settings y localizar los campos de acceso / URLs.
+Los nombres pueden aparecer en inglés o traducidos según la consola.
+
+6.5. En Valid redirect URIs, cargar estas entradas por separado:
+
+    https://dacs-nine.vercel.app/*
+    https://dacs2026.local/apexpredict/*
+    http://localhost:4200/*
+    https://localhost:4200/*
+
+Usar el botón de agregar fila si la interfaz lo requiere. No escribir toda
+la lista en una única entrada separada por comas.
+
+La primera entrada autoriza el retorno de producción, incluido /dashboard.
+Las otras corresponden al desarrollo local del proyecto.
+
+6.6. En Valid post logout redirect URIs, cargar por separado:
+
+    https://dacs-nine.vercel.app/*
+    https://dacs2026.local/apexpredict/*
+    http://localhost:4200/*
+    https://localhost:4200/*
+
+Este campo controla el destino después de cerrar sesión. La aplicación
+vuelve a la raíz del frontend; el patrón de producción incluye esa raíz.
+
+6.7. En Web origins, cargar estos orígenes por separado:
+
+    https://dacs-nine.vercel.app
+    https://dacs2026.local
+    http://localhost:4200
+    https://localhost:4200
+
+En Web origins no agregar /dashboard, /* ni una barra final.
+
+6.8. Reemplazar las entradas de hostname comodín de Vercel:
+
+    https://*.vercel.app/*
+    https://*.vercel.app
+
+por las direcciones concretas anteriores, según el campo.
+
+Si Web origins tiene el valor +, dejar los orígenes autorizados explícitos
+y retirar +. Conservar otros destinos legítimos previamente registrados
+si pertenecen a un entorno que todavía se usa.
+
+No agregar * como solución general. No autorizar todas las aplicaciones
+de Vercel para resolver el callback de esta aplicación.
+
+6.9. Pulsar Save.
+
+6.10. Salir de Settings, volver a entrar y comprobar que los valores quedaron
+guardados. Si no persisten, revisar el mensaje de validación o los permisos
+del administrador.
+
+6.11. El cambio guardado en el cliente se usa en las nuevas solicitudes de
+autenticación. No hace falta reconstruir Angular únicamente por este ajuste.
+
+6.12. Si se prueba desde una URL de preview de Vercel, el origen será distinto.
+Para esta reparación, probar primero con el dominio estable:
+
+    https://dacs-nine.vercel.app/
+
+Si después se necesita un preview, registrar su hostname concreto como un
+entorno adicional autorizado; no confundirlo con el dominio de producción.
+
+Resultado esperado:
+    El callback de /dashboard queda autorizado en el cliente persistido.
+
+
+7. VERIFICAR REGISTRO, ROLES, PKCE Y AUDIENCIAS
+--------------------------------------------
+
+Esta sección evita que, después de resolver redirect_uri, el usuario llegue
+al dashboard pero reciba errores de autenticación o permisos.
+
+7.1. Cliente público y flujo de autenticación
+
+En apexpredict-web, comprobar:
+
+    Client authentication: Off
+    Standard flow: On
+    Implicit flow: Off
+    Direct access grants: Off
+    PKCE / Code Challenge Method: S256
+
+Los ajustes pueden estar repartidos entre Settings y Advanced.
+El objetivo es mantener Authorization Code con PKCE S256 para un cliente
+público. El frontend no debe incorporar un client secret.
+
+7.2. Registro de cuentas
+
+En Realm settings, buscar las opciones de Login y comprobar que el registro
+de usuarios esté habilitado (User registration / Registration allowed).
+Esto permite mostrar Registrarse en el flujo de la aplicación.
+
+7.3. Roles
+
+Comprobar que el realm tenga los roles:
+
+    player
+    admin
+
+Una cuenta nueva de jugador debe recibir player. El JSON del repositorio
+configura el rol compuesto default-roles-apexpredict para incluir player.
+Verificar la configuración persistida de roles predeterminados/effective
+roles antes de corregirla; el nombre de esa pantalla puede variar.
+
+No asignar admin a todos los usuarios para resolver un 403.
+
+7.4. Audiencias del access token
+
+El BFF valida la audiencia:
+
+    apexpredict-bff
+
+El servicio de dominio valida:
+
+    apexpredict-backend
+
+Como el BFF reenvía el token al dominio, el access token debe incluir ambas.
+El JSON versionado ya contiene estos mappers:
+
+    apexpredict-bff-audience
+    apexpredict-backend-audience
+
+Revisar los mappers efectivos de apexpredict-web, incluidos los de su scope
+dedicado si la consola los organiza allí. Si están correctos, conservarlos.
+No duplicarlos por el solo hecho de que estén en otra pantalla.
+
+Configuración de referencia del primer mapper:
+
+    Name: apexpredict-bff-audience
+    Mapper type: Audience
+    Included Custom Audience: apexpredict-bff
+    Add to access token: On
+    Add to ID token: Off
+
+Configuración de referencia del segundo mapper:
+
+    Name: apexpredict-backend-audience
+    Mapper type: Audience
+    Included Custom Audience: apexpredict-backend
+    Add to access token: On
+    Add to ID token: Off
+
+Si falta uno, agregarlo mediante la configuración de mappers del cliente o
+su scope dedicado. Si los nombres de los campos difieren, consultar la
+ayuda de la versión instalada antes de modificar otros tipos de mapper.
+
+7.5. Después de cambiar roles o mappers
+
+Cerrar sesión y volver a iniciar sesión para obtener un token nuevo.
+No dar por actualizado un token que ya estaba emitido.
+
+Referencia general para estas opciones: [3]. Los identificadores y valores
+de esta sección proceden del código y del realm JSON de DACS.
+
+
+8. PROBAR LOGIN Y REGISTRO DESPUÉS DEL CAMBIO DE KEYCLOAK
+------------------------------------------------------
+
+8.1. Abrir una ventana privada/incógnito.
+8.2. Entrar a https://dacs-nine.vercel.app/
+8.3. Pulsar Iniciar sesión.
+8.4. Comprobar que aparece el formulario de Keycloak sin el error 400.
+8.5. Volver a la aplicación y pulsar Crear cuenta.
+8.6. Comprobar que aparece el formulario de registro.
+
+Siempre iniciar la prueba desde los botones de la aplicación. No reutilizar
+una URL antigua de autorización con state, nonce o código de una sesión previa.
+
+Si sigue apareciendo redirect_uri:
+
+  a. Revisar el hostname de la aplicación desde donde se pulsó el botón.
+  b. Revisar el valor real de redirect_uri en la solicitud de autorización.
+  c. Comprobar que client_id sea apexpredict-web.
+  d. Comprobar que la ruta de Keycloak incluya /realms/apexpredict/.
+  e. Volver al cliente persistido y confirmar que se guardó el callback.
+
+La barra de direcciones puede mostrar el callback codificado. Por ejemplo,
+%3A representa dos puntos y %2F representa una barra. No pegar esa versión
+codificada en el campo Valid redirect URIs: allí va la URL normal.
+
+Si los formularios ya aparecen, el bloqueo inicial quedó resuelto. Todavía
+hay que probar el canje de código y la carga del dashboard.
+
+
+9. CORREGIR Y VERIFICAR LAS CONEXIONES DEL BFF EN RENDER
+-----------------------------------------------------
+
+9.1. Abrir el proyecto de Render y seleccionar el servicio cuyo hostname es:
+
+    dacs-2-crv9.onrender.com
+
+9.2. Comprobar su identidad:
+
+    https://dacs-2-crv9.onrender.com/bff/ping
+
+Respuesta esperada, independientemente del orden de las propiedades:
+
+    {"status":"UP","service":"apexpredict-bff"}
+
+9.3. Entrar a Environment y comparar los valores reales con los siguientes.
+En cada par, la línea KEY es el nombre del campo y VALUE es su contenido.
+
+    KEY:   DOMAIN_SERVICE_URL
+    VALUE: https://dacs-pmkx.onrender.com/backend
+
+    KEY:   F1_CONNECTOR_URL
+    VALUE: https://dacs-1-v4ik.onrender.com/conector
+
+    KEY:   CORS_ORIGINS
+    VALUE: https://dacs-nine.vercel.app
+
+    KEY:   KEYCLOAK_ISSUER
+    VALUE: https://dacs-3-dswy.onrender.com/auth/realms/apexpredict
+
+    KEY:   KEYCLOAK_JWK_SET_URI
+    VALUE: https://dacs-3-dswy.onrender.com/auth/realms/apexpredict/protocol/openid-connect/certs
+
+    KEY:   SERVER_SSL_ENABLED
+    VALUE: false
+
+El último valor corresponde al contenedor HTTP detrás de la terminación
+HTTPS de Render. La aplicación pública y las llamadas del navegador siguen
+usando HTTPS. Conservar el PORT que proporciona/configura Render.
+
+El CORS de Vercel ya funcionaba en la comprobación anterior. Si el valor
+actual es correcto, no necesita cambiarse. Si existen otros orígenes
+legítimos necesarios, conservarlos explícitamente según la configuración.
+
+9.4. Revisar también si hay grupos de variables enlazados. Un valor definido
+en el propio servicio puede prevalecer sobre el del grupo. Corregir la
+fuente efectiva y evitar cambios de grupos que afecten servicios ajenos.
+
+9.5. Guardar los cambios y aplicarlos al servicio.
+
+Según las opciones disponibles en Render:
+
+  Save and deploy:
+    Aplica nuevas variables al build existente.
+
+  Save, rebuild, and deploy:
+    Reconstruye y despliega con las variables nuevas.
+
+  Save only:
+    Guarda pero no aplica las variables hasta un despliegue posterior.
+
+Si también falta el código corregido, desplegar el commit que lo contiene.
+Esperar a que el despliegue termine antes de comprobar el servicio.
+Estas opciones están documentadas por Render en [4].
+
+9.6. Abrir las comprobaciones de dependencias a través del BFF:
+
+    https://dacs-2-crv9.onrender.com/bff/backendping
+    https://dacs-2-crv9.onrender.com/bff/conectorping
+
+Resultados esperados:
+
+    backendping:
+    {"status":"UP","service":"apexpredict-domain-service"}
+
+    conectorping:
+    {"status":"UP","service":"apexpredict-f1-connector"}
+
+9.7. Comparar con los pings directos:
+
+    https://dacs-pmkx.onrender.com/backend/ping
+    https://dacs-1-v4ik.onrender.com/conector/ping
+
+Si el ping directo funciona pero el del BFF devuelve 502, revisar en los
+logs del BFF el intento de esa misma hora: destino, resolución DNS, conexión,
+timeout o error TLS. No concluir que es falta de RAM sin evidencia.
+
+9.8. Si un servicio tarda en responder, esperar a que el panel indique que
+está disponible y repetir una vez. Una respuesta lenta por sí sola no
+demuestra la causa; los logs deben respaldarla.
+
+9.9. Si los logs mencionan CERT_PASSWORD
+
+El application.yml del BFF referencia CERT_PASSWORD en la configuración
+del keystore. Aunque Render termine TLS, revisar si Spring intenta resolver
+esa propiedad al arrancar. No inventar una contraseña o reemplazar
+certificados como parte del arreglo de redirect_uri. Registrar el error
+exacto y tratar la configuración TLS de forma específica.
+
+
+10. REVISAR DOMINIO Y SUPABASE SI APARECE OTRO ERROR
+-------------------------------------------------
+
+Esta sección es necesaria si falla la carga o persistencia después del login.
+El error inicial redirect_uri no demuestra un problema de PostgreSQL.
+
+10.1. En Render, abrir el servicio dacs-pmkx.onrender.com.
+
+10.2. Verificar que tenga el issuer y las claves del mismo realm:
+
+    KEYCLOAK_ISSUER=https://dacs-3-dswy.onrender.com/auth/realms/apexpredict
+    KEYCLOAK_JWK_SET_URI=https://dacs-3-dswy.onrender.com/auth/realms/apexpredict/protocol/openid-connect/certs
+
+10.3. Si los logs muestran un error PostgreSQL, revisar estas variables:
+
+    DB_URL
+    DB_USER
+    APP_DB_PASSWORD
+
+El código usa APP_DB_PASSWORD. Una variable llamada DOMAIN_DB_PASSWORD
+no sustituye ese nombre automáticamente.
+
+10.4. Consultar los datos de conexión del proyecto de Supabase correcto.
+La URL que consume Spring debe ser JDBC PostgreSQL y corresponder al método
+de conexión elegido. No usar la URL pública de la API de Supabase ni una
+publishable key como contraseña PostgreSQL.
+
+10.5. Verificar juntos host, puerto, base de datos, usuario, contraseña y
+requisitos SSL de esa conexión. No mezclar el usuario de un pooler con el
+host de otro método. En este documento no se inventan valores privados.
+
+10.6. Revisar los logs de Flyway y de inicio del servicio. El proyecto usa
+migraciones versionadas y Hibernate con ddl-auto: validate.
+
+10.7. Un ping UP confirma que respondió el controlador. No certifica que
+una consulta real o una escritura en la base haya funcionado.
+
+10.8. Evitar cambios de estructura mientras se investiga un fallo de acceso:
+no cambiar validate a create/update como atajo, no borrar tablas y no
+eliminar el historial de Flyway para forzar un arranque.
+
+Resultado esperado:
+    El perfil se guarda y puede recuperarse al volver a ingresar.
+
+
+11. VERIFICAR EL CÓDIGO DESPLEGADO Y EL FRONTEND DE VERCEL
+------------------------------------------------------
+
+11.1. Confirmar los despliegues de Render
+
+Abrir cada servicio y anotar el commit desplegado. El BFF y el dominio
+necesitan las correcciones de permisos incluidas en 51b69d5 o en un commit
+posterior que las conserve.
+
+Los Dockerfiles del repositorio requieren estos contextos de construcción:
+
+    BFF:       backend/bff
+    Dominio:   backend/domain-service
+    Conector:  backend/f1-connector
+    Keycloak:  infra/keycloak
+
+Dentro de cada directorio existe un archivo llamado Dockerfile.
+Si Render configura por separado Root Directory, Dockerfile Path y Build
+Context, comprobar el contexto efectivo. Las instrucciones COPY pom.xml .
+y COPY src ./src de los Java necesitan el directorio del servicio como
+contexto. No cambiar rutas de un servicio que ya construye correctamente
+sin comprobar primero cómo está definido.
+
+11.2. Confirmar Vercel
+
+Entrar a:
+    https://vercel.com/tadeocdu-5859s-projects/dacs
+
+Abrir Deployments, seleccionar el despliegue que sirve el dominio de
+producción y comprobar:
+
+    Estado: Ready.
+    Repositorio: 7adeoGala/DACS.
+    Commit: 51b69d5 o uno posterior que conserve las correcciones.
+    Dominio: dacs-nine.vercel.app.
+
+Si es necesario redeployar, seleccionar un despliegue del código correcto.
+Redeployar un commit viejo conserva su código viejo. Ver referencia [5].
+
+11.3. Configuración de build versionada
+
+El vercel.json actual está preparado para ejecutar desde la raíz del repo:
+
+    Install Command:
+    npm --prefix frontend/apexpredict install
+
+    Build Command:
+    npm --prefix frontend/apexpredict run build
+
+    Output Directory:
+    frontend/apexpredict/dist/apexpredict/browser
+
+Si el panel tiene Root Directory apuntando a frontend/apexpredict, esos
+comandos relativos pueden no corresponder. Comparar el panel con el
+vercel.json y los logs antes de cambiar la configuración.
+
+La aplicación de Vercel se publica desde / y usa reescritura SPA a
+index.html para rutas como /dashboard.
+
+11.4. URL correcta de la API de producción
+
+El archivo frontend/apexpredict/src/environments/environment.ts debe contener:
+
+    apiUrl: 'https://dacs-2-crv9.onrender.com/bff'
+
+El valor anterior incorrecto era:
+
+    apiUrl: 'https://dacs-pmkx.onrender.com/bff'
+
+No corregirlo cambiando simplemente /bff por /backend. Angular debe seguir
+consumiendo el BFF.
+
+En este proyecto esa URL es una constante compilada. Crear una variable
+arbitraria API_URL en Vercel no modifica environment.ts automáticamente.
+
+11.5. Confirmar lo que recibe el navegador
+
+Abrir la aplicación, presionar F12 y abrir Network / Red. Recargar y revisar
+una petición de API; su destino debe comenzar con:
+
+    https://dacs-2-crv9.onrender.com/bff
+
+También se pueden inspeccionar los archivos JavaScript descargados. Los
+nombres main-*.js y chunk-*.js cambian entre builds; no buscar un hash fijo
+como único criterio. No publicar capturas que incluyan tokens o cookies.
+
+11.6. Mantener separado el entorno local
+
+Vercel usa el build production. Para Nginx local, start.ps1 usa:
+
+    --configuration=production,local --base-href=/apexpredict/
+
+El desarrollo con ng serve sigue usando environment.development.ts.
+No publicar en Vercel el paquete cuyo API apunta a dacs2026.local.
+
+
+12. PRUEBA COMPLETA DE PUNTA A PUNTA
+----------------------------------
+
+Esta prueba es la que permite afirmar que el problema está resuelto.
+Realizarla después de comprobar las etapas anteriores.
+
+12.1. Registro
+
+  a. Abrir una ventana privada.
+  b. Entrar a https://dacs-nine.vercel.app/
+  c. Pulsar Crear cuenta.
+  d. Comprobar que aparece el formulario de Keycloak.
+  e. Completar los datos de una cuenta propia de prueba.
+  f. Enviar el formulario.
+  g. Comprobar el retorno a /dashboard.
+
+12.2. Autenticación
+
+  a. En Network, comprobar Authorization Code con PKCE S256.
+  b. La autorización debe usar response_type=code.
+  c. La solicitud debe incluir code_challenge_method=S256.
+  d. El canje de código en Keycloak debe completarse sin error CORS.
+
+No copiar el código de autorización ni las respuestas que contienen tokens
+a un documento compartido o a un decodificador público.
+
+12.3. Perfil y ligas
+
+Buscar estas solicitudes y comprobar sus estados:
+
+    PUT https://dacs-2-crv9.onrender.com/bff/me
+    GET https://dacs-2-crv9.onrender.com/bff/leagues
+
+Con un usuario válido y rol player/admin se espera respuesta 200.
+Una lista vacía de ligas puede ser normal para un usuario nuevo.
+
+12.4. Persistencia
+
+  a. Recargar el dashboard.
+  b. Confirmar que se recupera el perfil.
+  c. Si se crea una liga de prueba, ponerle un nombre identificable.
+  d. Cerrar sesión, volver a entrar y comprobar que la liga sigue disponible.
+
+Recargar solamente la pantalla sin comprobar las respuestas de la API no
+demuestra por sí solo que los datos quedaron guardados en PostgreSQL.
+
+12.5. Datos del dashboard
+
+Revisar las consultas a próxima sesión, ranking y predicciones. Un 404 en
+/sessions/next puede significar que no hay sesiones futuras cargadas.
+La respuesta y los logs deben distinguir esa condición de un fallo de login.
+
+12.6. Permisos
+
+  Sin token:
+    Las rutas privadas deben responder 401.
+
+  Con token válido pero sin player/admin:
+    Las rutas privadas deben responder 403.
+
+  Con player:
+    Debe acceder al dashboard y recibir 403 en /bff/admin/status.
+
+  Con admin:
+    /bff/admin/status debe permitir el acceso.
+
+La comprobación de roles requiere cuentas de prueba con roles conocidos.
+No convertir una cuenta real en observer/admin solo para completar la tabla.
+
+12.7. Cierre de sesión
+
+  a. Pulsar Cerrar sesión.
+  b. Comprobar el retorno al frontend.
+  c. Abrir una ruta privada y confirmar que vuelve a requerir autenticación.
+
+12.8. Reingreso
+
+Volver a iniciar sesión con la cuenta creada. Debe regresar a /dashboard y
+cargar el perfil. Esa es una comprobación distinta de que el primer registro
+haya mostrado un formulario.
+
+
+13. DIAGNÓSTICO SEGÚN EL ERROR OBSERVADO
+-------------------------------------
+
+ERROR: Invalid parameter: redirect_uri
+  Revisar el cliente persistido, realm, client_id y callback exacto.
+  Acción principal: sección 6.
+
+ERROR: Invalid username or password en Keycloak Admin
+  Revisar las credenciales administrativas existentes.
+  Los datos de un jugador no sirven como administrador de master.
+  Acción principal: sección 5.
+
+ERROR: No aparece Registrarse
+  Revisar que el registro esté habilitado en el realm apexpredict.
+  Acción principal: sección 7.2.
+
+ERROR: El formulario abre pero el canje de código falla por CORS
+  Revisar Web origins en Keycloak para el origen exacto del frontend.
+  Si falla /bff/me por CORS, revisar CORS_ORIGINS del BFF.
+  Son dos servicios y dos configuraciones distintas.
+
+ERROR: /bff/me devuelve 401 después del login
+  Revisar que se envíe el access token al BFF correcto.
+  Comprobar issuer, firma, vencimiento y audiencia apexpredict-bff.
+  Revisar si el 401 proviene del dominio, que exige apexpredict-backend.
+
+ERROR: El dashboard devuelve 403 con un jugador
+  Comprobar rol player en el token nuevo y commit desplegado en ambos Java.
+  Un 403 no se arregla desactivando las validaciones JWT.
+
+ERROR: /bff/backendping devuelve 502
+  Comparar DOMAIN_SERVICE_URL y el ping directo del dominio.
+  Revisar logs del BFF y del dominio del mismo intento.
+
+ERROR: /bff/conectorping devuelve 502
+  Comparar F1_CONNECTOR_URL y el ping directo del conector.
+  Revisar logs de conexión del BFF y estado del conector.
+
+ERROR: dacs-pmkx.onrender.com/bff/... devuelve 404
+  Se está usando el host del dominio como si fuera el BFF.
+  La URL de Angular debe ser dacs-2-crv9.onrender.com/bff.
+
+ERROR: El servicio no inicia y menciona password authentication failed
+  Revisar las credenciales PostgreSQL efectivas y el usuario utilizado.
+  No confundir APP_DB_PASSWORD con otra variable de nombre parecido.
+
+ERROR: Flyway o Hibernate informa un problema de esquema
+  Leer la migración o discrepancia concreta.
+  No borrar datos ni forzar recreación de tablas como diagnóstico.
+
+ERROR: Todo parece configurado pero aparece un bundle viejo
+  Confirmar dominio de producción, commit de Vercel y estado del despliegue.
+  Recargar en ventana privada y revisar la URL real de las peticiones.
+
+ERROR: Cerrar sesión muestra un error de redirección
+  Revisar Valid post logout redirect URIs en apexpredict-web.
+  Debe permitir el retorno a https://dacs-nine.vercel.app/.
+
+
+14. COMPROBACIONES OPCIONALES DESDE POWERSHELL
+-------------------------------------------
+
+Ejecutar estos comandos de consulta pública sin agregar credenciales.
+Usar curl.exe para evitar diferencias con el alias curl de PowerShell.
+Cada comando debe copiarse en una sola línea.
+
+Identidad del BFF:
+    curl.exe -i --max-time 45 https://dacs-2-crv9.onrender.com/bff/ping
+
+Identidad del dominio:
+    curl.exe -i --max-time 45 https://dacs-pmkx.onrender.com/backend/ping
+
+Identidad del conector:
+    curl.exe -i --max-time 45 https://dacs-1-v4ik.onrender.com/conector/ping
+
+Conexión BFF -> dominio:
+    curl.exe -i --max-time 45 https://dacs-2-crv9.onrender.com/bff/backendping
+
+Conexión BFF -> conector:
+    curl.exe -i --max-time 45 https://dacs-2-crv9.onrender.com/bff/conectorping
+
+Ruta privada sin token; se espera 401:
+    curl.exe -i --max-time 45 https://dacs-2-crv9.onrender.com/bff/leagues
+
+Preflight CORS del perfil desde Vercel:
+    curl.exe -i --max-time 45 -X OPTIONS https://dacs-2-crv9.onrender.com/bff/me -H "Origin: https://dacs-nine.vercel.app" -H "Access-Control-Request-Method: PUT" -H "Access-Control-Request-Headers: authorization,content-type"
+
+Se espera una respuesta de preflight exitosa con el encabezado:
+    Access-Control-Allow-Origin: https://dacs-nine.vercel.app
+
+Estos comandos no prueban login, registro, canje de código ni persistencia.
+Un timeout indica que la consulta agotó su espera; no identifica por sí solo
+la causa del problema.
+
+
+15. QUÉ SE CORRIGIÓ Y QUÉ PRUEBAS YA SE EJECUTARON
+----------------------------------------------
+
+Cambios incluidos en el commit 51b69d5:
+
+  - Frontend de producción apuntando al BFF correcto.
+  - Callback, logout y origen concreto de Vercel en el JSON del realm.
+  - Permisos explícitos para las rutas del dashboard en BFF y dominio.
+  - Entorno de build local separado del de Vercel.
+  - Publicador local que rechaza el paquete destinado a Vercel.
+  - Pruebas de autorización adicionales y pruebas de formulario actualizadas.
+
+Rutas agregadas con acceso player/admin:
+
+    GET /sessions/next
+    GET /leaderboard/global
+    GET /predictions/current
+    GET /predictions/history
+    GET /predictions/session/{id}
+    POST /predictions/session/{id}
+    GET /notifications
+
+Las reglas se aplican dentro del context path de cada servicio:
+    BFF: /bff
+    Dominio: /backend
+
+Resultados locales registrados:
+
+    BFF:     33 pruebas aprobadas.
+    Dominio: 29 pruebas aprobadas.
+    Angular:  9 pruebas aprobadas.
+    Total:   71 pruebas aprobadas.
+
+También se verificaron los builds production y production,local.
+
+Límite de esas pruebas:
+Los tests de controladores usan dependencias y decoder simulados. Existen
+pruebas criptográficas separadas para firma, issuer, audiencia y vencimiento.
+Esos resultados no demuestran que las variables de Render o el cliente
+persistido de Keycloak estén correctos ni que Supabase haya guardado un
+perfil real en producción.
+
+La prueba completa de la sección 12 sigue siendo necesaria.
+
+
+16. REVERSIÓN Y REGISTRO DE LOS CAMBIOS
+------------------------------------
+
+Antes de guardar, anotar los valores no secretos anteriores y nuevos.
+Después de guardar, registrar hora, servicio y resultado observado.
+
+Si un cambio produce un fallo nuevo:
+
+  - Keycloak: restaurar únicamente los campos modificados usando el registro
+    previo, sin recrear el cliente ni el realm. Restaurar el callback viejo
+    incorrecto también restaura el problema original; no es una reparación.
+  - Render: restaurar únicamente la variable afectada y desplegar su valor
+    anterior si se determinó que ese cambio causó la regresión.
+  - Código: identificar el despliegue anterior antes de revertir. No hacer
+    cambios de base de datos como parte de una reversión del frontend.
+
+Conservar la evidencia del error antes de repetir cambios. Un reinicio sin
+registro puede ocultar el síntoma sin explicar su causa.
+
+
+17. LISTA FINAL DE ACEPTACIÓN
+---------------------------
+
+[ ] Se identificó el administrador de Keycloak existente.
+[ ] Se editó apexpredict-web dentro de apexpredict.
+[ ] Valid redirect URIs incluye https://dacs-nine.vercel.app/*.
+[ ] Web origins incluye https://dacs-nine.vercel.app.
+[ ] Valid post logout redirect URIs permite volver al frontend.
+[ ] Se guardaron los cambios y se confirmó su persistencia.
+[ ] Iniciar sesión abre el formulario sin redirect_uri inválido.
+[ ] Crear cuenta abre el formulario sin redirect_uri inválido.
+[ ] Cliente público, Standard flow y PKCE S256 están configurados.
+[ ] Una cuenta nueva recibe player y no admin.
+[ ] El access token nuevo tiene las audiencias BFF y backend.
+[ ] El BFF responde UP.
+[ ] backendping desde el BFF responde UP.
+[ ] conectorping desde el BFF responde UP.
+[ ] Los despliegues BFF/dominio incluyen las correcciones de permisos.
+[ ] Vercel sirve el build que apunta al BFF correcto.
+[ ] El canje de código funciona desde el origen de Vercel.
+[ ] PUT /bff/me y GET /bff/leagues funcionan con un jugador válido.
+[ ] El perfil y los datos de prueba persisten al volver a ingresar.
+[ ] Los errores 401/403 esperados se conservan.
+[ ] El cierre de sesión vuelve al frontend.
+[ ] Se anotaron los commits desplegados y los cambios efectivos.
+
+Marcar solo lo comprobado. No completar una casilla por suposición.
+
+
+18. PLANTILLA PARA ENVIAR RESULTADOS A OTRA PERSONA
+-------------------------------------------------
+
+PROYECTO: DACS / ApexPredict
+FECHA Y HORA (Argentina): _________________________________
+PERSONA QUE REALIZÓ LOS CAMBIOS: __________________________
+
+COMMIT DESPLEGADO EN VERCEL: _______________________________
+COMMIT DESPLEGADO EN BFF: __________________________________
+COMMIT DESPLEGADO EN DOMINIO: ______________________________
+COMMIT DESPLEGADO EN CONECTOR: _____________________________
+
+KEYCLOAK
+Realm editado: _____________________________________________
+Client ID editado: _________________________________________
+Callback Vercel guardado: Sí / No / No comprobado
+Origen Vercel guardado: Sí / No / No comprobado
+Logout Vercel guardado: Sí / No / No comprobado
+Login muestra formulario: Sí / No
+Registro muestra formulario: Sí / No
+
+RENDER
+BFF ping, estado HTTP y service: ___________________________
+Dominio directo, estado HTTP y service: ____________________
+Conector directo, estado HTTP y service: ___________________
+BFF backendping, estado HTTP y service: ____________________
+BFF conectorping, estado HTTP y service: ___________________
+
+FLUJO REAL
+Retorno a /dashboard: Sí / No / No probado
+PUT /bff/me, estado: _______________________________________
+GET /bff/leagues, estado: __________________________________
+Persistencia después de reingresar: ________________________
+Cierre de sesión: _________________________________________
+
+ERROR PENDIENTE
+Pantalla o endpoint: ______________________________________
+Hora exacta del intento: ___________________________________
+Estado HTTP: ______________________________________________
+Mensaje de error sin datos sensibles: ______________________
+Cambio anterior al error: _________________________________
+
+No adjuntar contraseñas, tokens, cookies, archivos .env ni un HAR completo
+sin revisar: pueden contener información de autenticación.
+
+
+19. REFERENCIAS
+---------------
+
+Fuentes del proyecto revisadas:
+
+  - README.md
+  - docs/despliegue-publico.md
+  - docs/validation.md
+  - infra/keycloak/apexpredict-realm.json
+  - infra/keycloak/Dockerfile
+  - frontend/apexpredict/src/environments/environment.ts
+  - frontend/apexpredict/angular.json
+  - backend/bff/src/main/resources/application.yml
+  - backend/domain-service/src/main/resources/application.yml
+  - vercel.json
+  - Diagnóstico proporcionado y resultados HTTP de la conversación.
+
+Documentación oficial:
+
+[1] Keycloak: importación de realms y comportamiento al iniciar.
+    https://www.keycloak.org/server/importExport
+
+[2] Keycloak: bootstrap y recuperación del acceso administrativo.
+    https://www.keycloak.org/server/bootstrap-admin-recovery
+
+[3] Keycloak: administración de clientes, usuarios y roles.
+    https://www.keycloak.org/docs/latest/server_admin/index.html
+
+[4] Render: variables de entorno y opciones para aplicar cambios.
+    https://render.com/docs/configure-environment-variables
+
+[5] Vercel: gestión de despliegues.
+    https://vercel.com/docs/deployments/managing-deployments
+
+FIN DEL DOCUMENTO
