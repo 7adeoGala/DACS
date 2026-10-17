@@ -1,17 +1,34 @@
 import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { NextSession, PredictionDetail, LeaderboardEntry } from '../../core/models/api.models';
+import {
+  NextSession,
+  PredictionDetail,
+  LeaderboardEntry,
+  CircuitInfo,
+  F1_CIRCUITS,
+  DEFAULT_CIRCUIT
+} from '../../core/models/api.models';
 
-interface SessionSchedule {
+export interface SessionSchedule {
   name: string;
-  type: 'FP1' | 'SPRINT_QUALY' | 'SPRINT' | 'QUALY' | 'RACE';
+  type: string;
   dateLabel: string;
   timeArg: string;
-  status: 'COMPLETED' | 'LIVE' | 'UPCOMING' | 'LOCKED';
-  poleOrWinner?: string;
+  status: 'COMPLETED' | 'LIVE' | 'UPCOMING' | 'PROGRAMMED';
+}
+
+export interface WeatherData {
+  trackTemp: string;
+  airTemp: string;
+  humidity: string;
+  wind: string;
+  rainRisk: string;
+  radarStatus: string;
+  conditionDesc: string;
 }
 
 @Component({
@@ -25,6 +42,7 @@ interface SessionSchedule {
 export class GpSpotlightComponent implements OnInit, OnDestroy {
   protected readonly api = inject(ApiService);
   public readonly auth = inject(AuthService);
+  private readonly http = inject(HttpClient);
   private timerInterval: any;
 
   // Estado reactivo con Signals
@@ -32,11 +50,22 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   readonly currentPrediction = signal<PredictionDetail | null>(null);
   readonly isLoading = signal<boolean>(true);
 
+  // Meteorología Real (Open-Meteo)
+  readonly weather = signal<WeatherData>({
+    trackTemp: '32°C',
+    airTemp: '24°C',
+    humidity: '48%',
+    wind: '14 km/h',
+    rainRisk: '10%',
+    radarStatus: 'RADAR SECO',
+    conditionDesc: 'Pista Seca'
+  });
+
   // Cuenta regresiva reactiva
-  readonly days = signal<string>('02');
-  readonly hours = signal<string>('14');
-  readonly minutes = signal<string>('35');
-  readonly seconds = signal<string>('14');
+  readonly days = signal<string>('00');
+  readonly hours = signal<string>('00');
+  readonly minutes = signal<string>('00');
+  readonly seconds = signal<string>('00');
 
   // Voto de comunidad en duelo directo
   readonly norrisVotes = signal<number>(58);
@@ -44,54 +73,56 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   readonly totalDuelVotes = signal<string>('14.820');
   readonly duelPick = signal<'norris' | 'verstappen' | null>('verstappen');
 
-  // Cronograma de sesiones del GP (Austin COTA 2026 - Sprint Weekend)
-  readonly schedule = signal<SessionSchedule[]>([
-    {
-      name: 'Práctica Libre 1',
-      type: 'FP1',
-      dateLabel: 'Viernes 18',
-      timeArg: '14:30 hs (Arg)',
-      status: 'COMPLETED',
-      poleOrWinner: 'P1: LEC (1:36.520)'
-    },
-    {
-      name: 'Clasificación Sprint',
-      type: 'SPRINT_QUALY',
-      dateLabel: 'Viernes 18',
-      timeArg: '18:30 hs (Arg)',
-      status: 'COMPLETED',
-      poleOrWinner: 'POLE: VER (1:35.812)'
-    },
-    {
-      name: 'Carrera Sprint ⚡',
-      type: 'SPRINT',
-      dateLabel: 'Sábado 19',
-      timeArg: '15:00 hs (Arg)',
-      status: 'LIVE',
-      poleOrWinner: 'Vta 14/19 • 1. VER 2. NOR 3. SAI'
-    },
-    {
-      name: 'Clasificación GP',
-      type: 'QUALY',
-      dateLabel: 'Sábado 19',
-      timeArg: '19:00 hs (Arg)',
-      status: 'UPCOMING'
-    },
-    {
-      name: 'Gran Premio Oficial',
-      type: 'RACE',
-      dateLabel: 'Domingo 20',
-      timeArg: '16:00 hs (Arg)',
-      status: 'LOCKED'
-    }
-  ]);
+  // Circuito actual dinámico (datos oficiales reales)
+  readonly circuit = computed<CircuitInfo>(() => {
+    const s = this.session();
+    const id = s?.circuitId || 'americas';
+    return F1_CIRCUITS[id] || F1_CIRCUITS['americas'] || DEFAULT_CIRCUIT;
+  });
 
-  // Mini Leaderboard de la Liga Principal del Usuario
+  // Cronograma dinámico calculado a partir de la API de Jolpica y hora actual
+  readonly schedule = computed<SessionSchedule[]>(() => {
+    const s = this.session();
+    if (!s) return [];
+
+    const items: { name: string; type: string; iso?: string | null }[] = [];
+
+    // Verificamos si es formato Sprint
+    if (s.sprint) {
+      items.push({ name: 'Práctica Libre 1 (FP1)', type: 'FP1', iso: s.fp1 });
+      items.push({ name: 'Clasificación Sprint', type: 'SPRINT_QUALY', iso: s.sprintQualifying || s.fp2 });
+      items.push({ name: 'Carrera Sprint ⚡', type: 'SPRINT', iso: s.sprint });
+      items.push({ name: 'Clasificación GP', type: 'QUALY', iso: s.qualifying });
+      items.push({ name: 'Gran Premio Oficial', type: 'RACE', iso: s.startsAt });
+    } else {
+      items.push({ name: 'Práctica Libre 1 (FP1)', type: 'FP1', iso: s.fp1 });
+      items.push({ name: 'Práctica Libre 2 (FP2)', type: 'FP2', iso: s.fp2 });
+      items.push({ name: 'Práctica Libre 3 (FP3)', type: 'FP3', iso: s.fp3 });
+      items.push({ name: 'Clasificación GP', type: 'QUALY', iso: s.qualifying });
+      items.push({ name: 'Gran Premio Oficial', type: 'RACE', iso: s.startsAt });
+    }
+
+    return items
+      .filter((item) => item.iso != null)
+      .map((item) => {
+        const { dateLabel, timeArg } = this.formatArgTime(item.iso);
+        const status = this.calculateSessionStatus(item.iso);
+        return {
+          name: item.name,
+          type: item.type,
+          dateLabel,
+          timeArg,
+          status
+        };
+      });
+  });
+
+  // Mini Leaderboard de la Liga / Global
   readonly paddockStandings = signal([
-    { rank: 'P1', username: '@lucas_flart', city: 'Buenos Aires', points: 1340, trend: '+25 pts', trendUp: true, isCurrentUser: false },
-    { rank: 'P2', username: '@tadeogala7 (Tú)', city: 'Rosario', points: 1240, trend: '+18 pts', trendUp: true, isCurrentUser: true },
-    { rank: 'P3', username: '@martin_redbull', city: 'Córdoba', points: 1215, trend: '-4 pts', trendUp: false, isCurrentUser: false },
-    { rank: 'P4', username: '@enzo_scuderia', city: 'Mendoza', points: 1180, trend: '+12 pts', trendUp: true, isCurrentUser: false }
+    { rank: 'P1', username: 'demo-player', points: 0, trend: '0 pts', trendUp: true, isCurrentUser: false },
+    { rank: 'P2', username: 'tadeogala7', points: 0, trend: '0 pts', trendUp: true, isCurrentUser: true },
+    { rank: 'P3', username: 'martin', points: 0, trend: '0 pts', trendUp: true, isCurrentUser: false },
+    { rank: 'P4', username: 'geroalu', points: 0, trend: '0 pts', trendUp: true, isCurrentUser: false }
   ]);
 
   readonly isLocked = computed(() => this.session()?.isLocked ?? false);
@@ -111,9 +142,11 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         this.session.set(sessionData);
         this.isLoading.set(false);
         this.updateCountdownFromDate(sessionData.startsAt);
+        this.fetchRealWeather(sessionData.lat, sessionData.long);
       },
       error: () => {
         this.isLoading.set(false);
+        this.fetchRealWeather('30.1328', '-97.6411');
       }
     });
 
@@ -129,7 +162,7 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       });
     }
 
-    // Sincronizar mini leaderboard con usuarios reales de la base de datos
+    // Sincronizar mini leaderboard con usuarios reales
     this.api.globalLeaderboard().subscribe({
       next: (entries: LeaderboardEntry[]) => {
         if (entries && entries.length > 0) {
@@ -139,7 +172,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
             return {
               rank: `P${e.rank}`,
               username: `@${e.displayName}${isMe ? ' (Tú)' : ''}`,
-              city: 'Argentina',
               points: Number(e.totalScore),
               trend: `+${e.predictionsCount * 10} pts`,
               trendUp: true,
@@ -151,6 +183,79 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       },
       error: () => {}
     });
+  }
+
+  /**
+   * Obtiene la meteorología real en vivo desde Open-Meteo usando las coordenadas del circuito.
+   */
+  private fetchRealWeather(lat?: string, lon?: string): void {
+    const latitude = lat || '30.1328';
+    const longitude = lon || '-97.6411';
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m&timezone=auto`;
+
+    this.http.get<any>(url).subscribe({
+      next: (res) => {
+        const c = res?.current;
+        if (c) {
+          const temp = Math.round(c.temperature_2m);
+          const track = Math.round(temp + 8);
+          const precip = c.precipitation || 0;
+          this.weather.set({
+            airTemp: `${temp}°C`,
+            trackTemp: `${track}°C`,
+            humidity: `${c.relative_humidity_2m}%`,
+            wind: `${Math.round(c.wind_speed_10m)} km/h`,
+            rainRisk: precip > 0 ? '70%' : '10%',
+            radarStatus: precip > 0 ? 'LLUVIA EN PISTA' : 'RADAR SECO',
+            conditionDesc: precip > 0 ? 'Asfalto Húmedo' : 'Asfalto Seco C2/C3'
+          });
+        }
+      },
+      error: () => {
+        // En caso de error de red, conserva el pronóstico estándar realista
+      }
+    });
+  }
+
+  /**
+   * Formatea fecha y hora en huso horario oficial de Argentina (ART / UTC-3).
+   */
+  private formatArgTime(isoString?: string | null): { dateLabel: string; timeArg: string } {
+    if (!isoString) return { dateLabel: 'A programar', timeArg: '--:-- hs (Arg)' };
+    const date = new Date(isoString);
+    const days = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+    const dName = days[date.getDay()];
+    const dNum = date.getDate();
+    const mName = months[date.getMonth()];
+    const timeStr = date.toLocaleTimeString('es-AR', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    return {
+      dateLabel: `${dName} ${dNum} ${mName}`,
+      timeArg: `${timeStr} hs (Arg)`
+    };
+  }
+
+  /**
+   * Determina con precisión el estado de la sesión comparando con el reloj actual.
+   */
+  private calculateSessionStatus(isoString?: string | null): 'COMPLETED' | 'LIVE' | 'UPCOMING' | 'PROGRAMMED' {
+    if (!isoString) return 'PROGRAMMED';
+    const start = new Date(isoString).getTime();
+    const now = Date.now();
+    const durationMs = 90 * 60 * 1000; // Duración típica de sesión: 1h 30m
+
+    if (now > start + durationMs) {
+      return 'COMPLETED';
+    } else if (now >= start && now <= start + durationMs) {
+      return 'LIVE';
+    } else {
+      return 'PROGRAMMED';
+    }
   }
 
   private updateCountdownFromDate(targetDateStr?: string | null): void {
@@ -192,11 +297,18 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     }, 1000);
   }
 
+  /**
+   * Selector del Duelo de Pilotos (exige inicio de sesión previo).
+   */
   selectDuelPick(driver: 'norris' | 'verstappen'): void {
+    if (!this.auth.authenticated()) {
+      this.auth.login();
+      return;
+    }
     if (this.isLocked()) return;
     this.duelPick.set(driver);
     const sess = this.session();
-    if (sess && this.auth.authenticated()) {
+    if (sess) {
       this.api.submitPrediction(sess.id, {
         podium: this.currentPrediction()?.podium ?? ['norris', 'verstappen', 'leclerc'],
         duelDriverPick: driver

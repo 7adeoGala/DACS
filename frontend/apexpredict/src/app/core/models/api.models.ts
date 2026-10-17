@@ -55,6 +55,10 @@ export interface NextSession {
   fp2?: string | null;
   fp3?: string | null;
   qualifying?: string | null;
+  sprint?: string | null;
+  sprintQualifying?: string | null;
+  lat?: string;
+  long?: string;
 }
 
 export interface JolpicaDriverStanding {

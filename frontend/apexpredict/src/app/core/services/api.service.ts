@@ -134,7 +134,9 @@ export class ApiService {
     }
     const fp1 = race.FirstPractice ? `${race.FirstPractice.date}T${race.FirstPractice.time}` : null;
     const fp2 = race.SecondPractice ? `${race.SecondPractice.date}T${race.SecondPractice.time}` : null;
-    const fp3 = race.ThirdPractice ? `${race.ThirdPractice.date}T${race.ThirdPractice.time}` : (race.Sprint ? `${race.Sprint.date}T${race.Sprint.time}` : null);
+    const fp3 = race.ThirdPractice ? `${race.ThirdPractice.date}T${race.ThirdPractice.time}` : null;
+    const sprint = race.Sprint ? `${race.Sprint.date}T${race.Sprint.time}` : null;
+    const sprintQualifying = race.SprintQualifying ? `${race.SprintQualifying.date}T${race.SprintQualifying.time}` : null;
     const qualifying = race.Qualifying ? `${race.Qualifying.date}T${race.Qualifying.time}` : null;
     const startsAt = race.time ? `${race.date}T${race.time}` : `${race.date}T14:00:00Z`;
     const roundNum = parseInt(race.round, 10);
@@ -158,7 +160,11 @@ export class ApiService {
       fp1,
       fp2,
       fp3,
-      qualifying
+      qualifying,
+      sprint,
+      sprintQualifying,
+      lat: race.Circuit?.Location?.lat || '30.1328',
+      long: race.Circuit?.Location?.long || '-97.6411'
     };
   }
 
