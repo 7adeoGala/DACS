@@ -81,30 +81,30 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
           </div>
         </div>
 
-        <!-- HORARIOS OFICIALES DEL FIN DE SEMANA (JOLPICA API) -->
+        <!-- HORARIOS OFICIALES DEL FIN DE SEMANA (HORARIO DE ARGENTINA - ART / UTC-3) -->
         <div class="schedule-list">
           <div class="schedule-row">
             <span class="sess-name">🟢 Práctica Libre 1 (FP1)</span>
             <span class="sess-time">
-              {{ nextSession()?.fp1 ? (nextSession()?.fp1 | date: 'EEE dd/MM · HH:mm' : 'UTC') + ' UTC' : 'Viernes 23/10 · 17:30 UTC' }}
+              {{ nextSession()?.fp1 ? (nextSession()?.fp1 | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Viernes 23/10 · 14:30 hs (Arg)' }}
             </span>
           </div>
           <div class="schedule-row">
             <span class="sess-name">🟢 Práctica Libre 2 (FP2)</span>
             <span class="sess-time">
-              {{ nextSession()?.fp2 ? (nextSession()?.fp2 | date: 'EEE dd/MM · HH:mm' : 'UTC') + ' UTC' : 'Viernes 23/10 · 21:00 UTC' }}
+              {{ nextSession()?.fp2 ? (nextSession()?.fp2 | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Viernes 23/10 · 18:00 hs (Arg)' }}
             </span>
           </div>
           <div class="schedule-row">
             <span class="sess-name">⚡ Clasificación Oficial</span>
             <span class="sess-time">
-              {{ nextSession()?.qualifying ? (nextSession()?.qualifying | date: 'EEE dd/MM · HH:mm' : 'UTC') + ' UTC' : 'Sábado 24/10 · 21:00 UTC' }}
+              {{ nextSession()?.qualifying ? (nextSession()?.qualifying | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Sábado 24/10 · 18:00 hs (Arg)' }}
             </span>
           </div>
           <div class="schedule-row active">
             <span class="sess-name">🏁 Gran Premio (Carrera)</span>
             <span class="sess-time">
-              {{ nextSession()?.startsAt ? (nextSession()?.startsAt | date: 'EEE dd/MM · HH:mm' : 'UTC') + ' UTC' : 'Domingo 25/10 · 20:00 UTC' }}
+              {{ nextSession()?.startsAt ? (nextSession()?.startsAt | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Domingo 25/10 · 17:00 hs (Arg)' }}
             </span>
           </div>
         </div>
@@ -142,7 +142,7 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
             <article class="race-card" [style.opacity]="isPast(race) ? '0.7' : '1'">
               <div class="race-top">
                 <span class="round-badge">RONDA {{ race.round.toString().padStart(2, '0') }}</span>
-                <span class="race-date">{{ race.date | date: 'dd MMM yyyy' : 'UTC' }}</span>
+                <span class="race-date">{{ race.date | date: 'dd MMM yyyy' : '-0300' }}</span>
               </div>
               <p class="country">{{ race.country }}</p>
               <h3>{{ race.name }}</h3>
@@ -150,7 +150,7 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
               <div class="race-bottom">
                 <span>{{
                   race.startsAt
-                    ? (race.startsAt | date: 'HH:mm' : 'UTC') + ' UTC'
+                    ? (race.startsAt | date: 'HH:mm' : '-0300') + ' hs (Arg)'
                     : 'Horario oficial'
                 }}</span>
                 <span style="color: var(--cyan); font-weight: 700;">
@@ -189,6 +189,19 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     this.error.set('');
 
+    // Si ya existe calendario en caché local, mostrarlo al instante (0ms)
+    try {
+      const cached = localStorage.getItem(`apexpredict_calendar_${this.season}`);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.length > 0) {
+          this.allRaces.set(parsed);
+          this.filterRaces(parsed);
+          this.loading.set(false);
+        }
+      }
+    } catch {}
+
     // Cargar siguiente sesión desde Jolpica/Backend
     this.api.nextSession().subscribe({
       next: (session) => {
@@ -208,7 +221,9 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('No pudimos cargar el calendario oficial. Por favor intenta nuevamente.');
+        if (this.allRaces().length === 0) {
+          this.error.set('No pudimos cargar el calendario oficial. Por favor intenta nuevamente.');
+        }
         this.loading.set(false);
       },
     });

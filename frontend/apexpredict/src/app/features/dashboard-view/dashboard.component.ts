@@ -92,7 +92,7 @@ type DashboardTab = 'prediction' | 'leagues' | 'leaderboard' | 'history';
                   <span class="status-pill locked">🔒 LOCK TIME SUPERADO · PRONÓSTICOS CERRADOS</span>
                 } @else {
                   <span class="status-pill open">
-                    ⏱️ ABIERTO HASTA {{ nextSession()?.startsAt ? (nextSession()?.startsAt | date: 'dd/MM HH:mm' : 'UTC') + ' UTC' : 'INICIO DE SESIÓN' }}
+                    ⏱️ ABIERTO HASTA {{ nextSession()?.startsAt ? (nextSession()?.startsAt | date: 'dd/MM HH:mm' : '-0300') + ' hs (Arg)' : 'INICIO DE SESIÓN' }}
                   </span>
                 }
               </div>
@@ -531,7 +531,7 @@ type DashboardTab = 'prediction' | 'leagues' | 'leaderboard' | 'history';
                         <span class="round-badge">{{ item.circuit }}</span>
                         <h3 style="font-size: 22px; margin-top: 6px;">{{ item.sessionName }}</h3>
                         <p class="muted" style="margin: 4px 0 0;">
-                          Fecha de carrera: {{ item.raceDate || (item.startsAt | date: 'dd/MM/yyyy' : 'UTC') }}
+                          Fecha de carrera: {{ item.raceDate || (item.startsAt | date: 'dd/MM/yyyy' : '-0300') }}
                         </p>
                       </div>
 
@@ -719,6 +719,10 @@ export class DashboardComponent implements OnInit {
   readonly predictionSuccess = signal(false);
 
   ngOnInit() {
+    // 1. Cargar de inmediato los datos del paddock desde Jolpica y caché local (150ms)
+    this.loadDashboardData();
+
+    // 2. En segundo plano, sincronizar perfil y ligas con el backend sin bloquear la pantalla
     this.api
       .profile()
       .pipe(
@@ -733,11 +737,8 @@ export class DashboardComponent implements OnInit {
           if (leagues.length > 0) {
             this.selectLeague(leagues[0]);
           }
-          this.loadDashboardData();
         },
-        error: () => {
-          this.loadDashboardData();
-        },
+        error: () => {},
       });
   }
 

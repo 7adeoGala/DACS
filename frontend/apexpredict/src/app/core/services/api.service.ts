@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of } from 'rxjs';
+import { Observable, catchError, map, of, timeout } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Finish,
@@ -22,30 +22,57 @@ export class ApiService {
   private readonly base = environment.apiUrl;
 
   calendar(season: number): Observable<Race[]> {
+    const jolpica$ = this.fetchJolpicaCalendar(season);
+
+    // Intentar backend con timeout de 1500ms; si duerme o tarda, cae instantáneamente a Jolpica (150ms)
     return this.http.get<Race[]>(`${this.base}/calendar/${season}`).pipe(
+      timeout(1500),
       map(races => {
         if (!races || races.length === 0) {
           throw new Error('Empty backend calendar, falling back to Jolpica');
         }
+        this.cacheCalendar(season, races);
         return races;
       }),
-      catchError(() => {
-        return this.http.get<any>(`https://api.jolpi.ca/ergast/f1/${season}.json`).pipe(
-          map(data => {
-            const list = data?.MRData?.RaceTable?.Races || [];
-            return list.map((r: any) => ({
-              season: parseInt(r.season, 10),
-              round: parseInt(r.round, 10),
-              name: r.raceName,
-              circuit: r.Circuit?.circuitName || 'Circuito Oficial',
-              country: r.Circuit?.Location?.country || 'Internacional',
-              date: r.date,
-              startsAt: r.time ? `${r.date}T${r.time}` : `${r.date}T14:00:00Z`
-            }));
-          })
-        );
-      })
+      catchError(() => jolpica$)
     );
+  }
+
+  private fetchJolpicaCalendar(season: number): Observable<Race[]> {
+    return this.http.get<any>(`https://api.jolpi.ca/ergast/f1/${season}.json`).pipe(
+      map(data => {
+        const list = data?.MRData?.RaceTable?.Races || [];
+        const races = list.map((r: any) => ({
+          season: parseInt(r.season, 10),
+          round: parseInt(r.round, 10),
+          name: r.raceName,
+          circuit: r.Circuit?.circuitName || 'Circuito Oficial',
+          country: r.Circuit?.Location?.country || 'Internacional',
+          date: r.date,
+          startsAt: r.time ? `${r.date}T${r.time}` : `${r.date}T14:00:00Z`
+        }));
+        this.cacheCalendar(season, races);
+        return races;
+      }),
+      catchError(() => of(this.getCachedCalendar(season) || []))
+    );
+  }
+
+  private cacheCalendar(season: number, races: Race[]) {
+    try {
+      if (races && races.length > 0) {
+        localStorage.setItem(`apexpredict_calendar_${season}`, JSON.stringify(races));
+      }
+    } catch {}
+  }
+
+  private getCachedCalendar(season: number): Race[] | null {
+    try {
+      const item = localStorage.getItem(`apexpredict_calendar_${season}`);
+      return item ? JSON.parse(item) : null;
+    } catch {
+      return null;
+    }
   }
 
   results(season: number, round: number) {
