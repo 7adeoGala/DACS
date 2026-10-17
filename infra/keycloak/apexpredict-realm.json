@@ -21,7 +21,7 @@
         "name": "default-roles-apexpredict",
         "description": "Roles iniciales de las cuentas de ApexPredict",
         "composite": true,
-        "composites": { "realm": ["player", "offline_access", "uma_authorization"] }
+        "composites": { "realm": ["player"] }
       }
     ]
   },
