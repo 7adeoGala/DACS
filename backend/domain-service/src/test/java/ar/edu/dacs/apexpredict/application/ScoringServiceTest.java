@@ -70,10 +70,10 @@ class ScoringServiceTest {
         assertTrue(breakdown.duelHit());
         assertEquals(3, breakdown.duelPoints());
         assertTrue(breakdown.safetyCarHit());
-        assertEquals(6, breakdown.safetyCarPoints());
+        assertEquals(10, breakdown.safetyCarPoints());
         assertTrue(breakdown.dnfHit());
-        assertEquals(6, breakdown.dnfPoints());
-        assertEquals(29, breakdown.totalPoints());
+        assertEquals(15, breakdown.dnfPoints());
+        assertEquals(42, breakdown.totalPoints());
     }
 
     @Test
@@ -146,7 +146,7 @@ class ScoringServiceTest {
     }
 
     @Test
-    @DisplayName("Autos de seguridad y abandonos: 6 puntos cada uno si la cantidad es exacta")
+    @DisplayName("Autos de seguridad (10 pts) y abandonos (15 pts) si la cantidad es exacta")
     void safetyCarsAndDnfsScoring() {
         var result = new SessionResult(session, List.of("a", "b", "c"), null, 1, 4, null, futureStart.plusSeconds(7200));
 
@@ -155,7 +155,7 @@ class ScoringServiceTest {
         var b = scoringService.calculateScore(pred, result, null);
 
         assertTrue(b.safetyCarHit());
-        assertEquals(6, b.safetyCarPoints());
+        assertEquals(10, b.safetyCarPoints());
         assertFalse(b.dnfHit());
         assertEquals(0, b.dnfPoints());
     }

@@ -85,23 +85,23 @@ public class ScoringService {
             }
         }
 
-        // 4. Cantidad de autos de seguridad (VSC - SC): 6 puntos
+        // 4. Cantidad de autos de seguridad (VSC - SC): 10 puntos
         boolean safetyCarHit = false;
         int safetyCarPoints = 0;
         if (prediction.getSafetyCarCount() != null && result.getSafetyCarCount() != null) {
             if (prediction.getSafetyCarCount().equals(result.getSafetyCarCount())) {
                 safetyCarHit = true;
-                safetyCarPoints = 6;
+                safetyCarPoints = 10;
             }
         }
 
-        // 5. Cantidad de abandonos (DNF - DNS): 6 puntos
+        // 5. Cantidad de abandonos (DNF - DNS): 15 puntos
         boolean dnfHit = false;
         int dnfPoints = 0;
         if (prediction.getDnfCount() != null && result.getDnfCount() != null) {
             if (prediction.getDnfCount().equals(result.getDnfCount())) {
                 dnfHit = true;
-                dnfPoints = 6;
+                dnfPoints = 15;
             }
         }
 

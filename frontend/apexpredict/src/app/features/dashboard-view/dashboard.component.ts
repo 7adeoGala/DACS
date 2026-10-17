@@ -34,7 +34,7 @@ import {
             </div>
             <div class="points-badge">
               <span class="dim">POTENCIAL MÁXIMO:</span>
-              <span class="pts-val">+125 PTS</span>
+              <span class="pts-val">+118 PTS</span>
             </div>
           </div>
 
@@ -253,27 +253,94 @@ import {
             </div>
           </div>
 
-          <!-- 3. SLIDERS / CONTADORES TELEMETRÍA -->
-          <div class="spotlight-card">
-            <div class="card-title-row">
-              <h4>INCIDENCIAS DE CARRERA</h4>
-              <span class="mono-pts">+32 PTS</span>
-            </div>
-            <div class="counters-grid">
-              <div class="counter-item">
-                <label>¿Aparición de Safety Car (SC)? (0 a 10)</label>
-                <div class="stepper">
-                  <button type="button" [disabled]="isLocked()" (click)="decrementSC()">-</button>
-                  <span class="count-num">{{ safetyCars() }}</span>
-                  <button type="button" [disabled]="isLocked()" (click)="incrementSC()">+</button>
+          <!-- 3. TELEMETRÍA DE CARRERA (DESAGRUPADA Y PULIDA) -->
+          <div class="grid-two-cols">
+            <!-- TARJETA 1: SAFETY CAR (+10 PTS) -->
+            <div class="spotlight-card telemetry-card sc-card">
+              <div class="card-title-row">
+                <div class="card-title-group">
+                  <span class="telemetry-icon-badge sc">🚨</span>
+                  <div>
+                    <h4>Auto de Seguridad (Safety Car)</h4>
+                    <span class="dim" style="font-size: 0.82rem;">Apariciones físicas de SC o Virtual SC (VSC)</span>
+                  </div>
+                </div>
+                <span class="amber-pts">+10 PTS</span>
+              </div>
+
+              <div class="telemetry-display-box">
+                <div class="stepper-hero">
+                  <button 
+                    type="button" 
+                    class="step-hero-btn" 
+                    [disabled]="isLocked() || safetyCars() <= 0" 
+                    (click)="decrementSC()"
+                    aria-label="Disminuir Safety Cars">
+                    −
+                  </button>
+                  <div class="step-hero-center">
+                    <span class="step-hero-val">{{ safetyCars() }}</span>
+                    <span class="step-hero-unit">{{ safetyCars() === 1 ? 'Aparición estimada' : 'Apariciones estimadas' }}</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    class="step-hero-btn" 
+                    [disabled]="isLocked() || safetyCars() >= 10" 
+                    (click)="incrementSC()"
+                    aria-label="Aumentar Safety Cars">
+                    +
+                  </button>
+                </div>
+                <div class="telemetry-range-hint">
+                  <span>Rango: 0 a 10</span>
+                  <span class="telemetry-status-pill">
+                    {{ safetyCars() === 0 ? 'Carrera Limpia (Sin SC)' : (safetyCars() <= 2 ? 'Frecuencia Normal' : 'Carrera Accidentada') }}
+                  </span>
                 </div>
               </div>
-              <div class="counter-item">
-                <label>Cantidad de Abandonos (DNFs) (0 a 20)</label>
-                <div class="stepper">
-                  <button type="button" [disabled]="isLocked()" (click)="decrementDNFs()">-</button>
-                  <span class="count-num">{{ dnfs() }}</span>
-                  <button type="button" [disabled]="isLocked()" (click)="incrementDNFs()">+</button>
+            </div>
+
+            <!-- TARJETA 2: ABANDONOS DNFs (+15 PTS) -->
+            <div class="spotlight-card telemetry-card dnf-card">
+              <div class="card-title-row">
+                <div class="card-title-group">
+                  <span class="telemetry-icon-badge dnf">🚩</span>
+                  <div>
+                    <h4>Abandonos de Carrera (DNFs)</h4>
+                    <span class="dim" style="font-size: 0.82rem;">Monoplazas fuera de carrera (DNF / DNS)</span>
+                  </div>
+                </div>
+                <span class="mono-pts">+15 PTS</span>
+              </div>
+
+              <div class="telemetry-display-box">
+                <div class="stepper-hero">
+                  <button 
+                    type="button" 
+                    class="step-hero-btn" 
+                    [disabled]="isLocked() || dnfs() <= 0" 
+                    (click)="decrementDNFs()"
+                    aria-label="Disminuir Abandonos">
+                    −
+                  </button>
+                  <div class="step-hero-center">
+                    <span class="step-hero-val">{{ dnfs() }}</span>
+                    <span class="step-hero-unit">{{ dnfs() === 1 ? 'Auto retirado' : 'Autos retirados' }}</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    class="step-hero-btn" 
+                    [disabled]="isLocked() || dnfs() >= 20" 
+                    (click)="incrementDNFs()"
+                    aria-label="Aumentar Abandonos">
+                    +
+                  </button>
+                </div>
+                <div class="telemetry-range-hint">
+                  <span>Rango: 0 a 20</span>
+                  <span class="telemetry-status-pill">
+                    {{ dnfs() === 0 ? 'Sin Abandonos' : (dnfs() <= 3 ? 'Desgaste Moderado' : 'Alto Caos en Pista') }}
+                  </span>
                 </div>
               </div>
             </div>
@@ -709,10 +776,10 @@ import {
                           Duelo: {{ h.scoreBreakdown.duelHit ? '+15 pts ✓' : '0 pts' }}
                         </span>
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.safetyCarHit">
-                          Safety Car: {{ h.scoreBreakdown.safetyCarHit ? '+16 pts ✓' : '0 pts' }}
+                          Safety Car: {{ h.scoreBreakdown.safetyCarHit ? '+10 pts ✓' : '0 pts' }}
                         </span>
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.dnfHit">
-                          DNFs: {{ h.scoreBreakdown.dnfHit ? '+16 pts ✓' : '0 pts' }}
+                          DNFs: {{ h.scoreBreakdown.dnfHit ? '+15 pts ✓' : '0 pts' }}
                         </span>
                       </div>
                     }
@@ -904,6 +971,12 @@ import {
     .cyan-pts {
       font-family: var(--font-mono);
       color: var(--cyan);
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+    .amber-pts {
+      font-family: var(--font-mono);
+      color: #fbbf24;
       font-weight: 700;
       font-size: 0.85rem;
     }
@@ -1312,45 +1385,132 @@ import {
       opacity: 0.6;
       cursor: not-allowed;
     }
-    .counters-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
+    .telemetry-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.25rem;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.01) 100%), var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      position: relative;
+      overflow: hidden;
     }
-    .stepper {
+    .telemetry-card.sc-card {
+      border-top: 4px solid #f59e0b;
+      background: linear-gradient(180deg, rgba(245, 158, 11, 0.06) 0%, rgba(18, 22, 31, 0.95) 100%);
+    }
+    .telemetry-card.dnf-card {
+      border-top: 4px solid var(--red);
+      background: linear-gradient(180deg, rgba(225, 6, 0, 0.06) 0%, rgba(18, 22, 31, 0.95) 100%);
+    }
+    .card-title-group {
       display: flex;
       align-items: center;
-      gap: 1rem;
-      margin-top: 0.6rem;
+      gap: 0.75rem;
     }
-    .stepper button {
-      width: 38px;
-      height: 38px;
-      background: #0d1015;
+    .telemetry-icon-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .telemetry-icon-badge.sc {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .telemetry-icon-badge.dnf {
+      background: rgba(225, 6, 0, 0.15);
+      border: 1px solid rgba(225, 6, 0, 0.35);
+    }
+    .telemetry-display-box {
+      background: #0d1118;
+      border: 1px solid var(--line-strong);
+      border-radius: var(--radius-sm);
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+    .stepper-hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.25rem;
+    }
+    .step-hero-btn {
+      width: 50px;
+      height: 50px;
+      background: #141923;
       border: 1px solid var(--line-strong);
       color: #fff;
-      font-size: 1.25rem;
+      font-size: 1.5rem;
+      font-weight: 700;
       border-radius: var(--radius-sm);
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s;
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
     }
-    .stepper button:hover:not(:disabled) {
+    .step-hero-btn:hover:not(:disabled) {
       background: var(--surface-hover);
-      border-color: var(--red);
+      border-color: var(--cyan);
+      box-shadow: 0 0 14px rgba(0, 242, 254, 0.3);
+      transform: scale(1.06);
     }
-    .stepper button:disabled {
-      opacity: 0.4;
+    .step-hero-btn:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+    .step-hero-btn:disabled {
+      opacity: 0.25;
       cursor: not-allowed;
     }
-    .count-num {
-      font-size: 1.6rem;
+    .step-hero-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .step-hero-val {
+      font-size: 2.5rem;
       font-weight: 800;
       font-family: var(--font-mono);
-      min-width: 32px;
-      text-align: center;
+      color: #ffffff;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+    .step-hero-unit {
+      font-size: 0.78rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-weight: 600;
+    }
+    .telemetry-range-hint {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      padding-top: 0.85rem;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+    .telemetry-status-pill {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      border: 1px solid var(--line);
     }
     .submit-bar {
       display: flex;
