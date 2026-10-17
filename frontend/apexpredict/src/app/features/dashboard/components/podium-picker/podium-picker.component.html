@@ -1,5 +1,5 @@
 <!-- CONTENEDOR PRINCIPAL DEL PODIO -->
-<div class="spotlight-card podium-card-wrapper">
+<div class="podium-card-wrapper">
   
   <!-- CABECERA DE LA TARJETA -->
   <div class="card-title-row">
@@ -117,22 +117,6 @@
       }
     </div>
 
-  </div>
-
-  <!-- BARRA DE ACCIÓN INFERIOR Y BONIFICACIÓN -->
-  <div class="podium-footer-row">
-    <div class="bonus-notice">
-      <span class="pulse-cyan"></span>
-      <span>Bonificación activada: <strong>+15 PTS Extra</strong> por Pleno de Podio (1-2-3 exactos)</span>
-    </div>
-    <div class="footer-actions">
-      <button type="button" class="btn-quiet" (click)="resetPodium()">
-        <span>↺</span> RESTABLECER PODIO
-      </button>
-      <button type="button" class="btn-save" (click)="save()">
-        <span>💾</span> GUARDAR MI PREDICCIÓN (+{{ totalEstimatedPoints() }} PTS)
-      </button>
-    </div>
   </div>
 
 </div>
