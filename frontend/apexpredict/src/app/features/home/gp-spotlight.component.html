@@ -240,7 +240,7 @@
               </div>
             }
           </div>
-          <a routerLink="/dashboard" class="btn-view-table">Ver Campeonato Completo →</a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'global' }" class="btn-view-table">Ver Campeonato Completo →</a>
         </div>
       } @else {
         <!-- Landing Page Genérica cuando el usuario NO ha iniciado sesión -->

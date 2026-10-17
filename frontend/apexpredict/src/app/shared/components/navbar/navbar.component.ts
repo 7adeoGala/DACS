@@ -1,11 +1,11 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
   selector: 'app-navbar',
   standalone: true,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink],
   template: `
     <header class="navbar-wrapper">
       <div class="navbar-container">
@@ -17,10 +17,11 @@ import { AuthService } from '../../../core/auth/auth.service';
 
         <!-- NAVEGACIÓN EN UN SOLO RENGLÓN CON ESPACIADO AMPLIO -->
         <nav class="nav-links">
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">GP Actual</a>
-          <a routerLink="/dashboard" routerLinkActive="active">Cockpit & Predicciones</a>
-          <a routerLink="/dashboard" [queryParams]="{ tab: 'ligas' }" routerLinkActive="active">Mis Ligas</a>
-          <a routerLink="/dashboard" [queryParams]="{ tab: 'global' }" routerLinkActive="active">Posiciones F1</a>
+          <a routerLink="/" [class.active]="isCurrent('home')">GP Actual</a>
+          <a routerLink="/dashboard" [class.active]="isCurrent('pronostico')">Cockpit & Predicciones</a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'ligas' }" [class.active]="isCurrent('ligas')">Mis Ligas</a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'global' }" [class.active]="isCurrent('global')">Posiciones F1</a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'historial' }" [class.active]="isCurrent('historial')">Historial</a>
         </nav>
 
         <!-- ACCIONES DE LOGIN / SESIÓN -->
@@ -161,4 +162,38 @@ import { AuthService } from '../../../core/auth/auth.service';
 })
 export class NavbarComponent {
   readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
+  readonly currentUrl = signal<string>(this.router.url);
+
+  constructor() {
+    this.router.events.subscribe((event) => {
+      if (event instanceof NavigationEnd) {
+        this.currentUrl.set(event.urlAfterRedirects || event.url);
+      }
+    });
+  }
+
+  isCurrent(tab: 'home' | 'pronostico' | 'ligas' | 'global' | 'historial'): boolean {
+    const url = this.currentUrl();
+    if (tab === 'home') {
+      return url === '/' || url === '' || url.startsWith('/?');
+    }
+    if (!url.startsWith('/dashboard') && !url.startsWith('/join')) {
+      return false;
+    }
+    if (tab === 'ligas') {
+      return url.includes('tab=ligas') || url.startsWith('/join');
+    }
+    if (tab === 'global') {
+      return url.includes('tab=global');
+    }
+    if (tab === 'historial') {
+      return url.includes('tab=historial');
+    }
+    if (tab === 'pronostico') {
+      return !url.includes('tab=ligas') && !url.includes('tab=global') && !url.includes('tab=historial');
+    }
+    return false;
+  }
 }
+

@@ -19,35 +19,7 @@ import {
   imports: [CommonModule, FormsModule, DatePipe],
   template: `
     <div class="dashboard-page">
-      <!-- HEADER DEL COCKPIT CON TABS PRINCIPALES -->
-      <div class="cockpit-header">
-        <div class="tabs-bar">
-          <button 
-            type="button"
-            [class.active]="activeTab() === 'pronostico'" 
-            (click)="activeTab.set('pronostico')">
-            🎯 Pronóstico GP
-          </button>
-          <button 
-            type="button"
-            [class.active]="activeTab() === 'ligas'" 
-            (click)="activeTab.set('ligas')">
-            🏆 Mis Ligas & Podios ({{ myLeagues().length }})
-          </button>
-          <button 
-            type="button"
-            [class.active]="activeTab() === 'global'" 
-            (click)="activeTab.set('global')">
-            📊 Tabla Global
-          </button>
-          <button 
-            type="button"
-            [class.active]="activeTab() === 'historial'" 
-            (click)="activeTab.set('historial')">
-            📜 Historial & Puntos
-          </button>
-        </div>
-      </div>
+
 
       <!-- ========================================== -->
       <!-- TAB 1: PRONÓSTICO GP                       -->
@@ -1226,6 +1198,8 @@ export class DashboardComponent implements OnInit {
         this.activeTab.set('global');
       } else if (tabParam === 'historial') {
         this.activeTab.set('historial');
+      } else {
+        this.activeTab.set('pronostico');
       }
     });
   }
