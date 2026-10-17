@@ -293,7 +293,7 @@
   <!-- Sección Head-to-Head: Norris vs Verstappen -->
   <section class="duel-section">
     <div class="duel-header">
-      <div class="duel-badge">WORLD CHAMPIONSHIP FIGHT // DUELO OFICIAL HEAD-TO-HEAD</div>
+      <div class="duel-badge">DUELO DE LA FECHA // HEAD-TO-HEAD OFICIAL</div>
       <h2>LANDO NORRIS <span class="vs">VS</span> MAX VERSTAPPEN</h2>
       <p class="duel-desc">Diferencia en el Campeonato WDC: 52 puntos. ¿Quién saldrá de Austin con ventaja?</p>
       <div class="champ-pts-strip">
@@ -317,13 +317,6 @@
           <div class="stat-line"><span class="val">6</span><span class="lbl">Pole Positions</span></div>
           <div class="stat-line highlight"><span class="val gold">21 vtas</span><span class="lbl">Vueltas Lideradas en COTA</span></div>
         </div>
-        <button type="button" class="btn-pick-driver norris-btn" [class.active]="duelPick() === 'norris'" (click)="selectDuelPick('norris')">
-          @if (!auth.authenticated()) {
-            🔒 Iniciar sesión para votar a Norris
-          } @else {
-            🏁 PREDECIR A NORRIS (P1)
-          }
-        </button>
       </div>
 
       <!-- Centro: Barras de Comparativa y Votos -->
@@ -384,13 +377,6 @@
           <div class="stat-line"><span class="val">8</span><span class="lbl">Pole Positions</span></div>
           <div class="stat-line highlight"><span class="val gold">3 (2021-23)</span><span class="lbl">Victorias Previas en COTA</span></div>
         </div>
-        <button type="button" class="btn-pick-driver ver-btn" [class.active]="duelPick() === 'verstappen'" (click)="selectDuelPick('verstappen')">
-          @if (!auth.authenticated()) {
-            🔒 Iniciar sesión para votar a Max
-          } @else {
-            🏆 PREDECIR A VERSTAPPEN (P1)
-          }
-        </button>
       </div>
     </div>
   </section>

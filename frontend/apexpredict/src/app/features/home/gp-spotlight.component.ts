@@ -296,23 +296,4 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       this.seconds.set(sec < 10 ? `0${sec}` : `${sec}`);
     }, 1000);
   }
-
-  /**
-   * Selector del Duelo de Pilotos (exige inicio de sesión previo).
-   */
-  selectDuelPick(driver: 'norris' | 'verstappen'): void {
-    if (!this.auth.authenticated()) {
-      this.auth.login();
-      return;
-    }
-    if (this.isLocked()) return;
-    this.duelPick.set(driver);
-    const sess = this.session();
-    if (sess) {
-      this.api.submitPrediction(sess.id, {
-        podium: this.currentPrediction()?.podium ?? ['norris', 'verstappen', 'leclerc'],
-        duelDriverPick: driver
-      }).subscribe();
-    }
-  }
 }
