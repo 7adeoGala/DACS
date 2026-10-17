@@ -10,8 +10,8 @@
   "internationalizationEnabled": true,
   "supportedLocales": ["es", "en"],
   "defaultLocale": "es",
-  "passwordPolicy": "length(10)",
-  "resetPasswordAllowed": false,
+  "passwordPolicy": "length(6)",
+  "resetPasswordAllowed": true,
   "loginTheme": "apexpredict",
   "defaultRole": { "name": "default-roles-apexpredict" },
   "roles": {
