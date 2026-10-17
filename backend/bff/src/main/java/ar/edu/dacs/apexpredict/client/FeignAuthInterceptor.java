@@ -11,6 +11,12 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 public class FeignAuthInterceptor implements RequestInterceptor {
     @Override
     public void apply(RequestTemplate template) {
+        if (template.feignTarget() != null && template.feignTarget().url() != null) {
+            String targetUrl = template.feignTarget().url();
+            if (targetUrl.contains(".onrender.com.onrender.com")) {
+                template.target(targetUrl.replace(".onrender.com.onrender.com", ".onrender.com"));
+            }
+        }
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth instanceof JwtAuthenticationToken jwtAuth) {
             template.header("Authorization", "Bearer " + jwtAuth.getToken().getTokenValue());

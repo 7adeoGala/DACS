@@ -780,31 +780,6 @@
   color: var(--text-main);
 }
 
-/* COTA Photo card */
-.cota-photo-card {
-  position: relative;
-  height: 90px;
-  border-radius: var(--radius-md);
-  background: linear-gradient(180deg, rgba(0,0,0,0.1), rgba(0,0,0,0.9)), url('https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=600&q=80') center/cover;
-  border: 1px solid var(--line);
-  overflow: hidden;
-  display: flex;
-  align-items: flex-end;
-  padding: 12px;
-}
-
-.photo-title {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 800;
-  color: var(--gold);
-}
-
-.photo-overlay p {
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  margin: 0;
-}
 
 /* Duelo Norris vs Verstappen */
 .duel-section {
