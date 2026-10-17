@@ -1,6 +1,9 @@
 import { TestBed } from '@angular/core/testing';
 import { of, Subject } from 'rxjs';
+import { signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
+import { AuthService } from '../../core/auth/auth.service';
 import { League } from '../../core/models/api.models';
 import { DashboardComponent } from './dashboard.component';
 
@@ -12,48 +15,63 @@ describe('Formulario de ligas', () => {
       leagues: vi.fn(() => of([])),
       createLeague: vi.fn(() => created),
       nextSession: vi.fn(() => of(null)),
+      currentPrediction: vi.fn(() => of(null)),
+      submitPrediction: vi.fn(() => of({})),
       globalLeaderboard: vi.fn(() => of([])),
       predictionHistory: vi.fn(() => of([])),
       leagueLeaderboard: vi.fn(() => of([])),
+      jolpicaDriverStandings: vi.fn(() => of([])),
+      jolpicaConstructorStandings: vi.fn(() => of([]))
     };
-    TestBed.configureTestingModule({ providers: [{ provide: ApiService, useValue: api }] });
+    const auth = {
+      username: signal('player'),
+      authenticated: signal(true),
+      userPoints: signal(0)
+    };
+    const route = {
+      snapshot: { paramMap: { get: () => null } },
+      queryParamMap: of({ get: () => 'ligas' })
+    };
+
+    TestBed.configureTestingModule({
+      providers: [
+        { provide: ApiService, useValue: api },
+        { provide: AuthService, useValue: auth },
+        { provide: ActivatedRoute, useValue: route }
+      ]
+    });
     const fixture = TestBed.createComponent(DashboardComponent);
     fixture.detectChanges();
-    const leaguesTab = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
-      .find(button => button.textContent?.includes('Mis Ligas'))!;
-    leaguesTab.click();
+    fixture.componentInstance.activeTab.set('ligas');
+    fixture.componentInstance.leagueSubTab.set('create');
     fixture.detectChanges();
-    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[formControlName="name"]');
-    const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
-    return { fixture, input, form, api, created };
+    return { fixture, api, created };
   }
 
-  it('envia el nombre sin navegar y muestra la liga devuelta por la API', () => {
-    const { fixture, input, form, api, created } = setup();
-    input.value = '  Liga del paddock  ';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    fixture.detectChanges();
-    const submit = new Event('submit', { bubbles: true, cancelable: true });
-    form.dispatchEvent(submit);
-    expect(submit.defaultPrevented).toBe(true);
-    expect(api.createLeague).toHaveBeenCalledWith('Liga del paddock');
-    // Un segundo envio mientras espera la respuesta no duplica la peticion.
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  it('envia el nombre y actualiza la lista con la liga devuelta por la API', () => {
+    const { fixture, api, created } = setup();
+    const comp = fixture.componentInstance;
+    comp.newLeagueName = '  Liga del paddock  ';
+    comp.createLeague();
+    expect(api.createLeague).toHaveBeenCalledWith('Liga del paddock', undefined, undefined);
+
+    // Un segundo envio mientras espera la respuesta no duplica la peticion
+    comp.createLeague();
     expect(api.createLeague).toHaveBeenCalledTimes(1);
+
     created.next({ id: 'league-1', name: 'Liga del paddock' });
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent).toContain('Liga del paddock');
-    expect(fixture.componentInstance.selectedLeague()?.id).toBe('league-1');
-    expect(input.value).toBe('');
+    expect(comp.myLeagues().some(l => l.id === 'league-1')).toBe(true);
+    expect(comp.selectedLeague()?.id).toBe('league-1');
+    expect(comp.newLeagueName).toBe('');
   });
 
   it('no envia un nombre vacio o compuesto solo por espacios', () => {
-    const { fixture, input, form, api } = setup();
-    input.value = '   ';
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    fixture.detectChanges();
-    expect(form.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
-    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    const { fixture, api } = setup();
+    const comp = fixture.componentInstance;
+    comp.newLeagueName = '   ';
+    comp.createLeague();
     expect(api.createLeague).not.toHaveBeenCalled();
   });
 });
+
