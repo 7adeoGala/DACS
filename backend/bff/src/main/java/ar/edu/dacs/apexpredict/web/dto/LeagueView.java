@@ -7,9 +7,17 @@ public record LeagueView(
     String name,
     String description,
     UUID inviteCode,
-    UUID ownerId
+    UUID ownerId,
+    String ownerName,
+    long memberCount,
+    boolean hasPassword,
+    boolean isMember
 ) {
     public LeagueView(UUID id, String name) {
-        this(id, name, null, null, null);
+        this(id, name, null, null, null, null, 1, false, true);
+    }
+
+    public LeagueView(UUID id, String name, String description, UUID inviteCode, UUID ownerId) {
+        this(id, name, description, inviteCode, ownerId, null, 1, false, true);
     }
 }

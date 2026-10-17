@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { DatePipe } from '@angular/common';
+import { ActivatedRoute } from '@angular/router';
 import { switchMap, catchError, of } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { 
@@ -249,151 +250,430 @@ type DashboardTab = 'prediction' | 'leagues' | 'leaderboard' | 'history';
         <!-- ========================================== -->
         @if (activeTab() === 'leagues') {
           <section>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-              <h2>Ligas Privadas & Competencia</h2>
-              <span class="muted">{{ leagues().length }} ligas activas</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <h2>Ligas Privadas & Competencia</h2>
+                <p class="muted" style="margin: 4px 0 0;">Competí en ligas privadas protegidas con contraseña o abiertas por link de invitación.</p>
+              </div>
+              <span class="round-badge">{{ leagues().length }} ligas unidas</span>
             </div>
 
-            <!-- SELECTOR HORIZONTAL DE LIGAS -->
-            @if (leagues().length > 0) {
-              <div class="league-selector-list">
-                @for (l of leagues(); track l.id) {
-                  <button 
-                    type="button" 
-                    class="league-pill"
-                    [class.active]="selectedLeague()?.id === l.id"
-                    (click)="selectLeague(l)">
-                    <span>🏆 {{ l.name }}</span>
-                  </button>
-                }
+            <!-- SUB-NAVEGACIÓN INTERNA DE LIGAS -->
+            <div class="dashboard-tabs" style="margin-bottom: 24px; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+              <button 
+                type="button" 
+                class="tab-btn" 
+                [class.active]="leaguesSubTab() === 'my-leagues'" 
+                (click)="setLeaguesSubTab('my-leagues')">
+                🏆 Mis Ligas ({{ leagues().length }})
+              </button>
+              <button 
+                type="button" 
+                class="tab-btn" 
+                [class.active]="leaguesSubTab() === 'explore'" 
+                (click)="setLeaguesSubTab('explore')">
+                🔍 Explorar Ligas Privadas
+              </button>
+              <button 
+                type="button" 
+                class="tab-btn" 
+                [class.active]="leaguesSubTab() === 'create'" 
+                (click)="setLeaguesSubTab('create')">
+                ➕ Crear Nueva Liga
+              </button>
+              <button 
+                type="button" 
+                class="tab-btn" 
+                [class.active]="leaguesSubTab() === 'join'" 
+                (click)="setLeaguesSubTab('join')">
+                🔗 Unirse por Link / Clave
+              </button>
+            </div>
+
+            @if (joinSuccess()) {
+              <div class="notice success" role="alert" style="margin-bottom: 20px;">
+                ✓ {{ joinSuccess() }}
               </div>
-
-              <!-- DETALLES DE LA LIGA SELECCIONADA Y SU PODIO -->
-              @if (selectedLeague()) {
-                <article class="spotlight-card" style="margin-bottom: 36px;">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
-                    <div>
-                      <span class="round-badge">CLASIFICACIÓN EN VIVO</span>
-                      <h2 style="font-size: 28px; margin-top: 8px;">{{ selectedLeague()?.name }}</h2>
-                      @if (selectedLeague()?.description) {
-                        <p class="muted" style="margin: 4px 0 0;">{{ selectedLeague()?.description }}</p>
-                      }
-                    </div>
-                    @if (selectedLeague()?.inviteCode) {
-                      <div style="background: rgba(0,0,0,0.3); padding: 12px 16px; border-radius: var(--radius-sm); border: 1px solid var(--line);">
-                        <span class="eyebrow" style="font-size: 10px; margin-bottom: 4px;">CÓDIGO DE INVITACIÓN</span>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                          <code style="color: var(--cyan); font-weight: 700;">{{ selectedLeague()?.inviteCode }}</code>
-                          <button class="button small quiet" (click)="copyInviteCode(selectedLeague()?.inviteCode)">
-                            {{ copied() ? '✓ Copiado' : 'Copiar' }}
-                          </button>
-                        </div>
-                      </div>
-                    }
-                  </div>
-
-                  <!-- PODIO TOP 3 DE LA LIGA -->
-                  @if (leagueLeaderboard().length >= 3) {
-                    <div class="podium-container">
-                      <!-- 2ND PLACE -->
-                      <div class="podium-col rank-2">
-                        <div class="podium-avatar">🥈</div>
-                        <div class="podium-user-name">{{ leagueLeaderboard()[1].displayName }}</div>
-                        <div class="podium-points">{{ leagueLeaderboard()[1].totalScore }} pts</div>
-                        <div class="podium-pedestal">2</div>
-                      </div>
-
-                      <!-- 1ST PLACE -->
-                      <div class="podium-col rank-1">
-                        <div style="font-size: 24px; margin-bottom: -10px;">👑</div>
-                        <div class="podium-avatar">🥇</div>
-                        <div class="podium-user-name">{{ leagueLeaderboard()[0].displayName }}</div>
-                        <div class="podium-points" style="color: var(--gold); font-size: 15px;">{{ leagueLeaderboard()[0].totalScore }} pts</div>
-                        <div class="podium-pedestal">1</div>
-                      </div>
-
-                      <!-- 3RD PLACE -->
-                      <div class="podium-col rank-3">
-                        <div class="podium-avatar">🥉</div>
-                        <div class="podium-user-name">{{ leagueLeaderboard()[2].displayName }}</div>
-                        <div class="podium-points">{{ leagueLeaderboard()[2].totalScore }} pts</div>
-                        <div class="podium-pedestal">3</div>
-                      </div>
-                    </div>
-                  }
-
-                  <!-- TABLA DE PARTICIPANTES DE LA LIGA -->
-                  <h3 style="margin: 24px 0 16px; font-size: 18px;">Participantes de la Liga ({{ leagueLeaderboard().length }})</h3>
-                  @if (leagueLeaderboard().length > 0) {
-                    <table class="leaderboard-table">
-                      <thead>
-                        <tr>
-                          <th>Pos</th>
-                          <th>Jugador / Escudería</th>
-                          <th>Puntos Totales</th>
-                          <th>Pronósticos Enviados</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        @for (entry of leagueLeaderboard(); track entry.userId) {
-                          <tr>
-                            <td>#{{ entry.rank }}</td>
-                            <td><strong style="color: #fff;">{{ entry.displayName }}</strong></td>
-                            <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--cyan);">
-                              {{ entry.totalScore }} pts
-                            </td>
-                            <td>{{ entry.predictionsCount }} carreras</td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
-                  } @else {
-                    <p class="empty">Aún no hay puntuaciones registradas en esta liga privada.</p>
-                  }
-                </article>
-              }
-            } @else {
-              <div class="spotlight-card" style="text-align: center; padding: 48px 24px; margin-bottom: 32px;">
-                <div style="font-size: 40px; margin-bottom: 12px;">🏁</div>
-                <h2>Aún no pertenecés a ninguna liga</h2>
-                <p class="lead" style="max-width: 480px; margin: 8px auto 24px;">
-                  Creá tu propia liga privada para jugar con amigos o ingresá el código de invitación de una existente.
-                </p>
+            }
+            @if (createSuccess()) {
+              <div class="notice success" role="alert" style="margin-bottom: 20px;">
+                ✓ {{ createSuccess() }}
+              </div>
+            }
+            @if (error()) {
+              <div class="notice error" role="alert" style="margin-bottom: 20px;">
+                ⚠️ {{ error() }}
               </div>
             }
 
-            <!-- FORMULARIOS: CREAR Y UNIRSE A LIGA -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
-              <!-- CREAR LIGA -->
-              <div class="form-card">
-                <h3>➕ Crear Nueva Liga Privada</h3>
-                <form [formGroup]="form" (ngSubmit)="create()">
-                  <label class="field-label" for="league-name">Nombre de la liga</label>
+            <!-- --------------------------------------- -->
+            <!-- SUB-TAB 1: MIS LIGAS                   -->
+            <!-- --------------------------------------- -->
+            @if (leaguesSubTab() === 'my-leagues') {
+              @if (leagues().length > 0) {
+                <div class="league-selector-list" style="margin-bottom: 24px;">
+                  @for (l of leagues(); track l.id) {
+                    <button 
+                      type="button" 
+                      class="league-pill"
+                      [class.active]="selectedLeague()?.id === l.id"
+                      (click)="selectLeague(l)">
+                      <span>🏆 {{ l.name }}</span>
+                      @if (l.hasPassword) {
+                        <span style="font-size: 11px; margin-left: 4px;">🔒</span>
+                      }
+                    </button>
+                  }
+                </div>
+
+                @if (selectedLeague()) {
+                  <article class="spotlight-card" style="margin-bottom: 36px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px;">
+                      <div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                          <span class="round-badge">CLASIFICACIÓN EN VIVO</span>
+                          @if (selectedLeague()?.hasPassword) {
+                            <span class="badge" style="background: rgba(245, 176, 0, 0.15); color: var(--gold); border: 1px solid rgba(245, 176, 0, 0.3); font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full);">🔒 Protegida con Contraseña</span>
+                          } @else {
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full);">🌐 Acceso Libre</span>
+                          }
+                        </div>
+                        <h2 style="font-size: 28px; margin-top: 10px;">{{ selectedLeague()?.name }}</h2>
+                        @if (selectedLeague()?.description) {
+                          <p class="muted" style="margin: 4px 0 0;">{{ selectedLeague()?.description }}</p>
+                        }
+                      </div>
+
+                      @if (selectedLeague()?.inviteCode) {
+                        <div style="background: rgba(0,0,0,0.4); padding: 16px; border-radius: var(--radius-sm); border: 1px solid var(--line); min-width: 300px;">
+                          <span class="eyebrow" style="font-size: 11px; margin-bottom: 8px; color: var(--cyan);">LINK DE INVITACIÓN OFICIAL</span>
+                          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <input 
+                              type="text" 
+                              readonly 
+                              [value]="getInviteUrl(selectedLeague()?.inviteCode)" 
+                              style="font-size: 12px; font-family: 'JetBrains Mono', monospace; background: rgba(0,0,0,0.5); padding: 6px 10px;" />
+                          </div>
+                          <div style="display: flex; gap: 8px;">
+                            <button class="button small" (click)="copyInviteUrl(selectedLeague()?.inviteCode)">
+                              {{ copiedLink() ? '✓ Link Copiado' : '🔗 Copiar Link' }}
+                            </button>
+                            <button class="button small quiet" (click)="copyInviteCode(selectedLeague()?.inviteCode)">
+                              {{ copied() ? '✓ Código Copiado' : '📋 Código' }}
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    </div>
+
+                    <!-- PODIO TOP 3 DE LA LIGA -->
+                    @if (leagueLeaderboard().length >= 3) {
+                      <div class="podium-container">
+                        <div class="podium-col rank-2">
+                          <div class="podium-avatar">🥈</div>
+                          <div class="podium-user-name">{{ leagueLeaderboard()[1].displayName }}</div>
+                          <div class="podium-points">{{ leagueLeaderboard()[1].totalScore }} pts</div>
+                          <div class="podium-pedestal">2</div>
+                        </div>
+
+                        <div class="podium-col rank-1">
+                          <div style="font-size: 24px; margin-bottom: -10px;">👑</div>
+                          <div class="podium-avatar">🥇</div>
+                          <div class="podium-user-name">{{ leagueLeaderboard()[0].displayName }}</div>
+                          <div class="podium-points" style="color: var(--gold); font-size: 15px;">{{ leagueLeaderboard()[0].totalScore }} pts</div>
+                          <div class="podium-pedestal">1</div>
+                        </div>
+
+                        <div class="podium-col rank-3">
+                          <div class="podium-avatar">🥉</div>
+                          <div class="podium-user-name">{{ leagueLeaderboard()[2].displayName }}</div>
+                          <div class="podium-points">{{ leagueLeaderboard()[2].totalScore }} pts</div>
+                          <div class="podium-pedestal">3</div>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- TABLA DE PARTICIPANTES DE LA LIGA -->
+                    <h3 style="margin: 28px 0 16px; font-size: 18px;">Participantes de la Liga ({{ leagueLeaderboard().length }})</h3>
+                    @if (leagueLeaderboard().length > 0) {
+                      <table class="leaderboard-table">
+                        <thead>
+                          <tr>
+                            <th>Pos</th>
+                            <th>Jugador / Escudería</th>
+                            <th>Puntos Totales</th>
+                            <th>Pronósticos Enviados</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (entry of leagueLeaderboard(); track entry.userId) {
+                            <tr>
+                              <td>#{{ entry.rank }}</td>
+                              <td><strong style="color: #fff;">{{ entry.displayName }}</strong></td>
+                              <td style="font-family: 'JetBrains Mono', monospace; font-weight: 700; color: var(--cyan);">
+                                {{ entry.totalScore }} pts
+                              </td>
+                              <td>{{ entry.predictionsCount }} carreras</td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    } @else {
+                      <p class="empty">Aún no hay puntuaciones registradas en esta liga privada.</p>
+                    }
+                  </article>
+                }
+              } @else {
+                <div class="spotlight-card" style="text-align: center; padding: 48px 24px; margin-bottom: 32px;">
+                  <div style="font-size: 44px; margin-bottom: 12px;">🏁</div>
+                  <h2>Aún no pertenecés a ninguna liga privada</h2>
+                  <p class="lead" style="max-width: 520px; margin: 8px auto 24px;">
+                    Explorá ligas existentes, creá tu propia liga privada protegida con contraseña o ingresá con un link de invitación.
+                  </p>
+                  <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                    <button class="button" (click)="setLeaguesSubTab('create')">➕ Crear Nueva Liga</button>
+                    <button class="button quiet" (click)="setLeaguesSubTab('explore')">🔍 Explorar Ligas Privadas</button>
+                  </div>
+                </div>
+              }
+
+              <!-- FORMULARIOS RÁPIDOS: CREAR Y UNIRSE A LIGA -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; margin-top: 24px;">
+                <!-- CREAR LIGA -->
+                <div class="form-card">
+                  <h3>➕ Crear Nueva Liga Privada</h3>
+                  <form [formGroup]="createLeagueForm" (ngSubmit)="create()">
+                    <label class="field-label" for="league-name-quick">Nombre de la liga *</label>
+                    <input 
+                      id="league-name-quick" 
+                      formControlName="name" 
+                      placeholder="Ej: Gran Premio de Amigos" 
+                      style="margin: 8px 0 16px;" 
+                      required />
+
+                    <label class="field-label" for="league-pwd-quick">🔒 Contraseña de Acceso (opcional)</label>
+                    <input 
+                      id="league-pwd-quick" 
+                      type="password"
+                      formControlName="password" 
+                      placeholder="Opcional: protejé tu liga con contraseña" 
+                      style="margin: 8px 0 16px;" />
+
+                    <button class="button" type="submit" [disabled]="leagueNameControl.invalid || saving()">
+                      {{ saving() ? 'Creando liga en base de datos…' : '🏁 Crear Liga' }}
+                    </button>
+                  </form>
+                </div>
+
+                <!-- UNIRSE A LIGA -->
+                <div class="form-card">
+                  <h3>🔗 Unirse con Código o Link</h3>
+                  <label class="field-label" for="invite-input-quick">Link o Código de Invitación</label>
                   <input 
-                    id="league-name" 
-                    formControlName="name" 
-                    placeholder="Ej: Gran Premio de Amigos" 
-                    style="margin: 8px 0 16px;" 
-                    required />
+                    id="invite-input-quick" 
+                    [formControl]="inviteLinkInput" 
+                    placeholder="Ej: https://.../join/345c4e89... o 345c4e89-..." 
+                    style="margin: 8px 0 16px;" />
 
-                  <button class="button" type="submit" [disabled]="name.invalid || saving()">
-                    {{ saving() ? 'Creando liga…' : 'Crear Liga' }}
-                  </button>
-                </form>
-              </div>
+                  <label class="field-label" for="invite-pwd-quick">Contraseña (si la liga la requiere)</label>
+                  <input 
+                    id="invite-pwd-quick" 
+                    type="password"
+                    [formControl]="invitePasswordInput" 
+                    placeholder="Contraseña de acceso" 
+                    style="margin: 8px 0 16px;" />
 
-              <!-- UNIRSE A LIGA -->
-              <div class="form-card">
-                <h3>🔗 Unirse con Código de Invitación</h3>
-                <label class="field-label" for="invite-input">Pegar código de invitación</label>
-                <div style="display: flex; gap: 8px; margin-top: 8px;">
-                  <input id="invite-input" #inviteInput placeholder="Ej: 345c4e89-506f-4f9d-8cf5-4a8cb70858ee" />
-                  <button class="button quiet" type="button" (click)="join(inviteInput.value)">
-                    Unirme
+                  <button class="button quiet" type="button" (click)="joinByInvite()" [disabled]="inviteLinkInput.invalid || joiningInProgress()">
+                    🚀 Unirme a la Liga
                   </button>
                 </div>
               </div>
-            </div>
+            }
+
+            <!-- --------------------------------------- -->
+            <!-- SUB-TAB 2: EXPLORAR LIGAS PRIVADAS     -->
+            <!-- --------------------------------------- -->
+            @if (leaguesSubTab() === 'explore') {
+              <div class="form-card" style="margin-bottom: 28px;">
+                <h3>🔍 Buscar Ligas Privadas</h3>
+                <p class="muted" style="margin: 4px 0 16px;">Buscá ligas por nombre para sumarte a la competencia:</p>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                  <input 
+                    type="text" 
+                    [formControl]="searchInput" 
+                    placeholder="Ej: DACS, Amigos, Scuderia..." 
+                    (keyup.enter)="searchPrivateLeagues()"
+                    style="flex: 1; min-width: 240px;" />
+                  <button class="button" type="button" (click)="searchPrivateLeagues()" [disabled]="searchingLeagues()">
+                    {{ searchingLeagues() ? 'Buscando…' : 'Buscar Ligas' }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- MODAL / PROMPT PARA CONTRASEÑA DE LIGA -->
+              @if (joiningLeague()) {
+                <div class="spotlight-card" style="border: 2px solid var(--gold); margin-bottom: 24px; background: rgba(245, 176, 0, 0.05);">
+                  <h3 style="color: var(--gold); margin-top: 0;">🔒 Ingresar Contraseña para: {{ joiningLeague()?.name }}</h3>
+                  <p class="muted" style="margin: 4px 0 16px;">Esta liga privada está protegida con contraseña. Ingresá la clave provista por el administrador:</p>
+                  
+                  <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                    <input 
+                      type="password" 
+                      [formControl]="promptPasswordControl" 
+                      placeholder="Contraseña de la liga" 
+                      (keyup.enter)="confirmJoinWithPassword()"
+                      style="flex: 1; min-width: 220px;" />
+                    <button class="button" (click)="confirmJoinWithPassword()" [disabled]="joiningInProgress()">
+                      {{ joiningInProgress() ? 'Verificando…' : 'Confirmar y Unirme' }}
+                    </button>
+                    <button class="button quiet" (click)="cancelJoinPrompt()">Cancelar</button>
+                  </div>
+                  @if (joiningError()) {
+                    <p class="error-text" style="color: var(--red-bright); margin-top: 10px; font-weight: 600;">⚠️ {{ joiningError() }}</p>
+                  }
+                </div>
+              }
+
+              <!-- LISTADO DE LIGAS ENCONTRADAS -->
+              @if (discoveredLeagues().length > 0) {
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px;">
+                  @for (l of discoveredLeagues(); track l.id) {
+                    <div class="spotlight-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                      <div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                          <h3 style="margin: 0; font-size: 20px;">{{ l.name }}</h3>
+                          @if (l.hasPassword) {
+                            <span style="font-size: 11px; background: rgba(245, 176, 0, 0.15); color: var(--gold); border: 1px solid rgba(245, 176, 0, 0.3); padding: 2px 6px; border-radius: var(--radius-sm); white-space: nowrap;">
+                              🔒 Con Contraseña
+                            </span>
+                          } @else {
+                            <span style="font-size: 11px; background: rgba(16, 185, 129, 0.15); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 6px; border-radius: var(--radius-sm); white-space: nowrap;">
+                              🌐 Acceso Libre
+                            </span>
+                          }
+                        </div>
+                        @if (l.description) {
+                          <p class="muted" style="margin: 8px 0; font-size: 14px;">{{ l.description }}</p>
+                        }
+                        <div style="font-size: 13px; color: var(--text-dim); margin-top: 12px; display: flex; flex-direction: column; gap: 4px;">
+                          <span>👤 Creador: <strong style="color: var(--text-main);">{{ l.ownerName || 'Oficial' }}</strong></span>
+                          <span>👥 Participantes: <strong style="color: var(--cyan);">{{ l.memberCount || 1 }} corredores</strong></span>
+                        </div>
+                      </div>
+
+                      <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line);">
+                        @if (isUserMemberOf(l.id)) {
+                          <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: var(--green); font-weight: 600; padding: 6px 12px; border-radius: var(--radius-sm); display: inline-block;">
+                            ✓ Ya eres miembro
+                          </span>
+                        } @else {
+                          <button class="button small" (click)="promptJoin(l)" style="width: 100%;">
+                            {{ l.hasPassword ? '🔒 Unirse con Contraseña' : 'Unirse a la Liga' }}
+                          </button>
+                        }
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="spotlight-card" style="text-align: center; padding: 36px 20px;">
+                  <p class="lead" style="margin: 0;">No se encontraron ligas con ese criterio de búsqueda.</p>
+                  <button class="button quiet" (click)="searchPrivateLeagues('')" style="margin-top: 12px;">Ver todas las ligas</button>
+                </div>
+              }
+            }
+
+            <!-- --------------------------------------- -->
+            <!-- SUB-TAB 3: CREAR NUEVA LIGA CON CLAVE  -->
+            <!-- --------------------------------------- -->
+            @if (leaguesSubTab() === 'create') {
+              <div class="form-card" style="max-width: 640px; margin: 0 auto;">
+                <div style="margin-bottom: 20px;">
+                  <span class="round-badge">CREAR LIGA OFICIAL</span>
+                  <h3 style="font-size: 24px; margin-top: 8px;">➕ Crear Nueva Liga Privada</h3>
+                  <p class="muted" style="margin: 4px 0 0;">Configurá el nombre, la descripción y una contraseña de seguridad para tu liga:</p>
+                </div>
+
+                <form [formGroup]="createLeagueForm" (ngSubmit)="create()">
+                  <div style="margin-bottom: 16px;">
+                    <label class="field-label" for="league-name-input">Nombre de la liga *</label>
+                    <input 
+                      id="league-name-input" 
+                      formControlName="name" 
+                      placeholder="Ej: Apex Champions League 2026" 
+                      style="margin-top: 6px; width: 100%;" 
+                      required />
+                    @if (leagueNameControl.touched && leagueNameControl.invalid) {
+                      <span class="error-text" style="color: var(--red-bright); font-size: 12px; margin-top: 4px; display: block;">El nombre es obligatorio (hasta 100 caracteres).</span>
+                    }
+                  </div>
+
+                  <div style="margin-bottom: 16px;">
+                    <label class="field-label" for="league-desc-input">Descripción (opcional)</label>
+                    <input 
+                      id="league-desc-input" 
+                      formControlName="desc" 
+                      placeholder="Ej: Torneo privado de amigos de la oficina" 
+                      style="margin-top: 6px; width: 100%;" />
+                  </div>
+
+                  <div style="margin-bottom: 24px;">
+                    <label class="field-label" for="league-password-input">
+                      🔒 Contraseña de Acceso (opcional)
+                    </label>
+                    <input 
+                      id="league-password-input" 
+                      type="password" 
+                      formControlName="password" 
+                      placeholder="Establecé una clave para proteger el ingreso (ej: f1argentina)" 
+                      style="margin-top: 6px; width: 100%;" />
+                    <span class="muted" style="font-size: 12px; display: block; margin-top: 4px;">
+                      Si definís una contraseña, solo quienes conozcan la clave podrán unirse a tu liga.
+                    </span>
+                  </div>
+
+                  <button class="button" type="submit" [disabled]="createLeagueForm.invalid || saving()" style="width: 100%; padding: 14px;">
+                    {{ saving() ? 'Guardando liga en base de datos…' : '🏁 Crear Liga y Persistir en Base de Datos' }}
+                  </button>
+                </form>
+              </div>
+            }
+
+            <!-- --------------------------------------- -->
+            <!-- SUB-TAB 4: UNIRSE POR LINK O CLAVE     -->
+            <!-- --------------------------------------- -->
+            @if (leaguesSubTab() === 'join') {
+              <div class="form-card" style="max-width: 640px; margin: 0 auto;">
+                <div style="margin-bottom: 20px;">
+                  <span class="round-badge">ACCESO A LIGA PRIVADA</span>
+                  <h3 style="font-size: 24px; margin-top: 8px;">🔗 Unirse por Link de Invitación o Código</h3>
+                  <p class="muted" style="margin: 4px 0 0;">Pegá el link completo o el código de invitación que te compartió el administrador:</p>
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                  <label class="field-label" for="invite-url-input">Link completo o Código UUID *</label>
+                  <input 
+                    id="invite-url-input" 
+                    [formControl]="inviteLinkInput" 
+                    placeholder="Ej: https://dacs-nine.vercel.app/join/345c4e89... o 345c4e89-506f-4f9d..." 
+                    style="margin-top: 6px; width: 100%;" />
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                  <label class="field-label" for="invite-pwd-input">Contraseña de la Liga (si está protegida)</label>
+                  <input 
+                    id="invite-pwd-input" 
+                    type="password" 
+                    [formControl]="invitePasswordInput" 
+                    placeholder="Ingresá la clave de acceso si la liga la requiere" 
+                    style="margin-top: 6px; width: 100%;" />
+                </div>
+
+                <button class="button" type="button" (click)="joinByInvite()" [disabled]="inviteLinkInput.invalid || joiningInProgress()" style="width: 100%; padding: 14px;">
+                  {{ joiningInProgress() ? 'Verificando y uniéndote…' : '🚀 Unirme a la Liga' }}
+                </button>
+              </div>
+            }
           </section>
         }
 
@@ -676,16 +956,50 @@ type DashboardTab = 'prediction' | 'leagues' | 'leaderboard' | 'history';
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
+  private readonly route = inject(ActivatedRoute);
 
   readonly drivers: DriverOption[] = F1_DRIVERS;
   readonly activeTab = signal<DashboardTab>('prediction');
 
-  readonly name = new FormControl('', {
+  // Sub-navegación dentro de Ligas
+  readonly leaguesSubTab = signal<'my-leagues' | 'explore' | 'create' | 'join'>('my-leagues');
+
+  // Exploración y búsqueda de ligas privadas
+  readonly searchInput = new FormControl('');
+  readonly discoveredLeagues = signal<League[]>([]);
+  readonly searchingLeagues = signal(false);
+  readonly searchError = signal('');
+
+  // Unirse con modal de contraseña
+  readonly joiningLeague = signal<League | null>(null);
+  readonly promptPasswordControl = new FormControl('');
+  readonly joiningError = signal('');
+  readonly joiningInProgress = signal(false);
+
+  // Formulario Crear Liga con Contraseña
+  readonly leagueNameControl = new FormControl('', {
     nonNullable: true,
     validators: [Validators.required, Validators.maxLength(100), Validators.pattern(/\S/)],
   });
-  readonly form = new FormGroup({ name: this.name });
+  readonly leagueDescControl = new FormControl('', { nonNullable: true, validators: [Validators.maxLength(255)] });
+  readonly leaguePasswordControl = new FormControl('', { nonNullable: true, validators: [Validators.maxLength(100)] });
+  readonly createLeagueForm = new FormGroup({
+    name: this.leagueNameControl,
+    desc: this.leagueDescControl,
+    password: this.leaguePasswordControl,
+  });
 
+  // Formulario Unirse por Link o Clave
+  readonly inviteLinkInput = new FormControl('', { nonNullable: true, validators: [Validators.required] });
+  readonly invitePasswordInput = new FormControl('', { nonNullable: true });
+
+  // Mensajes de éxito y estado
+  readonly joinSuccess = signal('');
+  readonly createSuccess = signal('');
+  readonly copiedLink = signal(false);
+  readonly copied = signal(false);
+
+  // Formulario de predicciones
   readonly predForm = new FormGroup({
     p1: new FormControl('', [Validators.required]),
     p2: new FormControl('', [Validators.required]),
@@ -712,17 +1026,23 @@ export class DashboardComponent implements OnInit {
   readonly saving = signal(false);
   readonly savingPrediction = signal(false);
   readonly ready = signal(false);
-  readonly copied = signal(false);
 
   readonly error = signal('');
   readonly predictionError = signal('');
   readonly predictionSuccess = signal(false);
 
   ngOnInit() {
-    // 1. Cargar de inmediato los datos del paddock desde Jolpica y caché local (150ms)
     this.loadDashboardData();
 
-    // 2. En segundo plano, sincronizar perfil y ligas con el backend sin bloquear la pantalla
+    // Si el usuario ingresó por un link directo de invitación (/join/:inviteCode)
+    const inviteParam = this.route.snapshot.paramMap.get('inviteCode');
+    if (inviteParam) {
+      this.activeTab.set('leagues');
+      this.leaguesSubTab.set('join');
+      this.inviteLinkInput.setValue(inviteParam);
+    }
+
+    // Cargar perfil y ligas del usuario desde el backend
     this.api
       .profile()
       .pipe(
@@ -734,7 +1054,7 @@ export class DashboardComponent implements OnInit {
       .subscribe({
         next: (leagues) => {
           this.leagues.set(leagues);
-          if (leagues.length > 0) {
+          if (leagues.length > 0 && !this.selectedLeague()) {
             this.selectLeague(leagues[0]);
           }
         },
@@ -749,6 +1069,16 @@ export class DashboardComponent implements OnInit {
     }
   }
 
+  setLeaguesSubTab(subTab: 'my-leagues' | 'explore' | 'create' | 'join') {
+    this.leaguesSubTab.set(subTab);
+    this.error.set('');
+    this.joinSuccess.set('');
+    this.createSuccess.set('');
+    if (subTab === 'explore' && this.discoveredLeagues().length === 0) {
+      this.searchPrivateLeagues('');
+    }
+  }
+
   selectLeague(league: League) {
     this.selectedLeague.set(league);
     this.api.leagueLeaderboard(league.id).subscribe({
@@ -757,11 +1087,174 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  isUserMemberOf(leagueId: string): boolean {
+    return this.leagues().some(l => l.id === leagueId);
+  }
+
+  getInviteUrl(code?: string): string {
+    return code ? `${window.location.origin}/join/${code}` : '';
+  }
+
+  copyInviteUrl(code?: string) {
+    if (!code) return;
+    navigator.clipboard.writeText(this.getInviteUrl(code)).then(() => {
+      this.copiedLink.set(true);
+      setTimeout(() => this.copiedLink.set(false), 2000);
+    });
+  }
+
   copyInviteCode(code?: string) {
     if (!code) return;
     navigator.clipboard.writeText(code).then(() => {
       this.copied.set(true);
       setTimeout(() => this.copied.set(false), 2000);
+    });
+  }
+
+  searchPrivateLeagues(query?: string) {
+    this.searchingLeagues.set(true);
+    this.searchError.set('');
+    const term = query !== undefined ? query : this.searchInput.value?.trim();
+    this.api.searchLeagues(term).subscribe({
+      next: (list) => {
+        this.discoveredLeagues.set(list);
+        this.searchingLeagues.set(false);
+      },
+      error: () => {
+        this.discoveredLeagues.set([]);
+        this.searchingLeagues.set(false);
+        this.searchError.set('No se pudieron buscar las ligas. Intente nuevamente.');
+      }
+    });
+  }
+
+  promptJoin(league: League) {
+    if (!league.hasPassword) {
+      this.joinDirect(league);
+      return;
+    }
+    this.joiningLeague.set(league);
+    this.promptPasswordControl.reset();
+    this.joiningError.set('');
+  }
+
+  cancelJoinPrompt() {
+    this.joiningLeague.set(null);
+    this.promptPasswordControl.reset();
+    this.joiningError.set('');
+  }
+
+  confirmJoinWithPassword() {
+    const league = this.joiningLeague();
+    if (!league) return;
+    this.joiningInProgress.set(true);
+    this.joiningError.set('');
+
+    const pwd = this.promptPasswordControl.value?.trim() || '';
+    this.api.joinLeagueById(league.id, pwd).subscribe({
+      next: (updatedLeague) => {
+        this.joiningInProgress.set(false);
+        this.joiningLeague.set(null);
+        this.refreshUserLeagues(updatedLeague.id);
+        this.joinSuccess.set(`¡Te uniste con éxito a la liga "${updatedLeague.name}"!`);
+        this.leaguesSubTab.set('my-leagues');
+        setTimeout(() => this.joinSuccess.set(''), 5000);
+      },
+      error: (err) => {
+        this.joiningInProgress.set(false);
+        this.joiningError.set(err.error?.message || err.error?.description || 'Contraseña incorrecta o error al unirse.');
+      }
+    });
+  }
+
+  private joinDirect(league: League) {
+    this.api.joinLeagueById(league.id).subscribe({
+      next: (updatedLeague) => {
+        this.refreshUserLeagues(updatedLeague.id);
+        this.joinSuccess.set(`¡Te uniste con éxito a la liga "${updatedLeague.name}"!`);
+        this.leaguesSubTab.set('my-leagues');
+        setTimeout(() => this.joinSuccess.set(''), 5000);
+      },
+      error: (err) => {
+        this.error.set(err.error?.message || err.error?.description || 'No pudiste unirte a la liga.');
+      }
+    });
+  }
+
+  joinByInvite() {
+    let raw = this.inviteLinkInput.value?.trim() || '';
+    if (!raw) return;
+
+    // Acepta URLs completas (ej: https://.../join/UUID) o el UUID directamente
+    if (raw.includes('/join/')) {
+      raw = raw.substring(raw.lastIndexOf('/join/') + 6);
+    }
+    if (raw.includes('/')) {
+      raw = raw.substring(raw.lastIndexOf('/') + 1);
+    }
+    const inviteCode = raw.trim();
+
+    this.joiningInProgress.set(true);
+    this.error.set('');
+
+    const pwd = this.invitePasswordInput.value?.trim() || undefined;
+
+    this.api.joinLeague(inviteCode, pwd).subscribe({
+      next: (league) => {
+        this.joiningInProgress.set(false);
+        this.refreshUserLeagues(league.id);
+        this.inviteLinkInput.reset();
+        this.invitePasswordInput.reset();
+        this.joinSuccess.set(`¡Te uniste con éxito a la liga "${league.name}"!`);
+        this.leaguesSubTab.set('my-leagues');
+        setTimeout(() => this.joinSuccess.set(''), 5000);
+      },
+      error: (err) => {
+        this.joiningInProgress.set(false);
+        this.error.set(err.error?.message || err.error?.description || 'Código o link de invitación no válido o contraseña incorrecta.');
+      }
+    });
+  }
+
+  create() {
+    if (this.leagueNameControl.invalid || this.saving()) return;
+    this.saving.set(true);
+    this.error.set('');
+    this.createSuccess.set('');
+
+    const name = this.leagueNameControl.value.trim();
+    const desc = this.leagueDescControl.value.trim() || undefined;
+    const pwd = this.leaguePasswordControl.value.trim() || undefined;
+
+    const call$ = (desc || pwd) ? this.api.createLeague(name, desc, pwd) : this.api.createLeague(name);
+    call$.subscribe({
+      next: (league) => {
+        this.leagues.update((prev) => [league, ...prev]);
+        this.selectLeague(league);
+        this.createLeagueForm.reset();
+        this.saving.set(false);
+        this.createSuccess.set(`¡Liga "${league.name}" creada y guardada con éxito en la base de datos!`);
+        this.leaguesSubTab.set('my-leagues');
+        setTimeout(() => this.createSuccess.set(''), 5000);
+      },
+      error: (err) => {
+        this.saving.set(false);
+        this.error.set(err.error?.message || err.error?.description || 'No pudimos crear la liga en la base de datos. Intente nuevamente.');
+      },
+    });
+  }
+
+  private refreshUserLeagues(selectLeagueId?: string) {
+    this.api.leagues().subscribe({
+      next: (list) => {
+        this.leagues.set(list);
+        if (selectLeagueId) {
+          const found = list.find(l => l.id === selectLeagueId);
+          if (found) this.selectLeague(found);
+        } else if (list.length > 0 && !this.selectedLeague()) {
+          this.selectLeague(list[0]);
+        }
+      }
     });
   }
 
@@ -877,11 +1370,11 @@ export class DashboardComponent implements OnInit {
       podium: [val.p1!, val.p2!, val.p3!],
       polePositionDriverId: val.pole ? val.pole : null,
       duelDriverPick: val.duel ? val.duel : null,
-      safetyCarCount: val.safetyCars ?? 0,
+      safetyCars: val.safetyCars ?? 0,
       dnfCount: val.dnfs ?? 0,
     };
 
-    // Guardar en almacenamiento local
+    // Respaldo en almacenamiento local
     try {
       localStorage.setItem(`apexpredict_pred_${session.season}_${session.round}`, JSON.stringify(payload));
     } catch {}
@@ -890,8 +1383,13 @@ export class DashboardComponent implements OnInit {
       next: (res) => {
         this.savingPrediction.set(false);
         this.predictionSuccess.set(true);
+        this.predictionError.set('');
         this.currentPrediction.set(res);
         this.loadHistory();
+        this.api.globalLeaderboard().subscribe({ next: (lb) => this.leaderboard.set(lb) });
+        if (this.selectedLeague()) {
+          this.api.leagueLeaderboard(this.selectedLeague()!.id).subscribe({ next: (lb) => this.leagueLeaderboard.set(lb) });
+        }
       },
       error: (err) => {
         this.savingPrediction.set(false);
@@ -899,41 +1397,9 @@ export class DashboardComponent implements OnInit {
           this.isLocked.set(true);
           this.predictionError.set('Lock Time alcanzado: La sesión ha comenzado y se bloquearon los pronósticos.');
         } else {
-          // Confirmar guardado local
-          this.predictionSuccess.set(true);
-          this.predictionError.set('');
+          const msg = err.error?.message || err.error?.description || 'Error al persistir el pronóstico en la base de datos. Verifique su conexión.';
+          this.predictionError.set(msg);
         }
-      }
-    });
-  }
-
-  create() {
-    if (this.name.invalid || this.saving()) return;
-    this.saving.set(true);
-    this.error.set('');
-    this.api.createLeague(this.name.value.trim()).subscribe({
-      next: (league) => {
-        this.leagues.update((leagues) => [league, ...leagues]);
-        this.selectLeague(league);
-        this.name.reset();
-        this.saving.set(false);
-      },
-      error: () => {
-        this.saving.set(false);
-        this.error.set('No pudimos crear la liga. Intenta nuevamente.');
-      },
-    });
-  }
-
-  join(code: string) {
-    if (!code || !code.trim()) return;
-    this.api.joinLeague(code.trim()).subscribe({
-      next: (league) => {
-        this.leagues.update((leagues) => [league, ...leagues]);
-        this.selectLeague(league);
-      },
-      error: () => {
-        this.error.set('Código de invitación no válido o ya eres miembro de esa liga.');
       }
     });
   }

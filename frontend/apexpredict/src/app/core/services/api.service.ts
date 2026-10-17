@@ -83,20 +83,31 @@ export class ApiService {
     return this.http.put<Profile>(`${this.base}/me`, {});
   }
 
+  private readonly ROUND_18_UUID = 'f0c23d70-f7ca-411d-b827-7a9d45037100';
+
   leagues() {
     return this.http.get<League[]>(`${this.base}/leagues`);
   }
 
-  createLeague(name: string, description?: string) {
-    return this.http.post<League>(`${this.base}/leagues`, { name, description });
+  searchLeagues(query?: string): Observable<League[]> {
+    const q = query ? `?query=${encodeURIComponent(query)}` : '';
+    return this.http.get<League[]>(`${this.base}/leagues/search${q}`);
   }
 
-  editLeague(id: string, name: string, description?: string) {
-    return this.http.put<League>(`${this.base}/leagues/${id}`, { name, description });
+  createLeague(name: string, description?: string, password?: string) {
+    return this.http.post<League>(`${this.base}/leagues`, { name, description, password });
   }
 
-  joinLeague(inviteCode: string) {
-    return this.http.post<League>(`${this.base}/leagues/join/${inviteCode}`, {});
+  editLeague(id: string, name: string, description?: string, password?: string) {
+    return this.http.put<League>(`${this.base}/leagues/${id}`, { name, description, password });
+  }
+
+  joinLeagueById(id: string, password?: string) {
+    return this.http.post<League>(`${this.base}/leagues/${id}/join`, { password });
+  }
+
+  joinLeague(inviteCode: string, password?: string) {
+    return this.http.post<League>(`${this.base}/leagues/join/${inviteCode}`, { password });
   }
 
   globalLeaderboard() {
@@ -126,11 +137,13 @@ export class ApiService {
     const fp3 = race.ThirdPractice ? `${race.ThirdPractice.date}T${race.ThirdPractice.time}` : (race.Sprint ? `${race.Sprint.date}T${race.Sprint.time}` : null);
     const qualifying = race.Qualifying ? `${race.Qualifying.date}T${race.Qualifying.time}` : null;
     const startsAt = race.time ? `${race.date}T${race.time}` : `${race.date}T14:00:00Z`;
+    const roundNum = parseInt(race.round, 10);
+    const id = roundNum === 18 ? this.ROUND_18_UUID : `jolpica-${race.season}-${race.round}`;
 
     return {
-      id: `jolpica-${race.season}-${race.round}`,
+      id,
       season: parseInt(race.season, 10),
-      round: parseInt(race.round, 10),
+      round: roundNum,
       name: race.raceName,
       circuit: race.Circuit?.circuitName || 'Circuit of the Americas',
       type: 'RACE',

@@ -70,9 +70,23 @@ public class PredictionController {
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PredictionService.PredictionDetailView getPredictionForSession(
         @AuthenticationPrincipal Jwt jwt,
-        @PathVariable UUID sessionId
+        @PathVariable String sessionId
     ) {
+        UUID uuid = null;
+        try {
+            uuid = UUID.fromString(sessionId);
+        } catch (Exception ignored) {}
+        if (uuid != null) {
+            return predictionService.getUserPrediction(jwt.getIssuer().toString(), jwt.getSubject(), uuid);
+        }
         return predictionService.getUserPrediction(jwt.getIssuer().toString(), jwt.getSubject(), sessionId);
+    }
+
+    public PredictionService.PredictionDetailView getPredictionForSession(
+        Jwt jwt,
+        UUID sessionId
+    ) {
+        return getPredictionForSession(jwt, sessionId.toString());
     }
 
     /**
@@ -85,22 +99,28 @@ public class PredictionController {
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PredictionService.PredictionDetailView submitPrediction(
         @AuthenticationPrincipal Jwt jwt,
-        @PathVariable UUID sessionId,
+        @PathVariable String sessionId,
         @Valid @RequestBody SubmitPredictionDto body
     ) {
         try {
-            return predictionService.saveOrUpdatePrediction(
-                jwt.getIssuer().toString(),
-                jwt.getSubject(),
-                sessionId,
-                new PredictionService.SubmitPredictionRequest(
-                    body.podium(),
-                    body.polePositionDriverId(),
-                    body.duelDriverPick(),
-                    body.safetyCarCount(),
-                    body.dnfCount()
-                )
+            UUID uuid = null;
+            try {
+                uuid = UUID.fromString(sessionId);
+            } catch (Exception ignored) {}
+
+            var req = new PredictionService.SubmitPredictionRequest(
+                body.podium(),
+                body.polePositionDriverId(),
+                body.duelDriverPick(),
+                body.safetyCarCount(),
+                body.dnfCount()
             );
+
+            if (uuid != null) {
+                return predictionService.saveOrUpdatePrediction(jwt.getIssuer().toString(), jwt.getSubject(), uuid, req);
+            } else {
+                return predictionService.saveOrUpdatePrediction(jwt.getIssuer().toString(), jwt.getSubject(), sessionId, req);
+            }
         } catch (IllegalStateException ex) {
             // Error de negocio: Lock Time superado o perfil no creado
             throw new ResponseStatusException(HttpStatus.LOCKED, ex.getMessage(), ex);
@@ -108,6 +128,14 @@ public class PredictionController {
             // Error de validación de datos
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }
+    }
+
+    public PredictionService.PredictionDetailView submitPrediction(
+        Jwt jwt,
+        UUID sessionId,
+        SubmitPredictionDto body
+    ) {
+        return submitPrediction(jwt, sessionId.toString(), body);
     }
 
     /**

@@ -12,4 +12,5 @@ public interface LeagueMemberRepository extends JpaRepository<LeagueMember, UUID
     Optional<LeagueMember> findByLeagueAndUser(League league, User user);
     boolean existsByLeagueAndUser(League league, User user);
     List<LeagueMember> findByLeague(League league);
+    long countByLeague(League league);
 }

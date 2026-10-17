@@ -14,6 +14,13 @@ export const routes: Routes = [
       import('./features/dashboard-view/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
+    path: 'join/:inviteCode',
+    title: 'Unirse a Liga · ApexPredict',
+    canActivate: [requireRole('player', 'admin')],
+    loadComponent: () =>
+      import('./features/dashboard-view/dashboard.component').then((m) => m.DashboardComponent),
+  },
+  {
     path: 'admin',
     title: 'Administracion · ApexPredict',
     canActivate: [requireRole('admin')],

@@ -22,6 +22,10 @@ export interface League {
   description?: string | null;
   inviteCode?: string;
   ownerId?: string;
+  ownerName?: string;
+  memberCount?: number;
+  hasPassword?: boolean;
+  isMember?: boolean;
 }
 
 export interface Finish {

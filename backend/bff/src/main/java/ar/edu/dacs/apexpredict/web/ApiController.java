@@ -65,6 +65,12 @@ public class ApiController {
         return domainClient.leagues();
     }
 
+    @GetMapping("/leagues/search")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public List<LeagueView> searchLeagues(@RequestParam(value = "query", required = false) String query) {
+        return domainClient.searchLeagues(query);
+    }
+
     @PostMapping("/leagues")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('player', 'admin')")
@@ -78,10 +84,16 @@ public class ApiController {
         return domainClient.editLeague(id, request);
     }
 
+    @PostMapping("/leagues/{id}/join")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public LeagueView joinLeagueById(@PathVariable UUID id, @RequestBody(required = false) JoinLeagueRequest request) {
+        return domainClient.joinLeagueById(id, request);
+    }
+
     @PostMapping("/leagues/join/{inviteCode}")
     @PreAuthorize("hasAnyRole('player', 'admin')")
-    public LeagueView joinLeague(@PathVariable UUID inviteCode) {
-        return domainClient.joinLeague(inviteCode);
+    public LeagueView joinLeague(@PathVariable UUID inviteCode, @RequestBody(required = false) JoinLeagueRequest request) {
+        return domainClient.joinLeague(inviteCode, request);
     }
 
     @GetMapping("/leaderboard/global")
@@ -116,14 +128,14 @@ public class ApiController {
 
     @GetMapping("/predictions/session/{sessionId}")
     @PreAuthorize("hasAnyRole('player', 'admin')")
-    public PredictionDetail predictionForSession(@PathVariable UUID sessionId) {
+    public PredictionDetail predictionForSession(@PathVariable String sessionId) {
         return domainClient.predictionForSession(sessionId);
     }
 
     @PostMapping("/predictions/session/{sessionId}")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PredictionDetail submitPrediction(
-        @PathVariable UUID sessionId,
+        @PathVariable String sessionId,
         @Valid @RequestBody SubmitPrediction request
     ) {
         return domainClient.submitPrediction(sessionId, request);

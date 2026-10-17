@@ -23,14 +23,20 @@ public interface DomainClient {
     @GetMapping("/leagues")
     List<LeagueView> leagues();
 
+    @GetMapping("/leagues/search")
+    List<LeagueView> searchLeagues(@RequestParam(value = "query", required = false) String query);
+
     @PostMapping("/leagues")
     LeagueView createLeague(@RequestBody CreateLeague request);
 
     @PutMapping("/leagues/{id}")
     LeagueView editLeague(@PathVariable("id") UUID id, @RequestBody EditLeague request);
 
+    @PostMapping("/leagues/{id}/join")
+    LeagueView joinLeagueById(@PathVariable("id") UUID id, @RequestBody(required = false) JoinLeagueRequest request);
+
     @PostMapping("/leagues/join/{inviteCode}")
-    LeagueView joinLeague(@PathVariable("inviteCode") UUID inviteCode);
+    LeagueView joinLeague(@PathVariable("inviteCode") UUID inviteCode, @RequestBody(required = false) JoinLeagueRequest request);
 
     @GetMapping("/leaderboard/global")
     List<LeaderboardEntry> globalLeaderboard();
@@ -48,11 +54,11 @@ public interface DomainClient {
     List<PredictionHistoryItem> predictionHistory();
 
     @GetMapping("/predictions/session/{sessionId}")
-    PredictionDetail predictionForSession(@PathVariable("sessionId") UUID sessionId);
+    PredictionDetail predictionForSession(@PathVariable("sessionId") String sessionId);
 
     @PostMapping("/predictions/session/{sessionId}")
     PredictionDetail submitPrediction(
-        @PathVariable("sessionId") UUID sessionId,
+        @PathVariable("sessionId") String sessionId,
         @RequestBody SubmitPrediction request
     );
 

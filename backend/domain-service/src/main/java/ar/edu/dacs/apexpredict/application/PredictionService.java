@@ -71,9 +71,57 @@ public class PredictionService {
      * Consulta el pronóstico del usuario para una sesión, indicando el estado del Lock Time.
      */
     @Transactional(readOnly = true)
+    public Session resolveSession(String sessionIdentifier) {
+        if (sessionIdentifier == null || sessionIdentifier.isBlank()) {
+            return null;
+        }
+        try {
+            UUID uuid = UUID.fromString(sessionIdentifier.trim());
+            return sessions.findById(uuid).orElse(null);
+        } catch (IllegalArgumentException ignored) {}
+
+        if ("next".equalsIgnoreCase(sessionIdentifier) || "current".equalsIgnoreCase(sessionIdentifier)) {
+            return sessions.findFirstByStartsAtAfterOrderByStartsAtAsc(Instant.now()).orElse(null);
+        }
+
+        String clean = sessionIdentifier.trim().toLowerCase().replace("jolpica-", "");
+        if (clean.contains("-")) {
+            String[] parts = clean.split("-");
+            if (parts.length >= 2) {
+                try {
+                    int season = Integer.parseInt(parts[0]);
+                    int round = Integer.parseInt(parts[1]);
+                    return sessions.findBySeasonAndRoundAndType(season, round, Session.Type.RACE).orElse(null);
+                } catch (NumberFormatException ignored) {}
+            }
+        }
+        return null;
+    }
+
+    private User getOrCreateUser(String issuer, String subject) {
+        return users.findByIssuerAndSubject(issuer, subject)
+            .orElseGet(() -> {
+                UUID newId = UUID.randomUUID();
+                users.upsert(newId, issuer, subject, subject, null);
+                return users.findByIssuerAndSubject(issuer, subject).orElseThrow();
+            });
+    }
+
+    @Transactional(readOnly = true)
+    public PredictionDetailView getUserPrediction(String issuer, String subject, String sessionIdentifier) {
+        Session session = resolveSession(sessionIdentifier);
+        if (session == null) {
+            throw new IllegalArgumentException("Sesión no encontrada: " + sessionIdentifier);
+        }
+        return getUserPrediction(issuer, subject, session.getId());
+    }
+
+    /**
+     * Consulta el pronóstico del usuario para una sesión, indicando el estado del Lock Time.
+     */
+    @Transactional(readOnly = true)
     public PredictionDetailView getUserPrediction(String issuer, String subject, UUID sessionId) {
-        User user = users.findByIssuerAndSubject(issuer, subject)
-            .orElseThrow(() -> new IllegalStateException("Perfil no inicializado."));
+        User user = getOrCreateUser(issuer, subject);
         Session session = sessions.findById(sessionId)
             .orElseThrow(() -> new IllegalArgumentException("Sesión no encontrada: " + sessionId));
 
@@ -121,6 +169,20 @@ public class PredictionService {
             ));
     }
 
+    @Transactional
+    public PredictionDetailView saveOrUpdatePrediction(
+        String issuer,
+        String subject,
+        String sessionIdentifier,
+        SubmitPredictionRequest request
+    ) {
+        Session session = resolveSession(sessionIdentifier);
+        if (session == null) {
+            throw new IllegalArgumentException("Sesión no encontrada: " + sessionIdentifier);
+        }
+        return saveOrUpdatePrediction(issuer, subject, session.getId(), request);
+    }
+
     /**
      * Carga o edita la predicción del usuario, validando estrictamente el "Lock Time".
      */
@@ -131,8 +193,7 @@ public class PredictionService {
         UUID sessionId,
         SubmitPredictionRequest request
     ) {
-        User user = users.findByIssuerAndSubject(issuer, subject)
-            .orElseThrow(() -> new IllegalStateException("Primero inicializa tu perfil con PUT /me."));
+        User user = getOrCreateUser(issuer, subject);
         Session session = sessions.findById(sessionId)
             .orElseThrow(() -> new IllegalArgumentException("Sesión no encontrada: " + sessionId));
 

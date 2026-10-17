@@ -25,6 +25,32 @@ public class PlayerService {
         this.predictions = predictions;
     }
 
+    private User getOrCreateUser(String issuer, String subject) {
+        return users.findByIssuerAndSubject(issuer, subject)
+            .orElseGet(() -> {
+                UUID newId = UUID.randomUUID();
+                users.upsert(newId, issuer, subject, subject, null);
+                return users.findByIssuerAndSubject(issuer, subject).orElseThrow();
+            });
+    }
+
+    private LeagueView toLeagueView(League l, User currentUser, Boolean explicitIsMember) {
+        boolean isMember = explicitIsMember != null ? explicitIsMember : (currentUser != null && members.existsByLeagueAndUser(l, currentUser));
+        long count = members.countByLeague(l);
+        String ownerName = l.getOwner() != null ? l.getOwner().getDisplayName() : "Desconocido";
+        return new LeagueView(
+            l.getId(),
+            l.getName(),
+            l.getDescription(),
+            l.getInviteCode(),
+            l.getOwner().getId(),
+            ownerName,
+            count,
+            l.hasPassword(),
+            isMember
+        );
+    }
+
     @Transactional
     public Profile provision(String issuer, String subject, String name, String email) {
         users.upsert(UUID.randomUUID(), issuer, subject, name, email);
@@ -34,56 +60,102 @@ public class PlayerService {
 
     @Transactional(readOnly = true)
     public List<LeagueView> leagues(String issuer, String subject) {
+        User user = users.findByIssuerAndSubject(issuer, subject).orElse(null);
         return leagues.findForUser(issuer, subject).stream()
-            .map(l -> new LeagueView(l.getId(), l.getName(), l.getDescription(), l.getInviteCode(), l.getOwner().getId()))
+            .map(l -> toLeagueView(l, user, true))
+            .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<LeagueView> searchLeagues(String issuer, String subject, String query) {
+        User user = users.findByIssuerAndSubject(issuer, subject).orElse(null);
+        return leagues.searchLeagues(query).stream()
+            .map(l -> toLeagueView(l, user, null))
             .toList();
     }
 
     @Transactional
-    public LeagueView createLeague(String issuer, String subject, String name, String description) {
-        var user = users.findByIssuerAndSubject(issuer, subject)
-            .orElseThrow(() -> new IllegalStateException("Primero inicializa tu perfil."));
-        var league = leagues.save(new League(name.strip(), description, user));
+    public LeagueView createLeague(String issuer, String subject, String name, String description, String password) {
+        var user = getOrCreateUser(issuer, subject);
+        var league = leagues.save(new League(name.strip(), description, password, user));
         members.save(new LeagueMember(league, user, LeagueMember.Role.OWNER));
-        return new LeagueView(league.getId(), league.getName(), league.getDescription(), league.getInviteCode(), user.getId());
+        return toLeagueView(league, user, true);
+    }
+
+    @Transactional
+    public LeagueView createLeague(String issuer, String subject, String name, String description) {
+        return createLeague(issuer, subject, name, description, null);
     }
 
     @Transactional
     public LeagueView createLeague(String issuer, String subject, String name) {
-        return createLeague(issuer, subject, name, null);
+        return createLeague(issuer, subject, name, null, null);
     }
 
     /**
-     * Permite editar una liga privada existente (nombre y descripción).
+     * Permite editar una liga privada existente (nombre, descripción y contraseña).
      * Solo el propietario tiene autorización para modificarla.
      */
     @Transactional
-    public LeagueView editLeague(String issuer, String subject, UUID leagueId, String newName, String newDescription) {
-        var user = users.findByIssuerAndSubject(issuer, subject)
-            .orElseThrow(() -> new IllegalStateException("Perfil no inicializado."));
+    public LeagueView editLeague(String issuer, String subject, UUID leagueId, String newName, String newDescription, String newPassword) {
+        var user = getOrCreateUser(issuer, subject);
         var league = leagues.findById(leagueId)
             .orElseThrow(() -> new IllegalArgumentException("Liga no encontrada: " + leagueId));
 
-        league.update(newName, newDescription, user);
-        return new LeagueView(league.getId(), league.getName(), league.getDescription(), league.getInviteCode(), league.getOwner().getId());
+        league.update(newName, newDescription, newPassword, user);
+        return toLeagueView(league, user, true);
+    }
+
+    @Transactional
+    public LeagueView editLeague(String issuer, String subject, UUID leagueId, String newName, String newDescription) {
+        return editLeague(issuer, subject, leagueId, newName, newDescription, null);
     }
 
     /**
-     * Permite a un usuario unirse a una liga privada mediante un código/link de invitación.
+     * Permite a un usuario unirse a una liga privada mediante su ID y contraseña (si la tiene).
      */
     @Transactional
-    public LeagueView joinLeagueByInviteCode(String issuer, String subject, UUID inviteCode) {
-        var user = users.findByIssuerAndSubject(issuer, subject)
-            .orElseThrow(() -> new IllegalStateException("Primero inicializa tu perfil."));
-        var league = leagues.findByInviteCode(inviteCode)
-            .orElseThrow(() -> new IllegalArgumentException("Código de invitación inválido: " + inviteCode));
+    public LeagueView joinLeague(String issuer, String subject, UUID leagueId, String password) {
+        var user = getOrCreateUser(issuer, subject);
+        var league = leagues.findById(leagueId)
+            .orElseThrow(() -> new IllegalArgumentException("Liga no encontrada: " + leagueId));
+
+        if (!league.verifyPassword(password)) {
+            throw new IllegalArgumentException("Contraseña de la liga incorrecta.");
+        }
 
         boolean alreadyMember = members.existsByLeagueAndUser(league, user);
         if (!alreadyMember) {
             members.save(new LeagueMember(league, user, LeagueMember.Role.MEMBER));
         }
 
-        return new LeagueView(league.getId(), league.getName(), league.getDescription(), league.getInviteCode(), league.getOwner().getId());
+        return toLeagueView(league, user, true);
+    }
+
+    /**
+     * Permite a un usuario unirse a una liga privada mediante un código/link de invitación.
+     */
+    @Transactional
+    public LeagueView joinLeagueByInviteCode(String issuer, String subject, UUID inviteCode, String password) {
+        var user = getOrCreateUser(issuer, subject);
+        var league = leagues.findByInviteCode(inviteCode)
+            .orElseThrow(() -> new IllegalArgumentException("Código de invitación inválido: " + inviteCode));
+
+        if (password != null && !password.isBlank() && !league.verifyPassword(password)) {
+            throw new IllegalArgumentException("Contraseña de la liga incorrecta.");
+        }
+
+        boolean alreadyMember = members.existsByLeagueAndUser(league, user);
+        if (!alreadyMember) {
+            members.save(new LeagueMember(league, user, LeagueMember.Role.MEMBER));
+        }
+
+        return toLeagueView(league, user, true);
+    }
+
+    @Transactional
+    public LeagueView joinLeagueByInviteCode(String issuer, String subject, UUID inviteCode) {
+        return joinLeagueByInviteCode(issuer, subject, inviteCode, null);
     }
 
     /**
@@ -130,6 +202,22 @@ public class PlayerService {
     }
 
     public record Profile(UUID id, String displayName, String email) {}
-    public record LeagueView(UUID id, String name, String description, UUID inviteCode, UUID ownerId) {}
+
+    public record LeagueView(
+        UUID id,
+        String name,
+        String description,
+        UUID inviteCode,
+        UUID ownerId,
+        String ownerName,
+        long memberCount,
+        boolean hasPassword,
+        boolean isMember
+    ) {
+        public LeagueView(UUID id, String name, String description, UUID inviteCode, UUID ownerId) {
+            this(id, name, description, inviteCode, ownerId, null, 1, false, true);
+        }
+    }
+
     public record LeaderboardEntry(int rank, UUID userId, String displayName, long totalScore, long predictionsCount) {}
 }
