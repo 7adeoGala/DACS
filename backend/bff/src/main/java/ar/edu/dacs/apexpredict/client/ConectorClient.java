@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 @FeignClient(
     name = "conectorClient",
-    url = "${feign.client.config.conectorClient.url}"
+    url = "${F1_CONNECTOR_URL:https://dacs-1-v4ik.onrender.com/conector}"
 )
 public interface ConectorClient {
 

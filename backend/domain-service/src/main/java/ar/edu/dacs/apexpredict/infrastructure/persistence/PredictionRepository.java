@@ -18,13 +18,13 @@ public interface PredictionRepository extends JpaRepository<Prediction, UUID> {
     List<Prediction> findBySessionId(UUID sessionId);
     boolean existsByUserIdAndSessionId(UUID userId, UUID sessionId);
 
-    // Leaderboard global acumulado en tiempo real
+    // Leaderboard global acumulado en tiempo real de todos los usuarios registrados
     @Query("""
-        SELECT p.user.id as userId, p.user.displayName as displayName, COALESCE(SUM(p.score), 0) as totalScore, COUNT(p.id) as predictionsCount
-        FROM Prediction p
-        WHERE p.score IS NOT NULL AND p.user IS NOT NULL
-        GROUP BY p.user.id, p.user.displayName
-        ORDER BY totalScore DESC, p.user.displayName ASC
+        SELECT u.id as userId, u.displayName as displayName, COALESCE(SUM(p.score), 0) as totalScore, COUNT(p.id) as predictionsCount
+        FROM User u
+        LEFT JOIN Prediction p ON p.user = u
+        GROUP BY u.id, u.displayName
+        ORDER BY totalScore DESC, u.displayName ASC
     """)
     List<GlobalLeaderboardRow> getGlobalLeaderboard();
 
@@ -32,7 +32,7 @@ public interface PredictionRepository extends JpaRepository<Prediction, UUID> {
     @Query("""
         SELECT m.user.id as userId, m.user.displayName as displayName, COALESCE(SUM(p.score), 0) as totalScore, COUNT(p.id) as predictionsCount
         FROM LeagueMember m
-        LEFT JOIN Prediction p ON p.user = m.user AND p.score IS NOT NULL
+        LEFT JOIN Prediction p ON p.user = m.user
         WHERE m.league.id = :leagueId
         GROUP BY m.user.id, m.user.displayName
         ORDER BY totalScore DESC, m.user.displayName ASC

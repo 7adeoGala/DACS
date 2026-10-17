@@ -1067,6 +1067,12 @@ export class DashboardComponent implements OnInit {
     if (tab === 'history') {
       this.loadHistory();
     }
+    if (tab === 'leaderboard') {
+      this.api.globalLeaderboard().subscribe({
+        next: (lb) => this.leaderboard.set(lb),
+        error: () => {}
+      });
+    }
   }
 
   setLeaguesSubTab(subTab: 'my-leagues' | 'explore' | 'create' | 'join') {

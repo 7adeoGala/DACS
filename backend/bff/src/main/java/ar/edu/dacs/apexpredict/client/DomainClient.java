@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @FeignClient(
     name = "domainClient",
-    url = "${feign.client.config.domainClient.url}",
+    url = "${DOMAIN_SERVICE_URL:https://dacs-pmkx.onrender.com/backend}",
     configuration = DomainFeignConfig.class
 )
 public interface DomainClient {

@@ -22,10 +22,11 @@ public class ApiExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleFeign(FeignException ex) {
         int status = ex.status();
         if (status <= 0 || status >= 500 || ex instanceof RetryableException) {
+            String detail = ex.getMessage();
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
                 "status", 502,
                 "code", "bff_502",
-                "description", "El servicio dependiente no esta disponible. Intenta nuevamente.",
+                "description", "El servicio dependiente no esta disponible: " + (detail != null ? detail : "error de conexion"),
                 "message", "Bad Gateway"
             ));
         }
