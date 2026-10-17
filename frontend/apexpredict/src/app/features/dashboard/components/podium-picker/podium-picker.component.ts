@@ -33,6 +33,9 @@ export const F1_DRIVERS: F1Driver[] = [
   { id: 'ocon', name: 'Esteban Ocon', code: 'OCO', number: 31, team: 'Haas', teamColor: '#B6BABD' }
 ];
 
+import { DriverPickerModalComponent } from '../../../../shared/components/driver-picker-modal/driver-picker-modal.component';
+import { PodiumSlot } from '../../../../core/models/f1-drivers.model';
+
 export interface PodiumSelection {
   p1: string;
   p2: string;
@@ -43,7 +46,7 @@ export interface PodiumSelection {
 @Component({
   selector: 'app-podium-picker',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, DriverPickerModalComponent],
   templateUrl: './podium-picker.component.html',
   styleUrls: ['./podium-picker.component.css']
 })
@@ -134,6 +137,10 @@ export class PodiumPickerComponent {
     this.p1DriverId.set('verstappen');
     this.p2DriverId.set('norris');
     this.p3DriverId.set('leclerc');
+  }
+
+  handleModalDriverSelected(event: { slot: PodiumSlot; driverId: string }) {
+    this.selectDriver(event.driverId);
   }
 
   save() {

@@ -124,72 +124,12 @@
 <!-- ======================================================== -->
 <!-- MODAL FLOTANTE DE SELECCIÓN DE PILOTO                     -->
 <!-- ======================================================== -->
-@if (isModalOpen()) {
-  <div class="modal-backdrop" (click)="closeModal()">
-    <div class="modal-dialog" (click)="$event.stopPropagation()">
-      
-      <div class="modal-header">
-        <div>
-          <span class="modal-tag">SELECCIONAR PILOTO F1</span>
-          <h4 class="modal-title">{{ activeSlotTitle() }}</h4>
-        </div>
-        <button type="button" class="modal-close-btn" (click)="closeModal()">✕</button>
-      </div>
+<app-driver-picker-modal
+  [isOpen]="isModalOpen()"
+  [currentSlot]="activeSlot()"
+  [p1DriverId]="p1DriverId()"
+  [p2DriverId]="p2DriverId()"
+  [p3DriverId]="p3DriverId()"
+  (onClose)="closeModal()"
+  (onDriverSelected)="handleModalDriverSelected($event)" />
 
-      <!-- BUSCADOR INTERACTIVO -->
-      <div class="modal-search-box">
-        <span class="search-icon">🔍</span>
-        <input 
-          type="text" 
-          class="search-input" 
-          placeholder="Buscar por piloto, escudería o dorsal..."
-          [ngModel]="searchFilter()"
-          (ngModelChange)="searchFilter.set($event)"
-          autofocus />
-      </div>
-
-      <!-- LISTA DE PILOTOS CON SCROLL -->
-      <div class="modal-driver-list">
-        @for (driver of filteredDrivers(); track driver.id) {
-          <div class="modal-driver-row"
-               [class.is-selected-p1]="p1DriverId() === driver.id"
-               [class.is-selected-p2]="p2DriverId() === driver.id"
-               [class.is-selected-p3]="p3DriverId() === driver.id"
-               [style.--driver-color]="driver.teamColor"
-               (click)="selectDriver(driver.id)">
-            
-            <div class="mdr-left">
-              <span class="mdr-strip" [style.background]="driver.teamColor"></span>
-              <div class="mdr-info">
-                <span class="mdr-name">{{ driver.name }}</span>
-                <span class="mdr-team">{{ driver.team }}</span>
-              </div>
-            </div>
-
-            <div class="mdr-right">
-              @if (p1DriverId() === driver.id) {
-                <span class="current-badge gold">En P1 🥇</span>
-              } @else if (p2DriverId() === driver.id) {
-                <span class="current-badge silver">En P2 🥈</span>
-              } @else if (p3DriverId() === driver.id) {
-                <span class="current-badge bronze">En P3 🥉</span>
-              }
-              <span class="mdr-code">{{ driver.code }}</span>
-              <span class="mdr-number">#{{ driver.number }}</span>
-            </div>
-
-          </div>
-        } @empty {
-          <div class="empty-search">
-            No se encontró ningún piloto con ese criterio.
-          </div>
-        }
-      </div>
-
-      <div class="modal-footer-hint">
-        💡 <em>Si eliges un piloto que ya estaba en otra posición, se intercambiarán automáticamente.</em>
-      </div>
-
-    </div>
-  </div>
-}

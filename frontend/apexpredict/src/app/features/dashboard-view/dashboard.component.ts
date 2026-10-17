@@ -15,11 +15,13 @@ import {
   JolpicaConstructorStanding
 } from '../../core/models/api.models';
 import { PodiumPickerComponent, PodiumSelection } from './components/podium-picker/podium-picker.component';
+import { DriverPickerModalComponent } from '../../shared/components/driver-picker-modal/driver-picker-modal.component';
+import { PodiumSlot } from '../../core/models/f1-drivers.model';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, PodiumPickerComponent],
+  imports: [CommonModule, FormsModule, DatePipe, PodiumPickerComponent, DriverPickerModalComponent],
   template: `
     <div class="dashboard-page">
 
@@ -814,76 +816,18 @@ import { PodiumPickerComponent, PodiumSelection } from './components/podium-pick
       }
 
       <!-- ========================================== -->
-      <!-- MODAL SELECTOR DE PILOTOS (MISMO TEMPLATE) -->
+      <!-- MODAL SELECTOR DE PILOTOS MODULAR          -->
       <!-- ========================================== -->
-      @if (isPickerOpen()) {
-        <div class="driver-picker-backdrop" (click)="closeDriverPicker()">
-          <div class="driver-picker-modal" (click)="$event.stopPropagation()">
-            <div class="picker-header">
-              <div>
-                <h3 class="picker-title">{{ getPickerTitle() }}</h3>
-                <p class="picker-subtitle">
-                  Elegí el piloto. Si ya fue asignado a otro puesto del podio, se intercambiarán automáticamente.
-                </p>
-              </div>
-              <button type="button" class="picker-close-btn" (click)="closeDriverPicker()" aria-label="Cerrar">✕</button>
-            </div>
+      <app-driver-picker-modal
+        [isOpen]="isPickerOpen()"
+        [currentSlot]="pickerSlot()"
+        [p1DriverId]="p1DriverId()"
+        [p2DriverId]="p2DriverId()"
+        [p3DriverId]="p3DriverId()"
+        [poleDriverId]="poleDriverId()"
+        (onClose)="closeDriverPicker()"
+        (onDriverSelected)="handleModalDriverSelected($event)" />
 
-            <div class="picker-search-bar">
-              <span class="search-icon">🔍</span>
-              <input 
-                type="text" 
-                [ngModel]="pickerSearch()" 
-                (ngModelChange)="pickerSearch.set($event)"
-                placeholder="Buscar por piloto, escudería (# o código)..." 
-                class="picker-search-input" />
-              @if (pickerSearch()) {
-                <button type="button" class="clear-search-btn" (click)="pickerSearch.set('')">✕</button>
-              }
-            </div>
-
-            <div class="picker-grid-scroll">
-              @if (filteredDrivers().length > 0) {
-                <div class="picker-drivers-grid">
-                  @for (d of filteredDrivers(); track d.id) {
-                    <div class="driver-template-card picker-mode"
-                         [class.is-selected]="isCurrentInSlot(d.id)"
-                         [class.is-swap]="isDriverInAnotherSlot(d.id)"
-                         [style.--driver-color]="d.teamColor"
-                         (click)="selectDriver(pickerSlot(), d.id)">
-                      <div class="dtc-header">
-                        <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
-                          {{ d.team }}
-                        </span>
-                        <div class="dtc-badges">
-                          <span class="dtc-code">{{ d.code }}</span>
-                          <span class="dtc-num">#{{ d.number }}</span>
-                        </div>
-                      </div>
-                      <div class="dtc-main">
-                        <div class="dtc-name">{{ d.name }}</div>
-                      </div>
-                      <div class="dtc-action">
-                        @if (isCurrentInSlot(d.id)) {
-                          <span class="status-chip current">✓ Seleccionado</span>
-                        } @else if (isDriverInAnotherSlot(d.id)) {
-                          <span class="status-chip swap">⇄ En {{ getDriverSlotName(d.id) }} (Intercambiar)</span>
-                        } @else {
-                          <span class="status-chip pick">Elegir piloto →</span>
-                        }
-                      </div>
-                    </div>
-                  }
-                </div>
-              } @else {
-                <div class="picker-empty-state">
-                  <p>No se encontraron pilotos que coincidan con "{{ pickerSearch() }}".</p>
-                </div>
-              }
-            </div>
-          </div>
-        </div>
-      }
 
       <!-- ========================================== -->
       <!-- MODAL COMPARATIVO: RESULTADOS vs OFICIALES -->
@@ -2421,6 +2365,10 @@ export class DashboardComponent implements OnInit {
     if (!id) return 'Piloto';
     const found = this.drivers.find(d => d.id === id);
     return found ? `${found.name} (${found.team})` : id;
+  }
+
+  handleModalDriverSelected(event: { slot: PodiumSlot; driverId: string }) {
+    this.selectDriver(event.slot, event.driverId);
   }
 
   handleSavePodium(podium: PodiumSelection) {

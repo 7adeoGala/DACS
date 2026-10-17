@@ -1,0 +1,120 @@
+@if (isOpen()) {
+  <div class="driver-picker-backdrop" (click)="close()">
+    <!-- stopPropagation evita que el modal se cierre al hacer clic adentro -->
+    <div class="driver-picker-modal" (click)="$event.stopPropagation()">
+      
+      <!-- CABECERA DEL MODAL -->
+      <div class="picker-header">
+        <div class="header-titles">
+          <div class="slot-badge-row">
+            <span class="slot-medal-badge">{{ getSlotIcon() }}</span>
+            <h3 class="picker-title">{{ getSlotTitle() }}</h3>
+            <span class="points-pill">{{ getSlotPoints() }}</span>
+          </div>
+          <p class="picker-subtitle">
+            Elegí el piloto. Si ya fue asignado a otro puesto del podio, se intercambiarán automáticamente.
+          </p>
+        </div>
+        <button type="button" class="picker-close-btn" (click)="close()" aria-label="Cerrar modal">✕</button>
+      </div>
+
+      <!-- BARRA DE BÚSQUEDA Y ATAJOS -->
+      <div class="picker-search-bar">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          [ngModel]="searchQuery()" 
+          (ngModelChange)="searchQuery.set($event)"
+          placeholder="Buscar por piloto, escudería (# o código)..." 
+          class="picker-search-input" />
+        <div class="search-actions">
+          <span class="kbd-shortcut">Ctrl + K</span>
+          @if (searchQuery()) {
+            <button type="button" class="clear-search-btn" (click)="searchQuery.set('')">✕</button>
+          }
+        </div>
+      </div>
+
+      <!-- FILTRO HORIZONTAL POR ESCUDERÍA -->
+      <div class="teams-filter-bar">
+        <button 
+          type="button" 
+          class="team-filter-pill" 
+          [class.active]="selectedTeam() === 'ALL'"
+          (click)="selectedTeam.set('ALL')">
+          Todos ({{ drivers.length }})
+        </button>
+        @for (team of teamList; track team.name) {
+          <button 
+            type="button" 
+            class="team-filter-pill"
+            [class.active]="selectedTeam() === team.name"
+            (click)="selectedTeam.set(team.name)">
+            <span class="team-dot" [style.background]="team.color"></span>
+            {{ team.name }}
+          </button>
+        }
+      </div>
+
+      <!-- GRILLA DE PILOTOS SCROLLEABLE -->
+      <div class="picker-grid-scroll">
+        @if (filteredDrivers().length > 0) {
+          <div class="picker-drivers-grid">
+            @for (d of filteredDrivers(); track d.id) {
+              <div class="driver-template-card picker-mode"
+                   [class.is-selected]="isCurrentInSlot(d.id)"
+                   [class.is-swap]="isDriverInAnotherSlot(d.id)"
+                   [style.--driver-color]="d.teamColor"
+                   (click)="selectDriver(d.id)">
+                
+                <div class="dtc-header">
+                  <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
+                    {{ d.team }}
+                  </span>
+                  <div class="dtc-badges">
+                    <span class="dtc-code">{{ d.code }}</span>
+                    <span class="dtc-num">#{{ d.number }}</span>
+                  </div>
+                </div>
+
+                <div class="dtc-main">
+                  <div class="dtc-name">{{ d.name }}</div>
+                </div>
+
+                <!-- INDICADORES DINÁMICOS DE ACCIÓN / AUTO-SWAP -->
+                <div class="dtc-action">
+                  @if (isCurrentInSlot(d.id)) {
+                    <span class="status-chip current">✓ Seleccionado en {{ getSlotShortName() }}</span>
+                  } @else if (isDriverInAnotherSlot(d.id)) {
+                    <span class="status-chip swap">⇄ En {{ getDriverSlotName(d.id) }} (Intercambiar)</span>
+                  } @else {
+                    <span class="status-chip pick">Elegir piloto →</span>
+                  }
+                </div>
+
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="picker-empty-state">
+            <span class="empty-icon">🏎️</span>
+            <p>No se encontraron pilotos que coincidan con "{{ searchQuery() }}".</p>
+            <button type="button" class="btn-reset-filter" (click)="resetFilters()">Limpiar filtros</button>
+          </div>
+        }
+      </div>
+
+      <!-- FOOTER DEL MODAL -->
+      <div class="picker-footer-info">
+        <div class="rules-hint">
+          <span class="hint-bullet">💡</span>
+          <span>Pleno de podio (1-2-3 exactos) otorga <strong>+15 PTS extra</strong> · Cierre: <strong>Sábado 15:55 hs (Arg)</strong></span>
+        </div>
+        <div class="esc-hint">
+          Presioná <kbd>ESC</kbd> para salir
+        </div>
+      </div>
+
+    </div>
+  </div>
+}
