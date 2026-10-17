@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of, switchMap, timeout } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, timeout, retry, timer } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Finish,
@@ -249,15 +249,45 @@ export class ApiService {
   }
 
   currentPrediction() {
-    return this.http.get<PredictionDetail>(`${this.base}/predictions/current`);
+    return this.http.get<PredictionDetail>(`${this.base}/predictions/current`).pipe(
+      retry({
+        count: 2,
+        delay: (error, retryCount) => {
+          if (error.status === 502 || error.status === 503 || error.status === 504) {
+            return timer(retryCount * 2500);
+          }
+          throw error;
+        }
+      })
+    );
   }
 
   predictionHistory() {
-    return this.http.get<PredictionHistoryItem[]>(`${this.base}/predictions/history`);
+    return this.http.get<PredictionHistoryItem[]>(`${this.base}/predictions/history`).pipe(
+      retry({
+        count: 2,
+        delay: (error, retryCount) => {
+          if (error.status === 502 || error.status === 503 || error.status === 504) {
+            return timer(retryCount * 2500);
+          }
+          throw error;
+        }
+      })
+    );
   }
 
   submitPrediction(sessionId: string, prediction: SubmitPrediction) {
-    return this.http.post<PredictionDetail>(`${this.base}/predictions/session/${sessionId}`, prediction);
+    return this.http.post<PredictionDetail>(`${this.base}/predictions/session/${sessionId}`, prediction).pipe(
+      retry({
+        count: 2,
+        delay: (error, retryCount) => {
+          if (error.status === 502 || error.status === 503 || error.status === 504) {
+            return timer(retryCount * 2500);
+          }
+          throw error;
+        }
+      })
+    );
   }
 
   adminStatus() {

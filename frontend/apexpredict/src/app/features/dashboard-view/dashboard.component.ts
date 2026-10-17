@@ -2567,7 +2567,11 @@ export class DashboardComponent implements OnInit {
       },
       error: (err) => {
         this.isSaving.set(false);
-        this.saveError.set(err.error?.message || err.error?.description || 'Error al persistir el pronóstico en la base de datos.');
+        if (err.status === 502 || err.status === 504) {
+          this.saveError.set('El servidor se encontraba en reposo (arranque en frío de Render). Por favor, volvé a presionar "Guardar Pronóstico" ahora que ya inició.');
+        } else {
+          this.saveError.set(err.error?.description || err.error?.message || 'Error al persistir el pronóstico en la base de datos.');
+        }
       }
     });
   }

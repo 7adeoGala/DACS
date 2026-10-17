@@ -20,8 +20,8 @@ feign:
   client:
     config:
       default:
-        connectTimeout: 10000
-        readTimeout: 25000
+        connectTimeout: 45000
+        readTimeout: 60000
         loggerLevel: basic
       domainClient:
         url: ${DOMAIN_SERVICE_URL:https://dacs-pmkx.onrender.com/backend}
