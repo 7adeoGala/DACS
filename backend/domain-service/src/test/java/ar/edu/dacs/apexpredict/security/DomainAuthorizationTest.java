@@ -2,11 +2,16 @@ package ar.edu.dacs.apexpredict.security;
 
 import ar.edu.dacs.apexpredict.application.NotificationService;
 import ar.edu.dacs.apexpredict.application.PlayerService;
+import ar.edu.dacs.apexpredict.application.PredictionService;
+import ar.edu.dacs.apexpredict.application.ScoringService;
 import ar.edu.dacs.apexpredict.web.DomainController;
 import ar.edu.dacs.apexpredict.web.DomainExceptionHandler;
+import ar.edu.dacs.apexpredict.web.PredictionController;
 import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -30,7 +35,7 @@ class DomainAuthorizationTest {
     @Configuration
     @EnableWebMvc
     @EnableWebSecurity
-    @Import({SecurityConfig.class, DomainController.class, DomainExceptionHandler.class})
+    @Import({SecurityConfig.class, DomainController.class, PredictionController.class, DomainExceptionHandler.class})
     static class Config {
         @Bean
         PlayerService players() {
@@ -43,6 +48,16 @@ class DomainAuthorizationTest {
         }
 
         @Bean
+        PredictionService predictions() {
+            return mock(PredictionService.class);
+        }
+
+        @Bean
+        ScoringService scoring() {
+            return mock(ScoringService.class);
+        }
+
+        @Bean
         JwtDecoder decoder() {
             return mock(JwtDecoder.class);
         }
@@ -52,12 +67,17 @@ class DomainAuthorizationTest {
     WebApplicationContext context;
     @Autowired
     JwtDecoder decoder;
+    @Autowired
+    PredictionService predictions;
 
     private MockMvc mvc;
 
     @BeforeEach
     void setup() {
         mvc = MockMvcBuilders.webAppContextSetup(context).apply(springSecurity()).build();
+        when(predictions.getNextScheduledSession()).thenReturn(new PredictionService.NextSessionView(
+            UUID.fromString("00000000-0000-0000-0000-000000000001"), 2026, 1,
+            "Test Grand Prix", "Test Circuit", "RACE", "2026-10-18", null, false, null, null));
         for (String role : List.of("player", "admin", "observer")) {
             when(decoder.decode(role)).thenReturn(Jwt.withTokenValue(role).header("alg", "RS256")
                 .subject(role).issuer("https://dacs2026.local/auth/realms/apexpredict")
@@ -109,6 +129,43 @@ class DomainAuthorizationTest {
             .andExpect(status().isForbidden())
             .andExpect(jsonPath("$.status").value(403))
             .andExpect(jsonPath("$.code").value("backend_403"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/sessions/next", "/leaderboard/global", "/predictions/current",
+        "/predictions/history", "/predictions/session/00000000-0000-0000-0000-000000000001", "/notifications"})
+    void dashboardReadsRequirePlayerOrAdmin(String path) throws Exception {
+        mvc.perform(get(path)).andExpect(status().isUnauthorized());
+        mvc.perform(get(path).header("Authorization", "Bearer observer"))
+            .andExpect(status().isForbidden());
+        for (String role : List.of("player", "admin")) {
+            mvc.perform(get(path).header("Authorization", "Bearer " + role))
+                .andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void submittingPredictionsRequiresPlayerOrAdmin() throws Exception {
+        String path = "/predictions/session/00000000-0000-0000-0000-000000000001";
+        String body = "{\"podium\":[\"norris\",\"piastri\",\"leclerc\"]}";
+        mvc.perform(post(path).contentType("application/json").content(body))
+            .andExpect(status().isUnauthorized());
+        mvc.perform(post(path).header("Authorization", "Bearer observer")
+            .contentType("application/json").content(body)).andExpect(status().isForbidden());
+        for (String role : List.of("player", "admin")) {
+            mvc.perform(post(path).header("Authorization", "Bearer " + role)
+                .contentType("application/json").content(body)).andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void unlistedRoutesAndMethodsRemainDenied() throws Exception {
+        for (String role : List.of("player", "admin")) {
+            mvc.perform(get("/predictions/unlisted").header("Authorization", "Bearer " + role))
+                .andExpect(status().isForbidden());
+            mvc.perform(post("/sessions/next").header("Authorization", "Bearer " + role))
+                .andExpect(status().isForbidden());
+        }
     }
 
     @Test

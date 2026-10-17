@@ -115,7 +115,8 @@ completos, invitaciones, carga de pronosticos ni calculo de puntos.
 
 Se usa Authorization Code con PKCE S256 y JWT Bearer, sin cookies de autenticacion
 propias del BFF. El cliente `apexpredict-web` es publico, sin client secret y sin
-password grant. El mapper de audiencia agrega `apexpredict-bff` al access token.
+password grant. Los mappers de audiencia agregan `apexpredict-bff` y
+`apexpredict-backend` al access token.
 
 Spring valida firma RS256, vencimiento, issuer
 `https://dacs2026.local/auth/realms/apexpredict` y audiencia. Convierte unicamente
@@ -178,7 +179,15 @@ Los environments respetan los valores solicitados:
 | Archivo | production | apiUrl |
 | --- | --- | --- |
 | `environment.development.ts` | false | `http://localhost:8080/api` |
-| `environment.ts` | true | `https://dacs2026.local/api` |
+| `environment.ts` (Vercel) | true | `https://dacs-2-crv9.onrender.com/bff` |
+| `environment.local.ts` (Nginx local) | true | `https://dacs2026.local/api` |
+
+El build de Vercel usa `npm run build` (produccion). `start.ps1` combina
+`--configuration=production,local --base-href=/apexpredict/` para conservar el
+BFF y Keycloak locales. No publicar el build de Vercel en Nginx local.
+
+Configuracion concreta de Keycloak/Render, evidencia y pasos pendientes del
+despliegue publico: [docs/despliegue-publico.md](docs/despliegue-publico.md).
 
 `architect.build.configurations.development.fileReplacements` selecciona el archivo
 local. Para compatibilizar el HTTP literal de la consigna con el requisito de TLS,

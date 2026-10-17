@@ -12,6 +12,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.*;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -31,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringJUnitConfig(AuthorizationTest.Config.class)
 @WebAppConfiguration
-@TestPropertySource(properties = "apexpredict.security.cors-origins=http://localhost:4200,https://dacs2026.local")
+@TestPropertySource(properties = "apexpredict.security.cors-origins=http://localhost:4200,https://dacs2026.local,https://dacs-nine.vercel.app")
 class AuthorizationTest {
 
     @Configuration
@@ -150,6 +152,43 @@ class AuthorizationTest {
             .andExpect(jsonPath("$.code").value("bff_403"));
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"/sessions/next", "/leaderboard/global", "/predictions/current",
+        "/predictions/history", "/predictions/session/00000000-0000-0000-0000-000000000001", "/notifications"})
+    void dashboardReadsRequirePlayerOrAdmin(String path) throws Exception {
+        mvc.perform(get(path)).andExpect(status().isUnauthorized());
+        mvc.perform(get(path).header("Authorization", "Bearer observer"))
+            .andExpect(status().isForbidden());
+        for (String role : List.of("player", "admin")) {
+            mvc.perform(get(path).header("Authorization", "Bearer " + role))
+                .andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void submittingPredictionsRequiresPlayerOrAdmin() throws Exception {
+        String path = "/predictions/session/00000000-0000-0000-0000-000000000001";
+        String body = "{\"podium\":[\"norris\",\"piastri\",\"leclerc\"]}";
+        mvc.perform(post(path).contentType("application/json").content(body))
+            .andExpect(status().isUnauthorized());
+        mvc.perform(post(path).header("Authorization", "Bearer observer")
+            .contentType("application/json").content(body)).andExpect(status().isForbidden());
+        for (String role : List.of("player", "admin")) {
+            mvc.perform(post(path).header("Authorization", "Bearer " + role)
+                .contentType("application/json").content(body)).andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void unlistedRoutesAndMethodsRemainDenied() throws Exception {
+        for (String role : List.of("player", "admin")) {
+            mvc.perform(get("/predictions/unlisted").header("Authorization", "Bearer " + role))
+                .andExpect(status().isForbidden());
+            mvc.perform(post("/sessions/next").header("Authorization", "Bearer " + role))
+                .andExpect(status().isForbidden());
+        }
+    }
+
     @Test
     void adminRouteRequiresAdminRole() throws Exception {
         when(domainClient.adminStatus()).thenReturn(Map.of("status", "authorized"));
@@ -179,6 +218,13 @@ class AuthorizationTest {
             .header("Access-Control-Request-Headers", "authorization"))
             .andExpect(status().isOk())
             .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"));
+
+        mvc.perform(options("/me")
+            .header("Origin", "https://dacs-nine.vercel.app")
+            .header("Access-Control-Request-Method", "PUT")
+            .header("Access-Control-Request-Headers", "authorization,content-type"))
+            .andExpect(status().isOk())
+            .andExpect(header().string("Access-Control-Allow-Origin", "https://dacs-nine.vercel.app"));
 
         mvc.perform(options("/me")
             .header("Origin", "https://attacker.invalid")

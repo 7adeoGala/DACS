@@ -1,4 +1,34 @@
-# Validacion · 29/09/2026
+# Validacion
+
+## Correccion de despliegue publico - 16/10/2026
+
+| Comprobacion local | Resultado |
+| --- | --- |
+| BFF, Maven verify con JDK 21 | 33 pruebas, 0 fallos, 0 errores |
+| Dominio, Maven verify con JDK 21 | 29 pruebas, 0 fallos, 0 errores |
+| Angular, `npm test -- --watch=false` | 9 pruebas aprobadas |
+| Build Angular `production` | Correcto; `chunk-B6MBHKDE.js` contiene `https://dacs-2-crv9.onrender.com/bff` |
+| Build Angular `production,local` | Correcto; API/Keycloak locales y base `/apexpredict/` |
+| Publicacion estatica local | Paquete local publicado; paquete Vercel rechazado por el guard |
+| Limites core/features y sintaxis de PowerShell/Node | Correctos |
+
+Las pruebas de autorizacion ejercitan los controladores reales con servicios y
+decoder simulados: sin token 401, observer 403, player/admin 200 en las rutas del
+dashboard, y denegacion de rutas/metodos no enumerados. Las pruebas JWT separadas
+verifican firmas, issuer, audiencias y vencimiento con tokens firmados de prueba.
+La prueba Feign verifica el reenvio del Bearer desde el contexto de seguridad.
+Esto no acredita un login ni una escritura real en Supabase de produccion.
+
+Se reprodujeron por HTTPS los 400 de login/registro de Vercel, la URL incorrecta
+del bundle publico y los 502 de `/bff/backendping` y `/bff/conectorping`.
+CORS de Vercel ya funciona en el BFF. No se modifico produccion ni se verifico
+login/registro completo, persistencia o logout remoto por falta de acceso
+administrativo conectado. Docker no estaba activo; no se arranco la infraestructura.
+
+Evidencia, configuracion exacta y secuencia para terminar la validacion:
+[despliegue-publico.md](despliegue-publico.md).
+
+## Validacion anterior - 29/09/2026
 
 ## Arranque y registro verificados el 29/09
 

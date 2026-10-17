@@ -83,7 +83,7 @@ try {
             Set-Content -LiteralPath $hashPath -Value $lockHash
         }
         Write-Host 'Compilando Angular...'
-        Invoke-Step 'npm.cmd' @('run', 'build', '--', '--configuration=production', '--base-href=/apexpredict/')
+        Invoke-Step 'npm.cmd' @('run', 'build', '--', '--configuration=production,local', '--base-href=/apexpredict/')
     } finally { Pop-Location }
     Invoke-Step 'node.exe' @('scripts/publish-frontend.mjs')
 

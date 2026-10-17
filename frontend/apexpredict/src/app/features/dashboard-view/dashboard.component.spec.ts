@@ -11,11 +11,19 @@ describe('Formulario de ligas', () => {
       profile: vi.fn(() => of({ id: 'player', displayName: 'Jugador', email: null })),
       leagues: vi.fn(() => of([])),
       createLeague: vi.fn(() => created),
+      nextSession: vi.fn(() => of(null)),
+      globalLeaderboard: vi.fn(() => of([])),
+      predictionHistory: vi.fn(() => of([])),
+      leagueLeaderboard: vi.fn(() => of([])),
     };
     TestBed.configureTestingModule({ providers: [{ provide: ApiService, useValue: api }] });
     const fixture = TestBed.createComponent(DashboardComponent);
     fixture.detectChanges();
-    const input: HTMLInputElement = fixture.nativeElement.querySelector('input');
+    const leaguesTab = Array.from(fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>)
+      .find(button => button.textContent?.includes('Mis Ligas'))!;
+    leaguesTab.click();
+    fixture.detectChanges();
+    const input: HTMLInputElement = fixture.nativeElement.querySelector('input[formControlName="name"]');
     const form: HTMLFormElement = fixture.nativeElement.querySelector('form');
     return { fixture, input, form, api, created };
   }
@@ -34,7 +42,8 @@ describe('Formulario de ligas', () => {
     expect(api.createLeague).toHaveBeenCalledTimes(1);
     created.next({ id: 'league-1', name: 'Liga del paddock' });
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('h2').textContent).toBe('Liga del paddock');
+    expect(fixture.nativeElement.textContent).toContain('Liga del paddock');
+    expect(fixture.componentInstance.selectedLeague()?.id).toBe('league-1');
     expect(input.value).toBe('');
   });
 
@@ -43,7 +52,7 @@ describe('Formulario de ligas', () => {
     input.value = '   ';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('button').disabled).toBe(true);
+    expect(form.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     expect(api.createLeague).not.toHaveBeenCalled();
   });
