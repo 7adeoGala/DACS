@@ -28,13 +28,12 @@ export class AuthService {
         onLoad: 'check-sso',
         pkceMethod: 'S256',
         checkLoginIframe: false,
-        silentCheckSsoRedirectUri: new URL('silent-check-sso.html', document.baseURI).href,
-        silentCheckSsoFallback: false,
-        messageReceiveTimeout: 5000,
       });
       sync();
-    } catch {
+    } catch (err) {
+      console.warn('Keycloak no disponible para SSO silencioso:', err);
       this.available.set(false);
+      sync();
     }
   }
   hasRole(...roles: AppRole[]): boolean {
