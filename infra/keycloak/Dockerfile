@@ -22,4 +22,4 @@ ENV KC_DB=postgres \
 EXPOSE 8080
 
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
-CMD ["start-dev", "--optimized", "--import-realm", "--http-host=0.0.0.0"]
+CMD ["start", "--optimized", "--import-realm", "--http-host=0.0.0.0"]
