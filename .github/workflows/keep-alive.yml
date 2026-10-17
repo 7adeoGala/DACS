@@ -1,0 +1,25 @@
+name: Render Keep Alive
+
+on:
+  schedule:
+    # Se ejecuta cada 10 minutos para evitar que Render suspenda las instancias por inactividad (15 min)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Permite ejecutar el ping manualmente desde la pestaña Actions de GitHub
+
+jobs:
+  ping-services:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Servicios Render
+        run: |
+          echo "Pinging BFF..."
+          curl -s -o /dev/null -w "BFF: %{http_code}\n" --max-time 45 https://dacs-2-crv9.onrender.com/bff/ping || true
+
+          echo "Pinging Domain Service..."
+          curl -s -o /dev/null -w "Domain Service: %{http_code}\n" --max-time 45 https://dacs-pmkx.onrender.com/backend/ping || true
+
+          echo "Pinging F1 Connector..."
+          curl -s -o /dev/null -w "F1 Connector: %{http_code}\n" --max-time 45 https://dacs-1-v4ik.onrender.com/conector/ping || true
+
+          echo "Pinging Keycloak Auth..."
+          curl -s -o /dev/null -w "Keycloak: %{http_code}\n" --max-time 45 https://dacs-3-dswy.onrender.com/auth/realms/apexpredict || true
