@@ -8,6 +8,18 @@ export const routes: Routes = [
       import('./features/home/gp-spotlight.component').then((m) => m.GpSpotlightComponent),
   },
   {
+    path: 'login',
+    title: 'Iniciar Sesión · ApexPredict',
+    loadComponent: () =>
+      import('./features/auth/login.component').then((m) => m.LoginComponent),
+  },
+  {
+    path: 'register',
+    title: 'Registrarse · ApexPredict',
+    loadComponent: () =>
+      import('./features/auth/register.component').then((m) => m.RegisterComponent),
+  },
+  {
     path: 'dashboard',
     title: 'Mis ligas · ApexPredict',
     canActivate: [requireRole('player', 'admin')],

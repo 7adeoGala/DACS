@@ -1,4 +1,6 @@
-<app-navbar />
+@if (!isAuthRoute()) {
+  <app-navbar />
+}
 @if (!auth.available()) {
   <div class="notice error" role="alert" style="margin: 1rem auto; max-width: 1440px;">
     ⚠️ El inicio de sesión no está disponible. Comprobá la conexión y recargá la página.
@@ -7,8 +9,11 @@
 <main id="main">
   <router-outlet />
 </main>
-<footer style="border-top: 1px solid var(--line); padding: 2rem 5%; text-align: center; color: var(--text-dim); font-size: 0.85rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; background: rgba(9, 11, 14, 0.9);">
-  <span style="font-weight: 700; color: var(--text-muted);">⚡ APEXPREDICT</span>
-  <span>Un prode para vivir cada carrera de Fórmula 1.</span>
-  <span>Datos Oficiales: Jolpica F1 · Proyecto DACS</span>
-</footer>
+@if (!isAuthRoute()) {
+  <footer style="border-top: 1px solid var(--line); padding: 2rem 5%; text-align: center; color: var(--text-dim); font-size: 0.85rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; background: rgba(9, 11, 14, 0.9);">
+    <span style="font-weight: 700; color: var(--text-muted);">⚡ APEXPREDICT</span>
+    <span>Un prode para vivir cada carrera de Fórmula 1.</span>
+    <span>Datos Oficiales: Jolpica F1 · Proyecto DACS</span>
+  </footer>
+}
+
