@@ -2175,11 +2175,11 @@ export class DashboardComponent implements OnInit {
 
   private restoreLocalCache() {
     const user = this.auth.username();
-    const cachedPred = this.api.getCachedPrediction(user);
+    const cachedPred = this.api.getCachedPrediction?.(user);
     if (cachedPred) {
       this.applyPredictionToState(cachedPred);
     }
-    const cachedLeagues = this.api.getCachedLeagues(user);
+    const cachedLeagues = this.api.getCachedLeagues?.(user);
     if (cachedLeagues && cachedLeagues.length > 0) {
       this.myLeagues.set(cachedLeagues);
       if (!this.selectedLeague()) {
@@ -2434,7 +2434,7 @@ export class DashboardComponent implements OnInit {
         this.saveSuccess.set(true);
         this.hasExistingPrediction.set(true);
         this.predictionSubmittedAt.set(res?.submittedAt || new Date().toISOString());
-        this.api.setCachedPrediction({
+        this.api.setCachedPrediction?.({
           ...res,
           podium: payload.podium,
           polePositionDriverId: payload.polePositionDriverId,

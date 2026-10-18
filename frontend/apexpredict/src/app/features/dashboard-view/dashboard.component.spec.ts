@@ -21,7 +21,11 @@ describe('Formulario de ligas', () => {
       predictionHistory: vi.fn(() => of([])),
       leagueLeaderboard: vi.fn(() => of([])),
       jolpicaDriverStandings: vi.fn(() => of([])),
-      jolpicaConstructorStandings: vi.fn(() => of([]))
+      jolpicaConstructorStandings: vi.fn(() => of([])),
+      getCachedPrediction: vi.fn(() => null),
+      setCachedPrediction: vi.fn(),
+      getCachedLeagues: vi.fn(() => null),
+      setCachedLeagues: vi.fn()
     };
     const auth = {
       username: signal('player'),
