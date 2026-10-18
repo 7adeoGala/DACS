@@ -1,4 +1,4 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -122,7 +122,7 @@ import { AuthService } from '../../core/auth/auth.service';
   `,
   styleUrls: ['./auth-shared.css']
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
@@ -131,6 +131,13 @@ export class LoginComponent {
   readonly showPassword = signal<boolean>(false);
   readonly isLoading = signal<boolean>(false);
   readonly errorMessage = signal<string>('');
+
+  ngOnInit() {
+    // Precalentar Keycloak en segundo plano apenas abre la pantalla de login
+    if (typeof window !== 'undefined') {
+      fetch('https://dacs-3-dswy.onrender.com/auth/realms/apexpredict', { mode: 'no-cors' }).catch(() => {});
+    }
+  }
 
   async handleLogin() {
     const user = this.username().trim();
