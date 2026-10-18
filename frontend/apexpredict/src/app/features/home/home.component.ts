@@ -25,11 +25,11 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
         <div class="hero-actions">
           @if (auth.authenticated()) {
             <a class="button" routerLink="/dashboard">
-              Ir a mi Centro de Control <span aria-hidden="true">→</span>
+              Ir a mi Centro de Control
             </a>
           } @else {
             <button class="button" [disabled]="!auth.available()" (click)="auth.login()">
-              Iniciar sesión <span aria-hidden="true">→</span>
+              Iniciar sesión
             </button>
             <button class="button quiet" [disabled]="!auth.available()" (click)="auth.register()">
               Crear cuenta gratis

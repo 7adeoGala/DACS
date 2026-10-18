@@ -105,7 +105,6 @@
         <div class="countdown-left">
           <div class="timer-title">
             <span>TIEMPO RESTANTE PARA LA CARRERA</span>
-            <span class="session-pill">GRAN PREMIO OFICIAL</span>
           </div>
           <div class="countdown-boxes">
             <div class="time-box"><span class="num">{{ days() }}</span><span class="label">DÍAS</span></div>
@@ -133,16 +132,16 @@
           @if (auth.authenticated()) {
             @if (currentPrediction()?.predictionId || (currentPrediction()?.podium && currentPrediction()!.podium.length > 0)) {
               <a routerLink="/dashboard" class="btn-cta-predict" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
-                VER / EDITAR MI PRONÓSTICO →
+                VER / EDITAR MI PRONÓSTICO
               </a>
             } @else {
               <a routerLink="/dashboard" class="btn-cta-predict">
-                CARGAR MI PRONÓSTICO →
+                CARGAR MI PRONÓSTICO
               </a>
             }
           } @else {
             <button type="button" (click)="auth.login()" class="btn-cta-predict">
-              INICIAR SESIÓN Y PREDECIR →
+              INICIAR SESIÓN Y PREDECIR
             </button>
           }
         </div>
@@ -210,7 +209,7 @@
               <div class="summary-item"><span class="lbl">POLE:</span><span class="val-code cyan">{{ currentPrediction()!.polePositionDriverId!.toUpperCase() }}</span></div>
             }
           </div>
-          <a routerLink="/dashboard" class="btn-user-dashboard">Ir a mi Panel Completo →</a>
+          <a routerLink="/dashboard" class="btn-user-dashboard">Ir a mi Panel Completo</a>
         </div>
 
         <!-- Mini Leaderboard Real de Usuarios -->
@@ -228,23 +227,11 @@
               </div>
             }
           </div>
-          <a routerLink="/dashboard" [queryParams]="{ tab: 'global' }" class="btn-view-table">Ver Campeonato Completo →</a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'global' }" class="btn-view-table">Ver Campeonato Completo</a>
         </div>
       } @else {
         <!-- Landing Page Genérica cuando el usuario NO ha iniciado sesión -->
         <div class="landing-welcome-card">
-          <div class="welcome-header">
-            <div class="welcome-f1-icon">
-              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-                <line x1="4" y1="22" x2="4" y2="15"/>
-              </svg>
-            </div>
-            <div>
-              <span class="welcome-tag">BIENVENIDO AL PADDOCK</span>
-              <h4>ApexPredict F1</h4>
-            </div>
-          </div>
           <p class="welcome-text">
             El prode oficial de Fórmula 1 en tiempo real. Predecí podios, poles y duelos mano a mano en cada Gran Premio y competí con tus amigos en ligas privadas.
           </p>
@@ -255,7 +242,7 @@
           </div>
           <div class="welcome-actions">
             <button type="button" class="btn-welcome-login" (click)="auth.login()">
-              Iniciar Sesión <span aria-hidden="true">→</span>
+              Iniciar Sesión
             </button>
             <button type="button" class="btn-welcome-register" (click)="auth.register()">
               Crear Cuenta Gratis

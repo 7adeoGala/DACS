@@ -838,7 +838,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     }
 
                     <div class="card-tap-hint">
-                      <span>Tocar para comparar con resultados oficiales FIA →</span>
+                      <span>Tocar para comparar con resultados oficiales FIA</span>
                     </div>
                   </div>
                 }

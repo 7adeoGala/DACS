@@ -93,13 +93,13 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       items.push({ name: 'Clasificación Sprint', type: 'SPRINT_QUALY', iso: s.sprintQualifying || s.fp2 });
       items.push({ name: 'Carrera Sprint', type: 'SPRINT', iso: s.sprint });
       items.push({ name: 'Clasificación GP', type: 'QUALY', iso: s.qualifying });
-      items.push({ name: 'Gran Premio Oficial', type: 'RACE', iso: s.startsAt });
+      items.push({ name: 'Carrera (Gran Premio)', type: 'RACE', iso: s.startsAt });
     } else {
       items.push({ name: 'Práctica Libre 1 (FP1)', type: 'FP1', iso: s.fp1 });
       items.push({ name: 'Práctica Libre 2 (FP2)', type: 'FP2', iso: s.fp2 });
       items.push({ name: 'Práctica Libre 3 (FP3)', type: 'FP3', iso: s.fp3 });
       items.push({ name: 'Clasificación GP', type: 'QUALY', iso: s.qualifying });
-      items.push({ name: 'Gran Premio Oficial', type: 'RACE', iso: s.startsAt });
+      items.push({ name: 'Carrera (Gran Premio)', type: 'RACE', iso: s.startsAt });
     }
 
     return items
