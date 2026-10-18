@@ -2,8 +2,10 @@ name: Render Keep Alive
 
 on:
   schedule:
-    # Se ejecuta cada 10 minutos para evitar que Render suspenda las instancias por inactividad (15 min)
-    - cron: '*/10 * * * *'
+    # Se ejecuta cada 8 minutos para evitar que Render suspenda las instancias por inactividad (15 min)
+    - cron: '*/8 * * * *'
+  push:
+    branches: [main]
   workflow_dispatch: # Permite ejecutar el ping manualmente desde la pestaña Actions de GitHub
 
 jobs:
@@ -12,14 +14,21 @@ jobs:
     steps:
       - name: Ping Servicios Render
         run: |
-          echo "Pinging BFF..."
+          echo "Pinging BFF & Domain Service (Chain)..."
+          curl -s -o /dev/null -w "BFF-to-Domain: %{http_code}\n" --max-time 60 https://dacs-2-crv9.onrender.com/bff/backendping || true
+
+          echo "Pinging BFF & F1 Connector (Chain)..."
+          curl -s -o /dev/null -w "BFF-to-Connector: %{http_code}\n" --max-time 60 https://dacs-2-crv9.onrender.com/bff/conectorping || true
+
+          echo "Pinging BFF Health..."
           curl -s -o /dev/null -w "BFF: %{http_code}\n" --max-time 45 https://dacs-2-crv9.onrender.com/bff/ping || true
 
-          echo "Pinging Domain Service..."
-          curl -s -o /dev/null -w "Domain Service: %{http_code}\n" --max-time 45 https://dacs-pmkx.onrender.com/backend/ping || true
+          echo "Pinging Domain Service Direct..."
+          curl -s -o /dev/null -w "Domain Service: %{http_code}\n" --max-time 60 https://dacs-pmkx.onrender.com/backend/ping || true
 
-          echo "Pinging F1 Connector..."
-          curl -s -o /dev/null -w "F1 Connector: %{http_code}\n" --max-time 45 https://dacs-1-v4ik.onrender.com/conector/ping || true
+          echo "Pinging F1 Connector Direct..."
+          curl -s -o /dev/null -w "F1 Connector: %{http_code}\n" --max-time 60 https://dacs-1-v4ik.onrender.com/conector/ping || true
 
           echo "Pinging Keycloak Auth..."
-          curl -s -o /dev/null -w "Keycloak: %{http_code}\n" --max-time 45 https://dacs-3-dswy.onrender.com/auth/realms/apexpredict || true
+          curl -s -o /dev/null -w "Keycloak: %{http_code}\n" --max-time 60 https://dacs-3-dswy.onrender.com/auth/realms/apexpredict || true
+

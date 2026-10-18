@@ -86,37 +86,54 @@ export class ApiService {
 
   private readonly ROUND_18_UUID = 'f0c23d70-f7ca-411d-b827-7a9d45037100';
 
+  private retryOnColdStart<T>() {
+    return retry<T>({
+      count: 4,
+      delay: (error, retryCount) => {
+        if (error.status === 502 || error.status === 503 || error.status === 504 || error.status === 0) {
+          console.warn(`[ApexPredict] Reintentando conexión con servidor (${retryCount}/4)...`);
+          return timer(Math.min(retryCount * 3000, 10000));
+        }
+        throw error;
+      }
+    });
+  }
+
+  pingBackend(): Observable<any> {
+    return this.http.get(`${this.base}/backendping`).pipe(catchError(() => of(null)));
+  }
+
   leagues() {
-    return this.http.get<League[]>(`${this.base}/leagues`);
+    return this.http.get<League[]>(`${this.base}/leagues`).pipe(this.retryOnColdStart());
   }
 
   searchLeagues(query?: string): Observable<League[]> {
     const q = query ? `?query=${encodeURIComponent(query)}` : '';
-    return this.http.get<League[]>(`${this.base}/leagues/search${q}`);
+    return this.http.get<League[]>(`${this.base}/leagues/search${q}`).pipe(this.retryOnColdStart());
   }
 
   createLeague(name: string, description?: string, password?: string) {
-    return this.http.post<League>(`${this.base}/leagues`, { name, description, password });
+    return this.http.post<League>(`${this.base}/leagues`, { name, description, password }).pipe(this.retryOnColdStart());
   }
 
   editLeague(id: string, name: string, description?: string, password?: string) {
-    return this.http.put<League>(`${this.base}/leagues/${id}`, { name, description, password });
+    return this.http.put<League>(`${this.base}/leagues/${id}`, { name, description, password }).pipe(this.retryOnColdStart());
   }
 
   joinLeagueById(id: string, password?: string) {
-    return this.http.post<League>(`${this.base}/leagues/${id}/join`, { password });
+    return this.http.post<League>(`${this.base}/leagues/${id}/join`, { password }).pipe(this.retryOnColdStart());
   }
 
   joinLeague(inviteCode: string, password?: string) {
-    return this.http.post<League>(`${this.base}/leagues/join/${inviteCode}`, { password });
+    return this.http.post<League>(`${this.base}/leagues/join/${inviteCode}`, { password }).pipe(this.retryOnColdStart());
   }
 
   globalLeaderboard() {
-    return this.http.get<LeaderboardEntry[]>(`${this.base}/leaderboard/global`);
+    return this.http.get<LeaderboardEntry[]>(`${this.base}/leaderboard/global`).pipe(this.retryOnColdStart());
   }
 
   leagueLeaderboard(leagueId: string) {
-    return this.http.get<LeaderboardEntry[]>(`${this.base}/leagues/${leagueId}/leaderboard`);
+    return this.http.get<LeaderboardEntry[]>(`${this.base}/leagues/${leagueId}/leaderboard`).pipe(this.retryOnColdStart());
   }
 
   nextSession(): Observable<NextSession> {
@@ -249,45 +266,15 @@ export class ApiService {
   }
 
   currentPrediction() {
-    return this.http.get<PredictionDetail>(`${this.base}/predictions/current`).pipe(
-      retry({
-        count: 2,
-        delay: (error, retryCount) => {
-          if (error.status === 502 || error.status === 503 || error.status === 504) {
-            return timer(retryCount * 2500);
-          }
-          throw error;
-        }
-      })
-    );
+    return this.http.get<PredictionDetail>(`${this.base}/predictions/current`).pipe(this.retryOnColdStart());
   }
 
   predictionHistory() {
-    return this.http.get<PredictionHistoryItem[]>(`${this.base}/predictions/history`).pipe(
-      retry({
-        count: 2,
-        delay: (error, retryCount) => {
-          if (error.status === 502 || error.status === 503 || error.status === 504) {
-            return timer(retryCount * 2500);
-          }
-          throw error;
-        }
-      })
-    );
+    return this.http.get<PredictionHistoryItem[]>(`${this.base}/predictions/history`).pipe(this.retryOnColdStart());
   }
 
   submitPrediction(sessionId: string, prediction: SubmitPrediction) {
-    return this.http.post<PredictionDetail>(`${this.base}/predictions/session/${sessionId}`, prediction).pipe(
-      retry({
-        count: 2,
-        delay: (error, retryCount) => {
-          if (error.status === 502 || error.status === 503 || error.status === 504) {
-            return timer(retryCount * 2500);
-          }
-          throw error;
-        }
-      })
-    );
+    return this.http.post<PredictionDetail>(`${this.base}/predictions/session/${sessionId}`, prediction).pipe(this.retryOnColdStart());
   }
 
   adminStatus() {

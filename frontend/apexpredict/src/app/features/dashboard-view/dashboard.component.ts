@@ -67,6 +67,13 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
             </div>
           }
 
+          @if (isSaving()) {
+            <div class="alert-box" style="margin-bottom: 1rem; background: rgba(0, 242, 254, 0.1); border: 1px solid var(--cyan); color: #e0f2fe; display: flex; align-items: center; gap: 8px;">
+              <span>⏳</span>
+              <span>Conectando con servidores de telemetría y sincronizando pronóstico con la base de datos...</span>
+            </div>
+          }
+
           @if (saveSuccess()) {
             <div class="alert-box success" style="margin-bottom: 1rem;">
               ✓ ¡Pronóstico guardado exitosamente en el servidor y la base de datos!
@@ -2412,7 +2419,7 @@ export class DashboardComponent implements OnInit {
       error: (err) => {
         this.isSaving.set(false);
         if (err.status === 502 || err.status === 504) {
-          this.saveError.set('El servidor se encontraba en reposo (arranque en frío de Render). Por favor, volvé a presionar "Guardar Pronóstico" ahora que ya inició.');
+          this.saveError.set('Los servidores de telemetría tardaron en responder debido al arranque inicial. Volvé a presionar "Guardar Pronóstico" ahora que el canal ya está abierto.');
         } else {
           this.saveError.set(err.error?.description || err.error?.message || 'Error al persistir el pronóstico en la base de datos.');
         }
