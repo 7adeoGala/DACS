@@ -40,10 +40,17 @@ export class AuthService {
   hasRole(...roles: AppRole[]): boolean {
     return this.authenticated() && roles.some((role) => this.roles().includes(role));
   }
-  login(route = 'dashboard'): Promise<void> {
+  login(route = 'dashboard', idpHint?: string): Promise<void> {
     const target = new URL(route.replace(/^\/+/, ''), document.baseURI);
     if (target.origin !== location.origin) return Promise.reject(new Error('Destino invalido.'));
-    return this.keycloak.login({ redirectUri: target.href });
+    const options: Parameters<Keycloak['login']>[0] = { redirectUri: target.href };
+    if (idpHint) {
+      options.idpHint = idpHint;
+    }
+    return this.keycloak.login(options);
+  }
+  loginWithGoogle(route = 'dashboard'): Promise<void> {
+    return this.login(route, 'google');
   }
   logout(): Promise<void> {
     return this.keycloak.logout({ redirectUri: new URL('.', document.baseURI).href });
