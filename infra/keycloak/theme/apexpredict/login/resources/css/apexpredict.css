@@ -1,12 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap');
 
 :root {
   --pf-v5-global--FontFamily--sans-serif: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --bg: #090b0e;
-  --surface: #141822;
-  --surface-card: #181d2a;
-  --surface-hover: #1e2434;
+  --surface: rgba(18, 23, 34, 0.85);
+  --surface-card: #0f131a;
+  --surface-hover: #141b26;
   --red: #e10600;
+  --red-dark: #b30500;
   --red-bright: #ff1801;
   --red-glow: rgba(225, 6, 0, 0.35);
   --cyan: #00f2fe;
@@ -14,188 +15,387 @@
   --text-muted: #94a3b8;
   --text-dim: #64748b;
   --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.16);
+  --line-strong: rgba(255, 255, 255, 0.12);
+}
+
+/* ======================================================== */
+/* 1. ESTRUCTURA GLOBAL Y FONDO F1 TELEMETRY                */
+/* ======================================================== */
+html, body {
+  background-color: #090b0e !important;
+  color: #f8fafc !important;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100vh !important;
 }
 
 body#keycloak-bg {
-  background-color: var(--bg) !important;
+  background-color: #090b0e !important;
   background-image: 
-    radial-gradient(circle at 15% 15%, rgba(225, 6, 0, 0.12) 0%, transparent 45%),
-    radial-gradient(circle at 85% 65%, rgba(0, 242, 254, 0.06) 0%, transparent 45%),
-    linear-gradient(180deg, #090b0ef2, #090b0e) !important;
+    radial-gradient(ellipse 60% 40% at 50% 10%, rgba(225, 6, 0, 0.08) 0%, transparent 70%),
+    radial-gradient(circle at 80% 80%, rgba(0, 242, 254, 0.03) 0%, transparent 50%) !important;
   background-attachment: fixed !important;
-  font-family: var(--pf-v5-global--FontFamily--sans-serif) !important;
-  color: var(--text-main) !important;
-  margin: 0;
-  min-height: 100vh;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 100vh !important;
 }
 
 .pf-v5-c-login {
   background: transparent !important;
-  font-family: inherit !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .pf-v5-c-login__container {
+  width: 100% !important;
   max-width: 480px !important;
-  margin: 40px auto !important;
-  padding: 0 16px !important;
+  margin: 0 auto !important;
+  padding: 2.5rem 1rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
 }
 
-/* Brand header */
+/* ======================================================== */
+/* 2. ENCABEZADO Y LOGO OFICIAL APEXPREDICT                 */
+/* ======================================================== */
 .pf-v5-c-login__header {
-  margin-bottom: 24px !important;
+  margin-bottom: 1.75rem !important;
   text-align: center !important;
+  width: 100% !important;
+}
+
+#kc-header {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 #kc-header-wrapper {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 12px !important;
-  font-size: 24px !important;
+  gap: 0.75rem !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 1.45rem !important;
   font-weight: 900 !important;
-  letter-spacing: -0.5px !important;
+  font-style: italic !important;
+  letter-spacing: 0.03em !important;
+  color: #ffffff !important;
   text-transform: uppercase !important;
-  color: #fff !important;
 }
 
 #kc-header-wrapper::before {
-  content: 'A';
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  background: var(--red);
-  color: #fff;
-  font-weight: 900;
-  font-size: 22px;
-  border-radius: 8px;
-  box-shadow: 0 0 16px var(--red-glow);
+  content: '⚡' !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #e10600 0%, #b30500 100%) !important;
+  color: #ffffff !important;
+  font-style: normal !important;
+  font-size: 19px !important;
+  font-weight: 900 !important;
+  box-shadow: 0 4px 16px rgba(225, 6, 0, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
-/* Main Card */
+#kc-header::after {
+  content: 'OFFICIAL F1 COMPETITION LEAGUE' !important;
+  display: block !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.58rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.22em !important;
+  color: #94a3b8 !important;
+  margin-top: 6px !important;
+  text-align: center !important;
+}
+
+/* ======================================================== */
+/* 3. TARJETA GLASSMORPHISM F1                              */
+/* ======================================================== */
 .pf-v5-c-login__main {
-  background: var(--surface) !important;
-  border: 1px solid var(--line-strong) !important;
+  width: 100% !important;
+  background: rgba(18, 23, 34, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 16px !important;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.7), 0 0 40px rgba(225, 6, 0, 0.06) !important;
-  backdrop-filter: blur(12px) !important;
-  padding: 32px 28px !important;
+  padding: 2rem 2.25rem !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 1px 1px rgba(255, 255, 255, 0.05) !important;
+  box-sizing: border-box !important;
 }
 
 .pf-v5-c-login__main-header {
-  border-bottom: 1px solid var(--line) !important;
-  padding-bottom: 16px !important;
-  margin-bottom: 20px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  margin-bottom: 1.5rem !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding-bottom: 1rem !important;
 }
 
+.pf-v5-c-login__main-header-title,
 #kc-page-title {
-  color: var(--text-main) !important;
-  font-size: 24px !important;
-  font-weight: 700 !important;
-  letter-spacing: -0.3px !important;
+  font-size: 1.55rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
   margin: 0 !important;
+  color: #ffffff !important;
 }
 
-/* Form controls / labels */
-.pf-v5-c-form__label-text {
-  color: var(--text-muted) !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
+/* Selector de Idioma Telemétrico */
+.pf-v5-c-login__main-header-utilities select,
+#kc-locale select {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.75rem !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  padding: 4px 10px !important;
+  border-radius: 6px !important;
+  color: #94a3b8 !important;
+  cursor: pointer !important;
+  outline: none !important;
+  transition: all 0.15s ease !important;
+}
+
+.pf-v5-c-login__main-header-utilities select:hover,
+#kc-locale select:hover {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+/* ======================================================== */
+/* 4. MENSAJES DE ALERTA (ACCOUNT ALREADY EXISTS, ETC)       */
+/* ======================================================== */
+.pf-v5-c-alert,
+.alert,
+#kc-error-message,
+.kc-feedback-text {
+  background: rgba(225, 6, 0, 0.12) !important;
+  border: 1px solid rgba(225, 6, 0, 0.35) !important;
+  border-left: 4px solid #e10600 !important;
+  border-radius: 10px !important;
+  padding: 1rem 1.15rem !important;
+  margin: 1.25rem 0 !important;
+  color: #ffb4ab !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.88rem !important;
+  line-height: 1.45 !important;
+  box-shadow: 0 4px 16px rgba(225, 6, 0, 0.15) !important;
+}
+
+.pf-v5-c-alert__title {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 0.92rem !important;
+  margin-bottom: 4px !important;
+}
+
+.pf-v5-c-alert__description {
+  color: #cbd5e1 !important;
+  font-size: 0.84rem !important;
+}
+
+.pf-v5-c-alert__icon {
+  color: #e10600 !important;
+  font-size: 1.15rem !important;
+  margin-right: 0.65rem !important;
+}
+
+/* ======================================================== */
+/* 5. FORMULARIOS Y CAMPOS                                   */
+/* ======================================================== */
+.pf-v5-c-form__group {
+  margin-bottom: 1.15rem !important;
+}
+
+.pf-v5-c-form__label-text,
+label {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  color: #94a3b8 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
+  margin-bottom: 0.4rem !important;
+  display: block !important;
 }
 
 .pf-v5-c-form-control input,
-input.pf-v5-c-form-control {
-  background-color: var(--surface-card) !important;
-  border: 1px solid var(--line-strong) !important;
+input.pf-v5-c-form-control,
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+  width: 100% !important;
+  background-color: #0f131a !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 8px !important;
-  color: var(--text-main) !important;
-  font-size: 15px !important;
-  padding: 12px 14px !important;
-  transition: border-color 0.2s, box-shadow 0.2s !important;
+  padding: 0.75rem 1rem !important;
+  color: #ffffff !important;
+  font-size: 0.92rem !important;
+  outline: none !important;
+  transition: all 0.15s ease !important;
+  box-sizing: border-box !important;
 }
 
 .pf-v5-c-form-control input:focus,
-input.pf-v5-c-form-control:focus {
-  border-color: var(--red) !important;
-  box-shadow: 0 0 0 3px var(--red-glow) !important;
-  outline: none !important;
+input.pf-v5-c-form-control:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus {
+  border-color: #e10600 !important;
+  box-shadow: 0 0 0 2px rgba(225, 6, 0, 0.2) !important;
 }
 
-/* Primary Button */
-.pf-v5-c-button.pf-m-primary,
-input[type="submit"].pf-v5-c-button {
-  background: linear-gradient(135deg, var(--red) 0%, var(--red-bright) 100%) !important;
-  border: none !important;
-  border-radius: 8px !important;
-  color: #fff !important;
-  font-size: 15px !important;
-  font-weight: 700 !important;
-  padding: 13px 24px !important;
-  text-transform: uppercase !important;
-  letter-spacing: 0.5px !important;
-  cursor: pointer !important;
-  box-shadow: 0 4px 16px var(--red-glow) !important;
-  transition: transform 0.15s, box-shadow 0.15s !important;
-  margin-top: 12px !important;
+/* ======================================================== */
+/* 6. BOTONES PRIMARIOS Y SECUNDARIOS                       */
+/* ======================================================== */
+.pf-v5-c-form__actions,
+#kc-form-buttons,
+#kc-form-options {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.85rem !important;
+  margin-top: 1.5rem !important;
   width: 100% !important;
 }
 
+/* BOTÓN PRIMARIO DE ALTO IMPACTO (Add to existing account / Iniciar sesión) */
+.pf-v5-c-button.pf-m-primary,
+button#linkAccount,
+button[name="submitAction"][value="linkAccount"],
+button[name="submitAction"]:last-of-type,
+input[type="submit"].pf-v5-c-button {
+  width: 100% !important;
+  background: linear-gradient(135deg, #e10600 0%, #b30500 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 10px !important;
+  color: #ffffff !important;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.05em !important;
+  padding: 0.85rem !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 20px rgba(225, 6, 0, 0.35) !important;
+  transition: all 0.18s ease !important;
+  text-transform: uppercase !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+  text-decoration: none !important;
+}
+
 .pf-v5-c-button.pf-m-primary:hover,
+button#linkAccount:hover,
+button[name="submitAction"][value="linkAccount"]:hover,
+button[name="submitAction"]:last-of-type:hover,
 input[type="submit"].pf-v5-c-button:hover {
-  transform: translateY(-2px) !important;
+  background: linear-gradient(135deg, #ff1801 0%, #cc0500 100%) !important;
   box-shadow: 0 6px 24px rgba(225, 6, 0, 0.5) !important;
+  transform: translateY(-1px) !important;
 }
 
-/* Eye / toggle password button */
+/* BOTÓN SECUNDARIO TELEMÉTRICO (Review profile / Volver / Cancelar) */
+.pf-v5-c-button.pf-m-secondary,
+.pf-v5-c-button.pf-m-tertiary,
+button#updateProfile,
+button[name="submitAction"][value="updateProfile"],
+button#cancel,
 .pf-v5-c-button.pf-m-control {
-  background: var(--surface-card) !important;
-  border: 1px solid var(--line-strong) !important;
-  color: var(--text-muted) !important;
-  border-radius: 0 8px 8px 0 !important;
+  width: 100% !important;
+  background: #0d1118 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 10px !important;
+  color: #e2e8f0 !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.82rem !important;
+  font-weight: 600 !important;
+  padding: 0.8rem 1rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  text-decoration: none !important;
 }
 
-/* Links */
+.pf-v5-c-button.pf-m-secondary:hover,
+button#updateProfile:hover,
+button[name="submitAction"][value="updateProfile"]:hover,
+button#cancel:hover {
+  background: #141b26 !important;
+  border-color: rgba(255, 255, 255, 0.28) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ======================================================== */
+/* 7. ENLACES Y PIE DE PÁGINA                               */
+/* ======================================================== */
 a {
-  color: var(--cyan) !important;
+  color: #00f2fe !important;
   text-decoration: none !important;
   font-weight: 500 !important;
-  transition: color 0.15s, text-decoration 0.15s !important;
+  transition: color 0.15s ease !important;
 }
 
 a:hover {
-  color: #fff !important;
+  color: #ffffff !important;
   text-decoration: underline !important;
 }
 
 #kc-registration {
-  color: var(--text-muted) !important;
-  font-size: 14px !important;
+  margin-top: 1.5rem !important;
   text-align: center !important;
-  margin-top: 20px !important;
-  padding-top: 16px !important;
-  border-top: 1px solid var(--line) !important;
+  font-size: 0.85rem !important;
+  color: #94a3b8 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  padding-top: 1.25rem !important;
 }
 
-/* Errors & Feedback */
-#kc-error-message,
-.kc-feedback-text,
-.pf-v5-c-helper-text__item.pf-m-error {
-  background: rgba(225, 6, 0, 0.12) !important;
-  border: 1px solid rgba(225, 6, 0, 0.35) !important;
-  color: #ff9e9e !important;
-  border-radius: 8px !important;
-  padding: 10px 14px !important;
-  font-size: 14px !important;
+#kc-registration a {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.4) !important;
+  text-decoration: none !important;
 }
 
-/* Language selector dropdown */
-.pf-v5-c-login__main-header-utilities select {
-  background: var(--surface-card) !important;
-  color: var(--text-muted) !important;
-  border: 1px solid var(--line) !important;
-  border-radius: 6px !important;
-  padding: 4px 8px !important;
+#kc-registration a:hover {
+  color: #e10600 !important;
+  border-color: #e10600 !important;
+}
+
+/* SUB-PIE TELEMÉTRICO OFICIAL */
+.pf-v5-c-login__container::after {
+  content: '● PADDOCK TELEMETRY SERVERS ONLINE | PKCE 256-BIT ENCRYPTED' !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  margin-top: 1.75rem !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 0.65rem !important;
+  color: #64748b !important;
+  letter-spacing: 0.05em !important;
+}
+
+@media (max-width: 600px) {
+  .pf-v5-c-login__main {
+    padding: 1.5rem !important;
+  }
 }
