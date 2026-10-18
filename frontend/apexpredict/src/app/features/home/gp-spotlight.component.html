@@ -1,33 +1,15 @@
 <div class="gp-telemetry-container">
-  <!-- Paddock Subheader / Live Status Bar (Limpio de datos técnicos de código/base de datos) -->
-  <div class="paddock-status-bar">
-    <div class="status-left">
-      <span class="live-pulse-dot"></span>
-      <span class="track-status">FIN DE SEMANA DE CARRERA // FIA GRADE 1</span>
-      <span class="divider">|</span>
-      <span class="pitwall-feed">FÓRMULA 1® TEMPORADA 2026</span>
-    </div>
-    <div class="status-right">
-      <span class="track-location">📍 {{ circuit().city }}, {{ circuit().country }}</span>
-      <span class="divider">|</span>
-      <span class="session-id">CRONOMETRAJE OFICIAL (ART / UTC-3)</span>
-    </div>
-  </div>
-
   <!-- Hero Header del Gran Premio -->
   <header class="gp-hero-header">
     <div class="gp-title-group">
       <div class="chips-row">
         <span class="badge round-tag">ROUND {{ session()?.round || 18 }} / 24</span>
         @if (session()?.sprint) {
-          <span class="badge sprint-tag">⚡ SPRINT WEEKEND</span>
-        } @else {
-          <span class="badge fia-tag">GRAND PRIX WEEKEND</span>
+          <span class="badge sprint-tag">SPRINT WEEKEND</span>
         }
-        <span class="badge fia-tag">FIA HOMOLOGATION: GRADE 1</span>
       </div>
       <h1 class="gp-main-title">
-        <span class="flag">🇺🇸</span> {{ session()?.name || 'United States Grand Prix' }} <span class="highlight-cota">// COTA</span>
+        {{ session()?.name || 'United States Grand Prix' }} <span class="highlight-cota">// COTA</span>
       </h1>
       <p class="gp-location">{{ circuit().name }} • {{ circuit().city }}, {{ circuit().country }}</p>
     </div>
@@ -51,7 +33,10 @@
     <aside class="sidebar-schedule">
       <div class="schedule-card-header">
         <div class="title-with-icon">
-          <span class="icon">🕒</span>
+          <svg class="header-icon-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
           <div>
             <h3>CRONOGRAMA OFICIAL</h3>
             <span class="subtext">Hora Argentina (UTC-3)</span>
@@ -67,9 +52,9 @@
               <div class="session-title-row">
                 <span class="session-name">{{ item.name }}</span>
                 @if (item.status === 'COMPLETED') {
-                  <span class="badge-status completed">✓ FINALIZADA</span>
+                  <span class="badge-status completed">FINALIZADA</span>
                 } @else if (item.status === 'LIVE') {
-                  <span class="badge-status live">🔴 EN VIVO</span>
+                  <span class="badge-status live"><span class="live-pulse-dot"></span> EN VIVO</span>
                 } @else if (item.status === 'UPCOMING') {
                   <span class="badge-status upcoming">PRÓXIMA</span>
                 } @else {
@@ -119,7 +104,7 @@
       <div class="countdown-banner">
         <div class="countdown-left">
           <div class="timer-title">
-            <span>⏱ TIEMPO RESTANTE PARA LA CARRERA</span>
+            <span>TIEMPO RESTANTE PARA LA CARRERA</span>
             <span class="session-pill">GRAN PREMIO OFICIAL</span>
           </div>
           <div class="countdown-boxes">
@@ -131,12 +116,15 @@
           <div class="sync-hint">
             @if (auth.authenticated()) {
               @if (currentPrediction()?.predictionId || (currentPrediction()?.podium && currentPrediction()!.podium.length > 0)) {
-                <span class="check-icon" style="color: var(--green);">✓</span> <strong>Pronóstico activo guardado en la base de datos</strong>
+                <span class="check-icon" style="color: var(--green); display: inline-flex; align-items: center;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                <strong>Pronóstico activo guardado en la base de datos</strong>
               } @else {
-                <span class="check-icon">ℹ</span> Sesión iniciada · Podés registrar tu pronóstico para el GP
+                <span class="check-icon">●</span> Sesión iniciada · Podés registrar tu pronóstico para el GP
               }
             } @else {
-              <span class="check-icon">ℹ</span> Iniciá sesión para guardar y competir en ligas
+              <span class="check-icon">●</span> Iniciá sesión para guardar y competir en ligas
             }
           </div>
         </div>
@@ -145,16 +133,16 @@
           @if (auth.authenticated()) {
             @if (currentPrediction()?.predictionId || (currentPrediction()?.podium && currentPrediction()!.podium.length > 0)) {
               <a routerLink="/dashboard" class="btn-cta-predict" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
-                <span class="btn-icon">✓</span> VER / EDITAR MI PRONÓSTICO
+                VER / EDITAR MI PRONÓSTICO →
               </a>
             } @else {
               <a routerLink="/dashboard" class="btn-cta-predict">
-                <span class="btn-icon">⚡</span> CARGAR MI PRONÓSTICO
+                CARGAR MI PRONÓSTICO →
               </a>
             }
           } @else {
             <button type="button" (click)="auth.login()" class="btn-cta-predict">
-              <span class="btn-icon">⚡</span> INICIAR SESIÓN Y PREDECIR
+              INICIAR SESIÓN Y PREDECIR →
             </button>
           }
         </div>
@@ -206,7 +194,7 @@
           <div class="user-info-row">
             <div class="user-avatar-initials">{{ (auth.username() || 'TG').slice(0, 2).toUpperCase() }}</div>
             <div>
-              <h4>{{ auth.username() }} <span class="verified">✓</span></h4>
+              <h4>{{ auth.username() }}</h4>
               <span class="user-handle">{{ auth.username() }} · Apex Paddock</span>
             </div>
           </div>
@@ -246,7 +234,12 @@
         <!-- Landing Page Genérica cuando el usuario NO ha iniciado sesión -->
         <div class="landing-welcome-card">
           <div class="welcome-header">
-            <span class="welcome-icon">🏎️</span>
+            <div class="welcome-f1-icon">
+              <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                <line x1="4" y1="22" x2="4" y2="15"/>
+              </svg>
+            </div>
             <div>
               <span class="welcome-tag">BIENVENIDO AL PADDOCK</span>
               <h4>ApexPredict F1</h4>
@@ -256,9 +249,9 @@
             El prode oficial de Fórmula 1 en tiempo real. Predecí podios, poles y duelos mano a mano en cada Gran Premio y competí con tus amigos en ligas privadas.
           </p>
           <div class="welcome-features">
-            <div class="feat-item"><span class="feat-icon">🎯</span> Pronósticos oficiales de cada GP</div>
-            <div class="feat-item"><span class="feat-icon">🔒</span> Ligas privadas con clave y link de invitación</div>
-            <div class="feat-item"><span class="feat-icon">🏆</span> Podio y tabla global en vivo</div>
+            <div class="feat-item"><span class="feat-bullet">●</span> Pronósticos oficiales de cada GP</div>
+            <div class="feat-item"><span class="feat-bullet">●</span> Ligas privadas con clave y link de invitación</div>
+            <div class="feat-item"><span class="feat-bullet">●</span> Podio y tabla global en vivo</div>
           </div>
           <div class="welcome-actions">
             <button type="button" class="btn-welcome-login" (click)="auth.login()">
@@ -278,11 +271,11 @@
           </div>
           <h4>Puntuación por Acierto</h4>
           <div class="scoring-list">
-            <div class="scoring-item"><span>🥇 Ganador de Carrera (P1)</span><strong>+25 pts</strong></div>
-            <div class="scoring-item"><span>🥈 Segundo Lugar (P2)</span><strong>+18 pts</strong></div>
-            <div class="scoring-item"><span>🥉 Tercer Lugar (P3)</span><strong>+15 pts</strong></div>
-            <div class="scoring-item"><span>🏁 Pole Position</span><strong>+20 pts</strong></div>
-            <div class="scoring-item"><span>🟣 Vuelta Rápida</span><strong>+10 pts</strong></div>
+            <div class="scoring-item"><span>Ganador de Carrera (P1)</span><strong>+25 pts</strong></div>
+            <div class="scoring-item"><span>Segundo Lugar (P2)</span><strong>+18 pts</strong></div>
+            <div class="scoring-item"><span>Tercer Lugar (P3)</span><strong>+15 pts</strong></div>
+            <div class="scoring-item"><span>Pole Position</span><strong>+20 pts</strong></div>
+            <div class="scoring-item"><span>Vuelta Rápida</span><strong>+10 pts</strong></div>
           </div>
         </div>
       }
@@ -360,7 +353,7 @@
             <span class="nor-label">NOR: {{ norrisVotes() }}%</span>
             <span class="ver-label">{{ verstappenVotes() }}% :VER</span>
           </div>
-          <span class="vote-trend">📈 Tendencia en tiempo real en la comunidad</span>
+          <span class="vote-trend">Tendencia en tiempo real en la comunidad</span>
         </div>
       </div>
 

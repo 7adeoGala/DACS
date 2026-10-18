@@ -77,13 +77,13 @@ export class DriverPickerModalComponent {
     });
   });
 
-  // Título e iconos contextuales
+  // Título e identificadores contextuales
   getSlotIcon(): string {
     switch (this.currentSlot()) {
-      case 'p1': return '🥇';
-      case 'p2': return '🥈';
-      case 'p3': return '🥉';
-      case 'pole': return '🏁';
+      case 'p1': return 'P1';
+      case 'p2': return 'P2';
+      case 'p3': return 'P3';
+      case 'pole': return 'POLE';
     }
   }
 

@@ -30,13 +30,13 @@ import { AuthService } from '../../core/auth/auth.service';
 
           @if (errorMessage()) {
             <div class="alert-message error">
-              ⚠️ {{ errorMessage() }}
+              {{ errorMessage() }}
             </div>
           }
 
           @if (successMessage()) {
             <div class="alert-message success">
-              ✓ {{ successMessage() }}
+              {{ successMessage() }}
             </div>
           }
 

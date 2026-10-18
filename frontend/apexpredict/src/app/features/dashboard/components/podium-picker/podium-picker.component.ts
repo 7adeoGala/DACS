@@ -85,9 +85,9 @@ export class PodiumPickerComponent {
   // Título legible del slot activo en el modal
   readonly activeSlotTitle = computed(() => {
     switch (this.activeSlot()) {
-      case 'p1': return '🥇 P1 Winner — Vencedor (+25 PTS)';
-      case 'p2': return '🥈 P2 Segundo — Segundo Puesto (+18 PTS)';
-      case 'p3': return '🥉 P3 Tercero — Tercer Puesto (+15 PTS)';
+      case 'p1': return 'P1 Winner — Vencedor';
+      case 'p2': return 'P2 Segundo — Segundo Puesto';
+      case 'p3': return 'P3 Tercero — Tercer Puesto';
     }
   });
 

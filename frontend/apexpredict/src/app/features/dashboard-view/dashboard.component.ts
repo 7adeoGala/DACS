@@ -48,7 +48,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
           @if (hasExistingPrediction()) {
             <div class="alert-box success" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
               <div>
-                <strong>✓ Pronóstico Registrado en la Base de Datos:</strong> 
+                <strong>Pronóstico Registrado en la Base de Datos:</strong> 
                 Tenés tu pronóstico activo guardado en el servidor para este GP.
                 @if (predictionSubmittedAt()) {
                   <span class="dim" style="margin-left: 6px; font-size: 0.85rem;">
@@ -57,33 +57,33 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 }
               </div>
               <span class="badge" style="background: rgba(16, 185, 129, 0.25); color: #fff; font-weight: 700; padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.78rem;">
-                ✓ SINCRONIZADO
+                SINCRONIZADO
               </span>
             </div>
           }
 
           @if (isLocked()) {
             <div class="alert-box error" style="margin-bottom: 1rem;">
-              🔒 <strong>PRONÓSTICOS BLOQUEADOS:</strong> La sesión oficial ya ha comenzado. El pronóstico se encuentra en modo solo lectura.
+              <strong>PRONÓSTICOS BLOQUEADOS:</strong> La sesión oficial ya ha comenzado. El pronóstico se encuentra en modo solo lectura.
             </div>
           }
 
           @if (isSaving()) {
             <div class="alert-box" style="margin-bottom: 1rem; background: rgba(0, 242, 254, 0.1); border: 1px solid var(--cyan); color: #e0f2fe; display: flex; align-items: center; gap: 8px;">
-              <span>⏳</span>
+              <span class="spinner-dot"></span>
               <span>Conectando con servidores de telemetría y sincronizando pronóstico con la base de datos...</span>
             </div>
           }
 
           @if (saveSuccess()) {
             <div class="alert-box success" style="margin-bottom: 1rem;">
-              ✓ ¡Pronóstico guardado exitosamente en el servidor y la base de datos!
+              ¡Pronóstico guardado exitosamente en el servidor y la base de datos!
             </div>
           }
 
           @if (saveError()) {
             <div class="alert-box error" style="margin-bottom: 1rem;">
-              ⚠️ {{ saveError() }}
+              {{ saveError() }}
             </div>
           }
 
@@ -99,8 +99,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
           <div class="grid-two-cols">
             <div class="spotlight-card">
               <div class="card-title-row">
-                <h4>🏁 Pole Position (Sábado)</h4>
-                <span class="cyan-pts">+20 PTS</span>
+                <h4>Pole Position (Sábado)</h4>
               </div>
               <div class="podium-slot-label" style="margin-bottom: 0.75rem;">Piloto más veloz en Q3</div>
               
@@ -131,8 +130,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
 
             <div class="spotlight-card">
               <div class="card-title-row">
-                <h4>⚔️ Duelo Directo de la Fecha</h4>
-                <span class="mono-pts">+15 PTS</span>
+                <h4>Duelo Directo de la Fecha</h4>
               </div>
               <label class="dim">{{ getDriverName(matchupDriver1()) }} vs {{ getDriverName(matchupDriver2()) }}</label>
               <div class="duel-selector">
@@ -156,17 +154,16 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
 
           <!-- 3. TELEMETRÍA DE CARRERA (DESAGRUPADA Y PULIDA) -->
           <div class="grid-two-cols">
-            <!-- TARJETA 1: SAFETY CAR (+10 PTS) -->
+            <!-- TARJETA 1: SAFETY CAR -->
             <div class="spotlight-card telemetry-card sc-card">
               <div class="card-title-row">
                 <div class="card-title-group">
-                  <span class="telemetry-icon-badge sc">🚨</span>
+                  <span class="telemetry-icon-badge sc">SC</span>
                   <div>
                     <h4>Auto de Seguridad (Safety Car)</h4>
                     <span class="dim" style="font-size: 0.82rem;">Apariciones físicas de SC o Virtual SC (VSC)</span>
                   </div>
                 </div>
-                <span class="amber-pts">+10 PTS</span>
               </div>
 
               <div class="telemetry-display-box">
@@ -201,17 +198,16 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               </div>
             </div>
 
-            <!-- TARJETA 2: ABANDONOS DNFs (+15 PTS) -->
+            <!-- TARJETA 2: ABANDONOS DNFs -->
             <div class="spotlight-card telemetry-card dnf-card">
               <div class="card-title-row">
                 <div class="card-title-group">
-                  <span class="telemetry-icon-badge dnf">🚩</span>
+                  <span class="telemetry-icon-badge dnf">DNF</span>
                   <div>
                     <h4>Abandonos de Carrera (DNFs)</h4>
                     <span class="dim" style="font-size: 0.82rem;">Monoplazas fuera de carrera (DNF / DNS)</span>
                   </div>
                 </div>
-                <span class="mono-pts">+15 PTS</span>
               </div>
 
               <div class="telemetry-display-box">
@@ -251,17 +247,17 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
           <div class="submit-bar">
             <button 
               class="button" 
-              type="button"
+              type="button" 
               [disabled]="isPodiumDuplicate() || isSaving() || isLocked()" 
               (click)="savePrediction()">
               @if (isSaving()) {
                 <span>Sincronizando con base de datos…</span>
               } @else if (saveSuccess()) {
-                <span>✓ ¡Pronóstico Guardado en Servidor!</span>
+                <span>¡Pronóstico Guardado en Servidor!</span>
               } @else if (hasExistingPrediction()) {
-                <span>🔄 Actualizar Mi Pronóstico Oficial</span>
+                <span>Actualizar Mi Pronóstico Oficial</span>
               } @else {
-                <span>🏁 Guardar Mi Pronóstico Oficial</span>
+                <span>Guardar Mi Pronóstico Oficial</span>
               }
             </button>
           </div>
@@ -279,31 +275,31 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               type="button"
               [class.active]="leagueSubTab() === 'list'" 
               (click)="leagueSubTab.set('list')">
-              🏆 Mis Ligas ({{ myLeagues().length }})
+              Mis Ligas ({{ myLeagues().length }})
             </button>
             <button 
               type="button"
               [class.active]="leagueSubTab() === 'create'" 
               (click)="leagueSubTab.set('create')">
-              ➕ Crear Nueva Liga
+              Crear Nueva Liga
             </button>
             <button 
               type="button"
               [class.active]="leagueSubTab() === 'join'" 
               (click)="leagueSubTab.set('join')">
-              🔗 Unirse por Link / Clave
+              Unirse por Link / Clave
             </button>
           </div>
 
           @if (leagueSuccess()) {
             <div class="alert-box success">
-              ✓ {{ leagueSuccess() }}
+              {{ leagueSuccess() }}
             </div>
           }
 
           @if (leagueError()) {
             <div class="alert-box error">
-              ⚠️ {{ leagueError() }}
+              {{ leagueError() }}
             </div>
           }
 
@@ -319,8 +315,15 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                       class="league-chip" 
                       [class.active]="selectedLeague()?.id === l.id" 
                       (click)="selectLeague(l)">
-                      🏆 {{ l.name }}
-                      @if (l.hasPassword) { <span style="font-size: 11px;">🔒</span> }
+                      {{ l.name }}
+                      @if (l.hasPassword) {
+                        <span class="lock-indicator" title="Protegida con contraseña" style="display: inline-flex; vertical-align: middle; margin-left: 4px;">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                          </svg>
+                        </span>
+                      }
                     </button>
                   }
                 </div>
@@ -341,7 +344,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     [value]="getInviteUrl(selectedLeague()?.inviteCode)" 
                     class="copy-input"/>
                   <button class="button small" type="button" (click)="copyInviteUrl()">
-                    {{ copySuccess() ? '✓ Copiado' : '🔗 Copiar Link' }}
+                    {{ copySuccess() ? 'Copiado' : 'Copiar Link' }}
                   </button>
                 </div>
               </div>
@@ -349,10 +352,10 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               <!-- PODIO TOP 3 DE LA LIGA -->
               <div class="spotlight-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                  <h3 class="podium-title" style="margin: 0;">👑 Podio de la Liga: {{ selectedLeague()?.name }}</h3>
+                  <h3 class="podium-title" style="margin: 0;">Podio de la Liga: {{ selectedLeague()?.name }}</h3>
                   @if (selectedLeague()?.hasPassword) {
                     <span style="font-size: 0.8rem; background: rgba(245, 176, 0, 0.15); color: var(--gold); border: 1px solid rgba(245, 176, 0, 0.3); padding: 3px 8px; border-radius: var(--radius-sm);">
-                      🔒 Protegida con Contraseña
+                      Protegida con Contraseña
                     </span>
                   }
                 </div>
@@ -361,32 +364,40 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   <div class="league-podium-pedestals">
                     <!-- P2: PLATA -->
                     <div class="pedestal silver-ped">
-                      <div class="pos-badge">🥈 P2</div>
+                      <div class="pos-badge">P2</div>
                       <div class="pilot-name">{{ leagueLeaderboard()[1]?.displayName || 'Esperando corredor' }}</div>
                       <div class="pilot-pts">{{ leagueLeaderboard()[1]?.totalScore || 0 }} pts</div>
                       <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
-                        {{ (leagueLeaderboard()[1]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                        {{ (leagueLeaderboard()[1]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
                       </span>
                     </div>
 
                     <!-- P1: ORO -->
                     <div class="pedestal gold-ped">
-                      <div class="crown">👑</div>
-                      <div class="pos-badge">🥇 P1</div>
+                      <div class="crown" aria-hidden="true">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/>
+                          <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
+                          <path d="M4 22h16"/>
+                          <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h10c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-2c-.55 0-1-.45-1-1v-2.34"/>
+                          <path d="M6 4h12a2 2 0 0 1 2 2v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V6a2 2 0 0 1 2-2z"/>
+                        </svg>
+                      </div>
+                      <div class="pos-badge">P1</div>
                       <div class="pilot-name">{{ leagueLeaderboard()[0]?.displayName || 'Líder' }}</div>
                       <div class="pilot-pts">{{ leagueLeaderboard()[0]?.totalScore || 0 }} pts</div>
                       <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
-                        {{ (leagueLeaderboard()[0]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                        {{ (leagueLeaderboard()[0]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
                       </span>
                     </div>
 
                     <!-- P3: BRONCE -->
                     <div class="pedestal bronze-ped">
-                      <div class="pos-badge">🥉 P3</div>
+                      <div class="pos-badge">P3</div>
                       <div class="pilot-name">{{ leagueLeaderboard()[2]?.displayName || 'Esperando corredor' }}</div>
                       <div class="pilot-pts">{{ leagueLeaderboard()[2]?.totalScore || 0 }} pts</div>
                       <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
-                        {{ (leagueLeaderboard()[2]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                        {{ (leagueLeaderboard()[2]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
                       </span>
                     </div>
                   </div>
@@ -417,9 +428,9 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                           <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
                           <td>
                             @if (entry.predictionsCount > 0) {
-                              <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">🟢 Pronóstico Enviado</span>
+                              <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">Pronóstico Enviado</span>
                             } @else {
-                              <span class="dim" style="font-size: 0.85rem;">⏳ Sin pronóstico aún</span>
+                              <span class="dim" style="font-size: 0.85rem;">Sin pronóstico aún</span>
                             }
                           </td>
                         </tr>
@@ -433,14 +444,25 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
             } @else {
               <!-- EMPTY STATE CUANDO NO TIENE LIGAS -->
               <div class="spotlight-card" style="text-align: center; padding: 3rem 1.5rem;">
-                <div style="font-size: 3rem; margin-bottom: 0.5rem;">🏁</div>
+                <div class="empty-state-f1-icon" style="margin: 0 auto 1.25rem; display: flex; justify-content: center;">
+                  <svg width="68" height="68" viewBox="0 0 64 64" fill="none" stroke="currentColor">
+                    <rect x="6" y="16" width="52" height="32" rx="8" stroke="var(--line-strong)" stroke-width="2" fill="rgba(255,255,255,0.03)" />
+                    <circle cx="16" cy="32" r="4.5" fill="var(--red)" />
+                    <circle cx="24" cy="32" r="4.5" fill="var(--red)" />
+                    <circle cx="32" cy="32" r="4.5" fill="var(--red)" />
+                    <circle cx="40" cy="32" r="4.5" fill="var(--red)" />
+                    <circle cx="48" cy="32" r="4.5" fill="var(--red)" />
+                    <line x1="32" y1="48" x2="32" y2="58" stroke="var(--line-strong)" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="22" y1="58" x2="42" y2="58" stroke="var(--line-strong)" stroke-width="3" stroke-linecap="round"/>
+                  </svg>
+                </div>
                 <h2>Aún no pertenecés a ninguna liga privada</h2>
                 <p class="dim" style="max-width: 500px; margin: 0.5rem auto 1.5rem;">
                   Creá tu propia liga privada con contraseña o ingresá mediante el link de invitación que te compartieron tus amigos.
                 </p>
                 <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
-                  <button class="button" type="button" (click)="leagueSubTab.set('create')">➕ Crear Nueva Liga</button>
-                  <button class="button quiet" type="button" (click)="leagueSubTab.set('join')">🔗 Unirme por Link o Código</button>
+                  <button class="button" type="button" (click)="leagueSubTab.set('create')">Crear Nueva Liga</button>
+                  <button class="button quiet" type="button" (click)="leagueSubTab.set('join')">Unirme por Link o Código</button>
                 </div>
               </div>
             }
@@ -471,7 +493,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               </div>
 
               <div class="form-group">
-                <label>🔒 Contraseña de Acceso (opcional)</label>
+                <label>Contraseña de Acceso (opcional)</label>
                 <input 
                   type="password" 
                   [(ngModel)]="newLeaguePassword" 
@@ -485,7 +507,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 type="button" 
                 [disabled]="!newLeagueName.trim() || isCreatingLeague()" 
                 (click)="createLeague()">
-                {{ isCreatingLeague() ? 'Creando en base de datos…' : '🏁 Crear Liga y Persistir' }}
+                {{ isCreatingLeague() ? 'Creando en base de datos…' : 'Crear Liga y Persistir' }}
               </button>
             </div>
           }
@@ -519,7 +541,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 type="button" 
                 [disabled]="!joinCode.trim() || isJoiningLeague()" 
                 (click)="joinLeague()">
-                {{ isJoiningLeague() ? 'Verificando e ingresando…' : '🚀 Unirme a la Liga' }}
+                {{ isJoiningLeague() ? 'Verificando e ingresando…' : 'Unirme a la Liga' }}
               </button>
             </div>
           }
@@ -537,19 +559,19 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               type="button"
               [class.active]="posicionesSubTab() === 'jugadores'" 
               (click)="posicionesSubTab.set('jugadores')">
-              👥 Jugadores Global ({{ globalLeaderboard().length }})
+              Jugadores Global ({{ globalLeaderboard().length }})
             </button>
             <button 
               type="button"
               [class.active]="posicionesSubTab() === 'pilotos'" 
               (click)="posicionesSubTab.set('pilotos')">
-              🏎️ Pilotos F1 (WDC)
+              Pilotos F1 (WDC)
             </button>
             <button 
               type="button"
               [class.active]="posicionesSubTab() === 'equipos'" 
               (click)="posicionesSubTab.set('equipos')">
-              🛠️ Equipos F1 (WCC)
+              Equipos F1 (WCC)
             </button>
           </div>
 
@@ -558,7 +580,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
             <div class="spotlight-card">
               <div class="card-title-row">
                 <div>
-                  <h3>📊 Clasificación Global de la Comunidad</h3>
+                  <h3>Clasificación Global de la Comunidad</h3>
                   <p class="dim" style="margin-top: 4px;">Puntos y pronósticos registrados en tiempo real por todos los corredores de ApexPredict.</p>
                 </div>
                 <span class="mono-pts">{{ globalLeaderboard().length }} Pilotos Registrados</span>
@@ -567,30 +589,38 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               @if (globalLeaderboard().length >= 3) {
                 <div class="league-podium-pedestals">
                   <div class="pedestal silver-ped">
-                    <div class="pos-badge">🥈 P2</div>
+                    <div class="pos-badge">P2</div>
                     <div class="pilot-name">{{ globalLeaderboard()[1]?.displayName }}</div>
                     <div class="pilot-pts">{{ globalLeaderboard()[1]?.totalScore }} pts</div>
                     <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
-                      {{ (globalLeaderboard()[1]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                      {{ (globalLeaderboard()[1]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
                     </span>
                   </div>
 
                   <div class="pedestal gold-ped">
-                    <div class="crown">👑</div>
-                    <div class="pos-badge">🥇 P1</div>
+                    <div class="crown" aria-hidden="true">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/>
+                        <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
+                        <path d="M4 22h16"/>
+                        <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h10c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-2c-.55 0-1-.45-1-1v-2.34"/>
+                        <path d="M6 4h12a2 2 0 0 1 2 2v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V6a2 2 0 0 1 2-2z"/>
+                      </svg>
+                    </div>
+                    <div class="pos-badge">P1</div>
                     <div class="pilot-name">{{ globalLeaderboard()[0]?.displayName }}</div>
                     <div class="pilot-pts">{{ globalLeaderboard()[0]?.totalScore }} pts</div>
                     <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
-                      {{ (globalLeaderboard()[0]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                      {{ (globalLeaderboard()[0]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
                     </span>
                   </div>
 
                   <div class="pedestal bronze-ped">
-                    <div class="pos-badge">🥉 P3</div>
+                    <div class="pos-badge">P3</div>
                     <div class="pilot-name">{{ globalLeaderboard()[2]?.displayName }}</div>
                     <div class="pilot-pts">{{ globalLeaderboard()[2]?.totalScore }} pts</div>
                     <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
-                      {{ (globalLeaderboard()[2]?.predictionsCount || 0) > 0 ? '🟢 Pronóstico cargado' : '⏳ Pendiente' }}
+                      {{ (globalLeaderboard()[2]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
                     </span>
                   </div>
                 </div>
@@ -619,9 +649,9 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                         <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
                         <td>
                           @if (entry.predictionsCount > 0) {
-                            <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">🟢 {{ entry.predictionsCount }} Carrera (Enviado)</span>
+                            <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">{{ entry.predictionsCount }} Carrera (Enviado)</span>
                           } @else {
-                            <span class="dim" style="font-size: 0.85rem;">⏳ 0 Carreras</span>
+                            <span class="dim" style="font-size: 0.85rem;">0 Carreras</span>
                           }
                         </td>
                       </tr>
@@ -639,7 +669,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
             <div class="spotlight-card">
               <div class="card-title-row">
                 <div>
-                  <h3>🏎️ Campeonato Mundial de Pilotos (WDC)</h3>
+                  <h3>Campeonato Mundial de Pilotos (WDC)</h3>
                   <p class="dim" style="margin-top: 4px;">Tabla oficial de posiciones de pilotos F1 2026 suministrada por Jolpica F1 API.</p>
                 </div>
                 <span class="mono-pts">{{ driverStandings().length }} Pilotos F1</span>
@@ -686,7 +716,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
             <div class="spotlight-card">
               <div class="card-title-row">
                 <div>
-                  <h3>🛠️ Campeonato Mundial de Constructores (WCC)</h3>
+                  <h3>Campeonato Mundial de Constructores (WCC)</h3>
                   <p class="dim" style="margin-top: 4px;">Tabla oficial de posiciones de escuderías F1 2026 suministrada por Jolpica F1 API.</p>
                 </div>
                 <span class="mono-pts">{{ constructorStandings().length }} Escuderías</span>
@@ -731,14 +761,14 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
           <div class="spotlight-card">
             <div class="card-title-row">
               <div>
-                <h3>📜 Historial & Pronósticos del Usuario</h3>
+                <h3>Historial & Pronósticos del Usuario</h3>
                 <p class="dim" style="margin-top: 4px;">Detalle de tus pronósticos guardados y puntos asignados por fecha.</p>
               </div>
             </div>
 
             <!-- AVISO TEMPORADA 2026 -->
             <div class="alert-box info" style="margin: 1rem 0; display: flex; align-items: flex-start; gap: 10px;">
-              <span style="font-size: 1.25rem;">ℹ️</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
               <div>
                 <strong>Temporada F1 2026 en curso:</strong>
                 A medida que se disputen los Grandes Premios y la FIA homologue las clasificaciones oficiales finales, tus resultados se puntuarán automáticamente.
@@ -755,7 +785,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                         @if (h.score != null) {
                           <span class="badge-round" style="font-size: 0.7rem; background: var(--green);">CARRERA PUNTUADA</span>
                         } @else {
-                          <span class="badge-round" style="font-size: 0.7rem; background: var(--gold); color: #000;">🟡 PRONÓSTICO REGISTRADO — EN ESPERA</span>
+                          <span class="badge-round" style="font-size: 0.7rem; background: var(--gold); color: #000;">PRONÓSTICO REGISTRADO — EN ESPERA</span>
                         }
                         <h4 style="margin: 6px 0 2px; font-size: 1.15rem;">{{ h.sessionName }}</h4>
                         <p class="dim" style="font-size: 0.85rem; margin: 0;">{{ h.circuit }}</p>
@@ -771,7 +801,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     @if (h.podium && h.podium.length >= 3) {
                       <div style="margin: 1rem 0 0.5rem; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--line);">
                         <div style="font-size: 0.82rem; margin-bottom: 4px;">
-                          <strong>Podio Elegido:</strong> 🥇 {{ getDriverName(h.podium[0]) }} • 🥈 {{ getDriverName(h.podium[1]) }} • 🥉 {{ getDriverName(h.podium[2]) }}
+                          <strong>Podio Elegido:</strong> P1: {{ getDriverName(h.podium[0]) }} • P2: {{ getDriverName(h.podium[1]) }} • P3: {{ getDriverName(h.podium[2]) }}
                         </div>
                         <div style="font-size: 0.82rem; color: var(--text-dim);">
                           Pole: <strong style="color: var(--cyan);">{{ getDriverName(h.polePositionDriverId) }}</strong> • 
@@ -793,22 +823,22 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                           Podio: +{{ h.scoreBreakdown.podiumPoints }} pts ({{ h.scoreBreakdown.podiumHits }}/3)
                         </span>
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.poleHit">
-                          Pole: {{ h.scoreBreakdown.poleHit ? '+20 pts ✓' : '0 pts' }}
+                          Pole: {{ h.scoreBreakdown.poleHit ? '+20 pts' : '0 pts' }}
                         </span>
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.duelHit">
-                          Duelo: {{ h.scoreBreakdown.duelHit ? '+15 pts ✓' : '0 pts' }}
+                          Duelo: {{ h.scoreBreakdown.duelHit ? '+15 pts' : '0 pts' }}
                         </span>
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.safetyCarHit">
-                          Safety Car: {{ h.scoreBreakdown.safetyCarHit ? '+10 pts ✓' : '0 pts' }}
+                          Safety Car: {{ h.scoreBreakdown.safetyCarHit ? '+10 pts' : '0 pts' }}
                         </span>
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.dnfHit">
-                          DNFs: {{ h.scoreBreakdown.dnfHit ? '+15 pts ✓' : '0 pts' }}
+                          DNFs: {{ h.scoreBreakdown.dnfHit ? '+15 pts' : '0 pts' }}
                         </span>
                       </div>
                     }
 
                     <div class="card-tap-hint">
-                      <span>🔍 Tocar para comparar con resultados oficiales FIA →</span>
+                      <span>Tocar para comparar con resultados oficiales FIA →</span>
                     </div>
                   </div>
                 }
@@ -861,13 +891,13 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 <div class="comp-total-pts">{{ item.score != null ? item.score : 0 }} <span style="font-size: 1rem; color: #fff;">/ 118 PTS</span></div>
               </div>
               <div class="comp-status-badge" [class.scored]="item.score != null">
-                {{ item.score != null ? '🏁 CARRERA PUNTUADA' : '⏳ RESULTADOS OFICIALES EN ESPERA' }}
+                {{ item.score != null ? 'CARRERA PUNTUADA' : 'RESULTADOS OFICIALES EN ESPERA' }}
               </div>
             </div>
 
             @if (item.score == null) {
               <div class="alert-box info" style="margin: 1rem 0;">
-                ℹ️ <strong>Carrera pendiente de homologación:</strong> Esta sesión aún no ha finalizado o los comisarios de la FIA no han emitido la clasificación final oficial. Debajo podés revisar tus pronósticos bloqueados.
+                <strong>Carrera pendiente de homologación:</strong> Esta sesión aún no ha finalizado o los comisarios de la FIA no han emitido la clasificación final oficial. Debajo podés revisar tus pronósticos bloqueados.
               </div>
             }
 
@@ -883,147 +913,147 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
 
               <!-- P1 WINNER -->
               <div class="comp-data-row">
-                <span class="c-col cat"><strong>🥇 P1 (Ganador GP)</strong></span>
+                <span class="c-col cat"><strong>P1 (Ganador GP)</strong></span>
                 <span class="c-col pick">{{ getDriverName(item.podium[0]) }}</span>
                 <span class="c-col official dim">
                   {{ item.officialResults?.podium?.[0] ? getDriverName(item.officialResults?.podium?.[0]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts gold">+25 PTS</span>
+                <span class="c-col pts gold">25 pts</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.podiumHits >= 1) {
-                      <span class="status-tag hit">✓ ACERTADO</span>
+                      <span class="status-tag hit">ACERTADO</span>
                     } @else {
-                      <span class="status-tag miss">✗ NO ACERTÓ</span>
+                      <span class="status-tag miss">NO ACERTÓ</span>
                     }
                   } @else {
-                    <span class="status-tag pending">⏳ PENDIENTE</span>
+                    <span class="status-tag pending">PENDIENTE</span>
                   }
                 </span>
               </div>
 
               <!-- P2 SEGUNDO -->
               <div class="comp-data-row">
-                <span class="c-col cat"><strong>🥈 P2 (Segundo Puesto)</strong></span>
+                <span class="c-col cat"><strong>P2 (Segundo Puesto)</strong></span>
                 <span class="c-col pick">{{ getDriverName(item.podium[1]) }}</span>
                 <span class="c-col official dim">
                   {{ item.officialResults?.podium?.[1] ? getDriverName(item.officialResults?.podium?.[1]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts silver">+18 PTS</span>
+                <span class="c-col pts silver">18 pts</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.podiumHits >= 2) {
-                      <span class="status-tag hit">✓ ACERTADO</span>
+                      <span class="status-tag hit">ACERTADO</span>
                     } @else {
-                      <span class="status-tag miss">✗ NO ACERTÓ</span>
+                      <span class="status-tag miss">NO ACERTÓ</span>
                     }
                   } @else {
-                    <span class="status-tag pending">⏳ PENDIENTE</span>
+                    <span class="status-tag pending">PENDIENTE</span>
                   }
                 </span>
               </div>
 
               <!-- P3 TERCERO -->
               <div class="comp-data-row">
-                <span class="c-col cat"><strong>🥉 P3 (Tercer Puesto)</strong></span>
+                <span class="c-col cat"><strong>P3 (Tercer Puesto)</strong></span>
                 <span class="c-col pick">{{ getDriverName(item.podium[2]) }}</span>
                 <span class="c-col official dim">
                   {{ item.officialResults?.podium?.[2] ? getDriverName(item.officialResults?.podium?.[2]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts bronze">+15 PTS</span>
+                <span class="c-col pts bronze">15 pts</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.podiumHits >= 3) {
-                      <span class="status-tag hit">✓ ACERTADO</span>
+                      <span class="status-tag hit">ACERTADO</span>
                     } @else {
-                      <span class="status-tag miss">✗ NO ACERTÓ</span>
+                      <span class="status-tag miss">NO ACERTÓ</span>
                     }
                   } @else {
-                    <span class="status-tag pending">⏳ PENDIENTE</span>
+                    <span class="status-tag pending">PENDIENTE</span>
                   }
                 </span>
               </div>
 
               <!-- POLE POSITION -->
               <div class="comp-data-row">
-                <span class="c-col cat"><strong>🏁 Pole Position (Q3)</strong></span>
+                <span class="c-col cat"><strong>Pole Position (Q3)</strong></span>
                 <span class="c-col pick">{{ getDriverName(item.polePositionDriverId) }}</span>
                 <span class="c-col official dim">
                   {{ item.officialResults?.polePositionDriverId ? getDriverName(item.officialResults?.polePositionDriverId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts cyan">+20 PTS</span>
+                <span class="c-col pts cyan">20 pts</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.poleHit) {
-                      <span class="status-tag hit">✓ ACERTADO</span>
+                      <span class="status-tag hit">ACERTADO</span>
                     } @else {
-                      <span class="status-tag miss">✗ NO ACERTÓ</span>
+                      <span class="status-tag miss">NO ACERTÓ</span>
                     }
                   } @else {
-                    <span class="status-tag pending">⏳ PENDIENTE</span>
+                    <span class="status-tag pending">PENDIENTE</span>
                   }
                 </span>
               </div>
 
               <!-- DUELO DE LA FECHA -->
               <div class="comp-data-row">
-                <span class="c-col cat"><strong>⚔️ Duelo de la Fecha</strong></span>
+                <span class="c-col cat"><strong>Duelo de la Fecha</strong></span>
                 <span class="c-col pick">{{ getDriverName(item.duelDriverPick) }}</span>
                 <span class="c-col official dim">
                   {{ item.officialResults?.duelWinnerId ? getDriverName(item.officialResults?.duelWinnerId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts">+15 PTS</span>
+                <span class="c-col pts">15 pts</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.duelHit) {
-                      <span class="status-tag hit">✓ ACERTADO</span>
+                      <span class="status-tag hit">ACERTADO</span>
                     } @else {
-                      <span class="status-tag miss">✗ NO ACERTÓ</span>
+                      <span class="status-tag miss">NO ACERTÓ</span>
                     }
                   } @else {
-                    <span class="status-tag pending">⏳ PENDIENTE</span>
+                    <span class="status-tag pending">PENDIENTE</span>
                   }
                 </span>
               </div>
 
               <!-- SAFETY CAR -->
               <div class="comp-data-row">
-                <span class="c-col cat"><strong>🚨 Safety Cars (Cant.)</strong></span>
+                <span class="c-col cat"><strong>Safety Cars (Cant.)</strong></span>
                 <span class="c-col pick">{{ item.safetyCarCount }} SC</span>
                 <span class="c-col official dim">
                   {{ item.officialResults?.safetyCarCount != null ? item.officialResults?.safetyCarCount + ' SC' : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts">+10 PTS</span>
+                <span class="c-col pts">10 pts</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.safetyCarHit) {
-                      <span class="status-tag hit">✓ EXACTO</span>
+                      <span class="status-tag hit">EXACTO</span>
                     } @else {
-                      <span class="status-tag miss">✗ NO ACERTÓ</span>
+                      <span class="status-tag miss">NO ACERTÓ</span>
                     }
                   } @else {
-                    <span class="status-tag pending">⏳ PENDIENTE</span>
+                    <span class="status-tag pending">PENDIENTE</span>
                   }
                 </span>
               </div>
 
               <!-- ABANDONOS DNFS -->
               <div class="comp-data-row">
-                <span class="c-col cat"><strong>⚠️ Abandonos / DNFs</strong></span>
+                <span class="c-col cat"><strong>Abandonos / DNFs</strong></span>
                 <span class="c-col pick">{{ item.dnfCount }} DNFs</span>
                 <span class="c-col official dim">
                   {{ item.officialResults?.dnfCount != null ? item.officialResults?.dnfCount + ' DNFs' : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts">+15 PTS</span>
+                <span class="c-col pts">15 pts</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.dnfHit) {
-                      <span class="status-tag hit">✓ EXACTO</span>
+                      <span class="status-tag hit">EXACTO</span>
                     } @else {
-                      <span class="status-tag miss">✗ NO ACERTÓ</span>
+                      <span class="status-tag miss">NO ACERTÓ</span>
                     }
                   } @else {
-                    <span class="status-tag pending">⏳ PENDIENTE</span>
+                    <span class="status-tag pending">PENDIENTE</span>
                   }
                 </span>
               </div>
@@ -2321,10 +2351,10 @@ export class DashboardComponent implements OnInit {
 
   getPickerTitle(): string {
     switch (this.pickerSlot()) {
-      case 'p1': return '🥇 Seleccionar Ganador P1 (+25 PTS)';
-      case 'p2': return '🥈 Seleccionar 2° Lugar P2 (+18 PTS)';
-      case 'p3': return '🥉 Seleccionar 3° Lugar P3 (+15 PTS)';
-      case 'pole': return '🏁 Seleccionar Pole Position (+20 PTS)';
+      case 'p1': return 'Seleccionar Ganador P1';
+      case 'p2': return 'Seleccionar 2° Lugar P2';
+      case 'p3': return 'Seleccionar 3° Lugar P3';
+      case 'pole': return 'Seleccionar Pole Position';
     }
   }
 

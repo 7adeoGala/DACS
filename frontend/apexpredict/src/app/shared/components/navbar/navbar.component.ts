@@ -12,7 +12,10 @@ import { ApiService } from '../../../core/services/api.service';
       <div class="navbar-container">
         <!-- LOGO ESTILIZADO APEXPREDICT -->
         <a routerLink="/" class="brand-logo">
-          <span class="logo-a">⚡</span>
+          <svg class="logo-racing-mark" viewBox="0 0 18 18" width="18" height="18" fill="none" style="margin-right: 2px;">
+            <path d="M2 14L8 4H12L6 14H2Z" fill="var(--red)"/>
+            <path d="M8 14L14 4H18L12 14H8Z" fill="#ffffff" fill-opacity="0.85"/>
+          </svg>
           <span class="txt-apex">APEX</span><span class="txt-predict">PREDICT</span>
         </a>
 
@@ -34,7 +37,7 @@ import { ApiService } from '../../../core/services/api.service';
           } @else {
             <div class="user-pill">
               @if (auth.userPoints() > 0) {
-                <span class="user-pts">🏆 {{ auth.userPoints() }} pts</span>
+                <span class="user-pts">{{ auth.userPoints() }} PTS</span>
               }
               <button class="btn-logout" (click)="auth.logout()">Salir · {{ auth.username() }}</button>
             </div>

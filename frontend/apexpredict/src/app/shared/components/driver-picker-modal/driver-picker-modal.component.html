@@ -9,7 +9,6 @@
           <div class="slot-badge-row">
             <span class="slot-medal-badge">{{ getSlotIcon() }}</span>
             <h3 class="picker-title">{{ getSlotTitle() }}</h3>
-            <span class="points-pill">{{ getSlotPoints() }}</span>
           </div>
           <p class="picker-subtitle">
             Elegí el piloto. Si ya fue asignado a otro puesto del podio, se intercambiarán automáticamente.
@@ -20,7 +19,10 @@
 
       <!-- BARRA DE BÚSQUEDA Y ATAJOS -->
       <div class="picker-search-bar">
-        <span class="search-icon">🔍</span>
+        <svg class="search-icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-dim); margin-right: 4px;">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
         <input 
           type="text" 
           [ngModel]="searchQuery()" 
@@ -84,9 +86,9 @@
                 <!-- INDICADORES DINÁMICOS DE ACCIÓN / AUTO-SWAP -->
                 <div class="dtc-action">
                   @if (isCurrentInSlot(d.id)) {
-                    <span class="status-chip current">✓ Seleccionado en {{ getSlotShortName() }}</span>
+                    <span class="status-chip current">Seleccionado en {{ getSlotShortName() }}</span>
                   } @else if (isDriverInAnotherSlot(d.id)) {
-                    <span class="status-chip swap">⇄ En {{ getDriverSlotName(d.id) }} (Intercambiar)</span>
+                    <span class="status-chip swap">En {{ getDriverSlotName(d.id) }} (Intercambiar)</span>
                   } @else {
                     <span class="status-chip pick">Elegir piloto →</span>
                   }
@@ -97,7 +99,13 @@
           </div>
         } @else {
           <div class="picker-empty-state">
-            <span class="empty-icon">🏎️</span>
+            <div class="empty-f1-graphic" style="margin-bottom: 0.75rem;">
+              <svg viewBox="0 0 48 48" width="48" height="48" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="24" cy="24" r="18"/>
+                <path d="M12 24h24M24 24v12M18 16h12"/>
+                <circle cx="24" cy="24" r="3" fill="var(--red)"/>
+              </svg>
+            </div>
             <p>No se encontraron pilotos que coincidan con "{{ searchQuery() }}".</p>
             <button type="button" class="btn-reset-filter" (click)="resetFilters()">Limpiar filtros</button>
           </div>
@@ -107,7 +115,7 @@
       <!-- FOOTER DEL MODAL -->
       <div class="picker-footer-info">
         <div class="rules-hint">
-          <span class="hint-bullet">💡</span>
+          <span class="hint-bullet">●</span>
           <span>Pleno de podio (1-2-3 exactos) otorga <strong>+15 PTS extra</strong> · Cierre: <strong>Sábado 15:55 hs (Arg)</strong></span>
         </div>
         <div class="esc-hint">

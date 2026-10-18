@@ -47,7 +47,7 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
             </div>
             <h2 style="font-size: 26px; margin-top: 10px;">{{ nextSession()?.name || 'Gran Premio de Fórmula 1' }}</h2>
             <p class="eyebrow" style="margin-top: 4px; color: var(--cyan);">
-              📍 {{ currentCircuit().city }}, {{ currentCircuit().country }} · {{ currentCircuit().name }}
+              {{ currentCircuit().city }}, {{ currentCircuit().country }} · {{ currentCircuit().name }}
             </p>
           </div>
         </div>
@@ -84,25 +84,25 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
         <!-- HORARIOS OFICIALES DEL FIN DE SEMANA (HORARIO DE ARGENTINA - ART / UTC-3) -->
         <div class="schedule-list">
           <div class="schedule-row">
-            <span class="sess-name">🟢 Práctica Libre 1 (FP1)</span>
+            <span class="sess-name">Práctica Libre 1 (FP1)</span>
             <span class="sess-time">
               {{ nextSession()?.fp1 ? (nextSession()?.fp1 | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Viernes 23/10 · 14:30 hs (Arg)' }}
             </span>
           </div>
           <div class="schedule-row">
-            <span class="sess-name">🟢 Práctica Libre 2 (FP2)</span>
+            <span class="sess-name">Práctica Libre 2 (FP2)</span>
             <span class="sess-time">
               {{ nextSession()?.fp2 ? (nextSession()?.fp2 | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Viernes 23/10 · 18:00 hs (Arg)' }}
             </span>
           </div>
           <div class="schedule-row">
-            <span class="sess-name">⚡ Clasificación Oficial</span>
+            <span class="sess-name">Clasificación Oficial (Q)</span>
             <span class="sess-time">
               {{ nextSession()?.qualifying ? (nextSession()?.qualifying | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Sábado 24/10 · 18:00 hs (Arg)' }}
             </span>
           </div>
           <div class="schedule-row active">
-            <span class="sess-name">🏁 Gran Premio (Carrera)</span>
+            <span class="sess-name">Gran Premio (Carrera)</span>
             <span class="sess-time">
               {{ nextSession()?.startsAt ? (nextSession()?.startsAt | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Domingo 25/10 · 17:00 hs (Arg)' }}
             </span>
