@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, catchError, map, of, switchMap, timeout, retry, timer } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, timeout, retry, timer, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Finish,
@@ -103,8 +103,49 @@ export class ApiService {
     return this.http.get(`${this.base}/backendping`).pipe(catchError(() => of(null)));
   }
 
-  leagues() {
-    return this.http.get<League[]>(`${this.base}/leagues`).pipe(this.retryOnColdStart());
+  getCachedPrediction(username?: string): PredictionDetail | null {
+    try {
+      const key = username ? `apex_pred_${username.toLowerCase()}` : 'apex_current_prediction';
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  setCachedPrediction(pred: PredictionDetail, username?: string) {
+    try {
+      const key = username ? `apex_pred_${username.toLowerCase()}` : 'apex_current_prediction';
+      localStorage.setItem(key, JSON.stringify(pred));
+    } catch {}
+  }
+
+  getCachedLeagues(username?: string): League[] | null {
+    try {
+      const key = username ? `apex_leagues_${username.toLowerCase()}` : 'apex_leagues';
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  setCachedLeagues(leagues: League[], username?: string) {
+    try {
+      const key = username ? `apex_leagues_${username.toLowerCase()}` : 'apex_leagues';
+      localStorage.setItem(key, JSON.stringify(leagues));
+    } catch {}
+  }
+
+  leagues(username?: string) {
+    return this.http.get<League[]>(`${this.base}/leagues`).pipe(
+      this.retryOnColdStart(),
+      tap(list => {
+        if (list && list.length > 0) {
+          this.setCachedLeagues(list, username);
+        }
+      })
+    );
   }
 
   searchLeagues(query?: string): Observable<League[]> {
@@ -265,16 +306,30 @@ export class ApiService {
     );
   }
 
-  currentPrediction() {
-    return this.http.get<PredictionDetail>(`${this.base}/predictions/current`).pipe(this.retryOnColdStart());
+  currentPrediction(username?: string) {
+    return this.http.get<PredictionDetail>(`${this.base}/predictions/current`).pipe(
+      this.retryOnColdStart(),
+      tap(pred => {
+        if (pred && (pred.predictionId || pred.podium?.length)) {
+          this.setCachedPrediction(pred, username);
+        }
+      })
+    );
   }
 
   predictionHistory() {
     return this.http.get<PredictionHistoryItem[]>(`${this.base}/predictions/history`).pipe(this.retryOnColdStart());
   }
 
-  submitPrediction(sessionId: string, prediction: SubmitPrediction) {
-    return this.http.post<PredictionDetail>(`${this.base}/predictions/session/${sessionId}`, prediction).pipe(this.retryOnColdStart());
+  submitPrediction(sessionId: string, prediction: SubmitPrediction, username?: string) {
+    return this.http.post<PredictionDetail>(`${this.base}/predictions/session/${sessionId}`, prediction).pipe(
+      this.retryOnColdStart(),
+      tap(saved => {
+        if (saved) {
+          this.setCachedPrediction(saved, username);
+        }
+      })
+    );
   }
 
   adminStatus() {

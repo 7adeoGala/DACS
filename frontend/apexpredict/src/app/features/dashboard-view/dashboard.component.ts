@@ -10,6 +10,7 @@ import {
   League, 
   NextSession, 
   LeaderboardEntry, 
+  PredictionDetail,
   PredictionHistoryItem,
   JolpicaDriverStanding,
   JolpicaConstructorStanding
@@ -2114,6 +2115,9 @@ export class DashboardComponent implements OnInit {
   joinPassword = '';
 
   ngOnInit() {
+    // 1. Restaurar inmediatamente desde caché local para evitar demoras y saltos visuales
+    this.restoreLocalCache();
+
     this.loadNextSession();
     this.loadCurrentPrediction();
     this.loadUserLeagues();
@@ -2169,31 +2173,50 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  private restoreLocalCache() {
+    const user = this.auth.username();
+    const cachedPred = this.api.getCachedPrediction(user);
+    if (cachedPred) {
+      this.applyPredictionToState(cachedPred);
+    }
+    const cachedLeagues = this.api.getCachedLeagues(user);
+    if (cachedLeagues && cachedLeagues.length > 0) {
+      this.myLeagues.set(cachedLeagues);
+      if (!this.selectedLeague()) {
+        this.selectedLeague.set(cachedLeagues[0]);
+      }
+    }
+  }
+
+  private applyPredictionToState(pred: PredictionDetail) {
+    if (pred.podium && pred.podium.length >= 3) {
+      this.p1DriverId.set(pred.podium[0]);
+      this.p2DriverId.set(pred.podium[1]);
+      this.p3DriverId.set(pred.podium[2]);
+    }
+    if (pred.polePositionDriverId) {
+      this.poleDriverId.set(pred.polePositionDriverId);
+    }
+    if (pred.duelDriverPick) {
+      this.duelWinnerId.set(pred.duelDriverPick);
+    }
+    if (pred.safetyCarCount != null) {
+      this.safetyCars.set(pred.safetyCarCount);
+    }
+    if (pred.dnfCount != null) {
+      this.dnfs.set(pred.dnfCount);
+    }
+    if (pred.predictionId || pred.submittedAt || (pred.podium && pred.podium.length > 0)) {
+      this.hasExistingPrediction.set(true);
+      this.predictionSubmittedAt.set(pred.submittedAt || null);
+    }
+  }
+
   private loadCurrentPrediction() {
-    this.api.currentPrediction().subscribe({
+    this.api.currentPrediction(this.auth.username()).subscribe({
       next: (pred) => {
         if (pred) {
-          if (pred.podium && pred.podium.length >= 3) {
-            this.p1DriverId.set(pred.podium[0]);
-            this.p2DriverId.set(pred.podium[1]);
-            this.p3DriverId.set(pred.podium[2]);
-          }
-          if (pred.polePositionDriverId) {
-            this.poleDriverId.set(pred.polePositionDriverId);
-          }
-          if (pred.duelDriverPick) {
-            this.duelWinnerId.set(pred.duelDriverPick);
-          }
-          if (pred.safetyCarCount != null) {
-            this.safetyCars.set(pred.safetyCarCount);
-          }
-          if (pred.dnfCount != null) {
-            this.dnfs.set(pred.dnfCount);
-          }
-          if (pred.predictionId || pred.submittedAt || (pred.podium && pred.podium.length > 0)) {
-            this.hasExistingPrediction.set(true);
-            this.predictionSubmittedAt.set(pred.submittedAt || null);
-          }
+          this.applyPredictionToState(pred);
         }
       },
       error: () => {}
@@ -2201,7 +2224,7 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadUserLeagues() {
-    this.api.leagues().subscribe({
+    this.api.leagues(this.auth.username()).subscribe({
       next: (leagues) => {
         this.myLeagues.set(leagues);
         if (leagues.length > 0) {
@@ -2211,7 +2234,9 @@ export class DashboardComponent implements OnInit {
         }
       },
       error: () => {
-        this.myLeagues.set([]);
+        if (!this.myLeagues().length) {
+          this.myLeagues.set([]);
+        }
       }
     });
   }
@@ -2403,12 +2428,20 @@ export class DashboardComponent implements OnInit {
       dnfCount: this.dnfs()
     };
 
-    this.api.submitPrediction(sessionId, payload).subscribe({
+    this.api.submitPrediction(sessionId, payload, this.auth.username()).subscribe({
       next: (res) => {
         this.isSaving.set(false);
         this.saveSuccess.set(true);
         this.hasExistingPrediction.set(true);
         this.predictionSubmittedAt.set(res?.submittedAt || new Date().toISOString());
+        this.api.setCachedPrediction({
+          ...res,
+          podium: payload.podium,
+          polePositionDriverId: payload.polePositionDriverId,
+          duelDriverPick: payload.duelDriverPick,
+          safetyCarCount: payload.safetyCarCount,
+          dnfCount: payload.dnfCount
+        }, this.auth.username());
         this.loadHistory();
         this.loadGlobalLeaderboard();
         if (this.selectedLeague()) {
