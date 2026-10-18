@@ -55,24 +55,54 @@ export class AuthService {
         (this.keycloak as any).authenticated = true;
         (this.keycloak as any).tokenParsed = this.decodeJwt(savedToken);
         (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
+        (this.keycloak as any).timeSkew = 0;
+        if (!(this.keycloak as any).endpoints) {
+          (this.keycloak as any).endpoints = {
+            token: () => `${environment.keycloak.url}/realms/${environment.keycloak.realm}/protocol/openid-connect/token`
+          };
+        }
         sync();
       } catch (e) {
         console.warn('Error restaurando token de sesión:', e);
       }
     }
 
-    try {
-      await this.keycloak.init({
-        pkceMethod: 'S256',
-        checkLoginIframe: false,
-      });
-      sync();
-    } catch (err) {
-      console.warn('Keycloak no disponible para SSO silencioso:', err);
-      if (!this.authenticated()) {
-        this.available.set(false);
+    const hasOAuthCallback = typeof window !== 'undefined' && 
+      (window.location.search.includes('code=') || window.location.hash.includes('code='));
+
+    const initPromise = this.keycloak.init({
+      pkceMethod: 'S256',
+      checkLoginIframe: false,
+    });
+
+    if (hasOAuthCallback) {
+      try {
+        await initPromise;
+        (this.keycloak as any).timeSkew = 0;
+        sync();
+      } catch (err) {
+        console.warn('Keycloak no disponible para SSO silencioso:', err);
+        if (!this.authenticated()) {
+          this.available.set(false);
+        }
+        sync();
       }
-      sync();
+    } else {
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Keycloak init timeout')), 2500)
+        );
+        await Promise.race([initPromise, timeoutPromise]);
+        (this.keycloak as any).timeSkew = 0;
+        sync();
+      } catch (err) {
+        console.warn('Keycloak init continuará en segundo plano (arranque rápido):', err);
+        initPromise.then(() => {
+          (this.keycloak as any).timeSkew = 0;
+          sync();
+        }).catch(() => {});
+        sync();
+      }
     }
   }
 
@@ -91,11 +121,16 @@ export class AuthService {
         scope: 'openid profile email',
       });
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
+
       const res = await fetch(tokenUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: body.toString(),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (!res.ok) {
         return false;
@@ -108,6 +143,12 @@ export class AuthService {
       (this.keycloak as any).authenticated = true;
       (this.keycloak as any).tokenParsed = this.decodeJwt(data.access_token);
       (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
+      (this.keycloak as any).timeSkew = 0;
+      if (!(this.keycloak as any).endpoints) {
+        (this.keycloak as any).endpoints = {
+          token: () => tokenUrl
+        };
+      }
 
       sessionStorage.setItem('apex_token', data.access_token);
       if (data.refresh_token) {

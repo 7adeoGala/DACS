@@ -103,6 +103,19 @@ export class ApiService {
     return this.http.get(`${this.base}/backendping`).pipe(catchError(() => of(null)));
   }
 
+  wakeServices(): void {
+    if (typeof window === 'undefined') return;
+    // 1. Despertar BFF y Domain Service en cadena
+    this.http.get(`${this.base}/backendping`).pipe(catchError(() => of(null))).subscribe();
+    this.http.get(`${this.base}/ping`).pipe(catchError(() => of(null))).subscribe();
+
+    // 2. Despertar Keycloak inmediatamente en segundo plano
+    fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}`, { mode: 'no-cors' }).catch(() => {});
+
+    // 3. Despertar conector F1 en segundo plano
+    fetch('https://dacs-1-v4ik.onrender.com/conector/ping', { mode: 'no-cors' }).catch(() => {});
+  }
+
   getCachedPrediction(username?: string): PredictionDetail | null {
     try {
       const key = username ? `apex_pred_${username.toLowerCase()}` : 'apex_current_prediction';

@@ -24,14 +24,14 @@ export class App {
       }
     });
 
-    // Despertar backend inmediatamente al cargar la app
-    this.api.pingBackend().subscribe();
+    // Despertar todos los microservicios (Keycloak, BFF, Domain, Connector) inmediatamente
+    this.api.wakeServices();
 
-    // Mantener backend despierto mientras el usuario tenga la aplicación abierta (cada 5 minutos)
+    // Mantener todos los microservicios activos mientras la app esté abierta (cada 3 minutos)
     if (typeof window !== 'undefined') {
       setInterval(() => {
-        this.api.pingBackend().subscribe();
-      }, 5 * 60 * 1000);
+        this.api.wakeServices();
+      }, 3 * 60 * 1000);
     }
   }
 }

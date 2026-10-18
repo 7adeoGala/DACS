@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthHeaderComponent } from './auth-header.component';
 import { AuthService } from '../../core/auth/auth.service';
+import { ApiService } from '../../core/services/api.service';
 
 @Component({
   selector: 'app-login',
@@ -41,6 +42,7 @@ import { AuthService } from '../../core/auth/auth.service';
                   type="text" 
                   [ngModel]="username()" 
                   (ngModelChange)="username.set($event)" 
+                  (focus)="prewarm()"
                   name="username" 
                   placeholder="tadeogala7" 
                   required 
@@ -57,6 +59,7 @@ import { AuthService } from '../../core/auth/auth.service';
                   [type]="showPassword() ? 'text' : 'password'" 
                   [ngModel]="password()" 
                   (ngModelChange)="password.set($event)" 
+                  (focus)="prewarm()"
                   name="password" 
                   placeholder="••••••••••••" 
                   required 
@@ -87,6 +90,13 @@ import { AuthService } from '../../core/auth/auth.service';
                 <span>INICIAR SESIÓN →</span>
               }
             </button>
+
+            @if (isWakingServer()) {
+              <div class="alert-message warning" style="margin-top: 0.5rem; display: flex; align-items: center; gap: 8px;">
+                <span class="spinner-dot"></span>
+                <span>Conectando con servidores de autenticación... Aguardá un instante mientras se valida tu cuenta.</span>
+              </div>
+            }
 
             <!-- SEPARADOR CON GOOGLE -->
             <div class="divider-wrap">
@@ -125,18 +135,21 @@ import { AuthService } from '../../core/auth/auth.service';
 export class LoginComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly api = inject(ApiService);
 
   readonly username = signal<string>('tadeogala7');
   readonly password = signal<string>('');
   readonly showPassword = signal<boolean>(false);
   readonly isLoading = signal<boolean>(false);
+  readonly isWakingServer = signal<boolean>(false);
   readonly errorMessage = signal<string>('');
 
   ngOnInit() {
-    // Precalentar Keycloak en segundo plano apenas abre la pantalla de login
-    if (typeof window !== 'undefined') {
-      fetch('https://dacs-3-dswy.onrender.com/auth/realms/apexpredict', { mode: 'no-cors' }).catch(() => {});
-    }
+    this.prewarm();
+  }
+
+  prewarm() {
+    this.api.wakeServices();
   }
 
   async handleLogin() {
@@ -150,6 +163,13 @@ export class LoginComponent implements OnInit {
 
     this.isLoading.set(true);
     this.errorMessage.set('');
+    this.isWakingServer.set(false);
+
+    const wakingTimer = setTimeout(() => {
+      if (this.isLoading()) {
+        this.isWakingServer.set(true);
+      }
+    }, 1800);
 
     try {
       const ok = await this.auth.loginWithCredentials(user, pwd);
@@ -162,6 +182,8 @@ export class LoginComponent implements OnInit {
       console.error('Error de login:', err);
       this.errorMessage.set(err?.message || 'Error de autenticación. Intentá nuevamente.');
     } finally {
+      clearTimeout(wakingTimer);
+      this.isWakingServer.set(false);
       this.isLoading.set(false);
     }
   }

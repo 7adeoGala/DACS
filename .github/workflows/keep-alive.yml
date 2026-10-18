@@ -2,8 +2,8 @@ name: Render Keep Alive
 
 on:
   schedule:
-    # Se ejecuta cada 8 minutos para evitar que Render suspenda las instancias por inactividad (15 min)
-    - cron: '*/8 * * * *'
+    # Se ejecuta cada 5 minutos para evitar que Render suspenda las instancias por inactividad (15 min)
+    - cron: '*/5 * * * *'
   push:
     branches: [main]
   workflow_dispatch: # Permite ejecutar el ping manualmente desde la pestaña Actions de GitHub

@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ApiService } from '../../../core/services/api.service';
 
 @Component({
   selector: 'app-navbar',
@@ -27,7 +28,7 @@ import { AuthService } from '../../../core/auth/auth.service';
         <!-- ACCIONES DE LOGIN / SESIÓN -->
         <div class="nav-actions">
           @if (!auth.isAuthenticated()) {
-            <a routerLink="/login" class="btn-login">
+            <a routerLink="/login" class="btn-login" (mouseenter)="api.wakeServices()" (focus)="api.wakeServices()">
               Iniciar Sesión <span class="arrow">↗</span>
             </a>
           } @else {
@@ -165,6 +166,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 export class NavbarComponent {
   readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  readonly api = inject(ApiService);
   readonly currentUrl = signal<string>(this.router.url);
 
   constructor() {
