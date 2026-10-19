@@ -14,7 +14,20 @@ export interface Profile {
   id: string;
   displayName: string;
   email: string | null;
+  favoriteDriverId?: string | null;
+  favoriteTeamId?: string | null;
+  notificationsEnabled?: boolean;
+  totalScore?: number;
+  predictionsCount?: number;
 }
+
+export interface UpdateProfileRequest {
+  displayName: string;
+  favoriteDriverId?: string | null;
+  favoriteTeamId?: string | null;
+  notificationsEnabled?: boolean;
+}
+
 
 export interface League {
   id: string;

@@ -6,6 +6,7 @@ import {
   Finish,
   League,
   Profile,
+  UpdateProfileRequest,
   Race,
   NextSession,
   PredictionDetail,
@@ -82,6 +83,14 @@ export class ApiService {
 
   profile() {
     return this.http.put<Profile>(`${this.base}/me`, {});
+  }
+
+  getProfile(): Observable<Profile> {
+    return this.http.get<Profile>(`${this.base}/me`);
+  }
+
+  updateProfile(payload: UpdateProfileRequest): Observable<Profile> {
+    return this.http.patch<Profile>(`${this.base}/me/profile`, payload);
   }
 
   private readonly ROUND_18_UUID = 'f0c23d70-f7ca-411d-b827-7a9d45037100';

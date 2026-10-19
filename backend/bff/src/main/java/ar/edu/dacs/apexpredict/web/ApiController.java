@@ -57,6 +57,19 @@ public class ApiController {
         return domainClient.me();
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public Profile getProfile() {
+        return domainClient.getProfile();
+    }
+
+    @PatchMapping("/me/profile")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public Profile updateProfile(@RequestBody UpdateProfileRequest request) {
+        return domainClient.updateProfile(request);
+    }
+
+
     // --- Ligas y Leaderboards ---
 
     @GetMapping("/leagues")

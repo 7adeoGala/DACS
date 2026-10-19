@@ -42,6 +42,23 @@ public class DomainController {
         );
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public PlayerService.Profile getProfile(@AuthenticationPrincipal Jwt jwt) {
+        return players.getProfile(jwt.getIssuer().toString(), jwt.getSubject());
+    }
+
+
+    @PatchMapping("/me/profile")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public PlayerService.Profile updateProfile(
+        @AuthenticationPrincipal Jwt jwt,
+        @RequestBody PlayerService.UpdateProfileRequest request
+    ) {
+        return players.updateProfile(jwt.getIssuer().toString(), jwt.getSubject(), request);
+    }
+
+
     @GetMapping("/leagues")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public List<PlayerService.LeagueView> leagues(@AuthenticationPrincipal Jwt jwt) {

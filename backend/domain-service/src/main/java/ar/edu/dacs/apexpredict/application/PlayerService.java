@@ -56,8 +56,48 @@ public class PlayerService {
     @Transactional
     public Profile provision(String issuer, String subject, String name, String email) {
         users.upsert(UUID.randomUUID(), issuer, subject, name, email);
-        var user = users.findByIssuerAndSubject(issuer, subject).orElseThrow();
-        return new Profile(user.getId(), user.getDisplayName(), user.getEmail());
+        return getProfile(issuer, subject);
+    }
+
+    @Transactional(readOnly = true)
+    public Profile getProfile(String issuer, String subject) {
+        User user = getOrCreateUser(issuer, subject);
+        long totalScore = predictions.sumScoreByUserId(user.getId());
+        long count = predictions.countByUserId(user.getId());
+        return new Profile(
+            user.getId(),
+            user.getDisplayName(),
+            user.getEmail(),
+            user.getFavoriteDriverId(),
+            user.getFavoriteTeamId(),
+            user.isNotificationsEnabled(),
+            totalScore,
+            count
+        );
+    }
+
+    @Transactional
+    public Profile updateProfile(String issuer, String subject, UpdateProfileRequest request) {
+        User user = getOrCreateUser(issuer, subject);
+        user.updateProfile(
+            request.displayName(),
+            request.favoriteDriverId(),
+            request.favoriteTeamId(),
+            request.notificationsEnabled()
+        );
+        users.save(user);
+        long totalScore = predictions.sumScoreByUserId(user.getId());
+        long count = predictions.countByUserId(user.getId());
+        return new Profile(
+            user.getId(),
+            user.getDisplayName(),
+            user.getEmail(),
+            user.getFavoriteDriverId(),
+            user.getFavoriteTeamId(),
+            user.isNotificationsEnabled(),
+            totalScore,
+            count
+        );
     }
 
     @Transactional(readOnly = true)
@@ -201,7 +241,28 @@ public class PlayerService {
         return leaderboard;
     }
 
-    public record Profile(UUID id, String displayName, String email) {}
+    public record Profile(
+        UUID id,
+        String displayName,
+        String email,
+        String favoriteDriverId,
+        String favoriteTeamId,
+        boolean notificationsEnabled,
+        long totalScore,
+        long predictionsCount
+    ) {
+        public Profile(UUID id, String displayName, String email) {
+            this(id, displayName, email, null, null, true, 0L, 0L);
+        }
+    }
+
+    public record UpdateProfileRequest(
+        String displayName,
+        String favoriteDriverId,
+        String favoriteTeamId,
+        Boolean notificationsEnabled
+    ) {}
+
 
     public record LeagueView(
         UUID id,

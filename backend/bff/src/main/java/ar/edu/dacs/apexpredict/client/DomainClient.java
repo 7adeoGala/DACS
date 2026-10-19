@@ -20,6 +20,13 @@ public interface DomainClient {
     @PutMapping("/me")
     Profile me();
 
+    @GetMapping("/me")
+    Profile getProfile();
+
+    @PatchMapping("/me/profile")
+    Profile updateProfile(@RequestBody UpdateProfileRequest request);
+
+
     @GetMapping("/leagues")
     List<LeagueView> leagues();
 

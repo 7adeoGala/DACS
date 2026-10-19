@@ -18,6 +18,13 @@ public interface PredictionRepository extends JpaRepository<Prediction, UUID> {
     List<Prediction> findBySessionId(UUID sessionId);
     boolean existsByUserIdAndSessionId(UUID userId, UUID sessionId);
 
+    @Query("SELECT COALESCE(SUM(p.score), 0) FROM Prediction p WHERE p.user.id = :userId")
+    long sumScoreByUserId(@Param("userId") UUID userId);
+
+    @Query("SELECT COUNT(p) FROM Prediction p WHERE p.user.id = :userId")
+    long countByUserId(@Param("userId") UUID userId);
+
+
     // Leaderboard global acumulado en tiempo real de todos los usuarios registrados
     @Query("""
         SELECT u.id as userId, u.displayName as displayName, COALESCE(SUM(p.score), 0) as totalScore, COUNT(p.id) as predictionsCount
