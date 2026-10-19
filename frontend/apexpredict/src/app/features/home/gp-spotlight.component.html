@@ -131,7 +131,7 @@
         <div class="countdown-right">
           @if (auth.authenticated()) {
             @if (currentPrediction()?.predictionId || (currentPrediction()?.podium && currentPrediction()!.podium.length > 0)) {
-              <a routerLink="/dashboard" class="btn-cta-predict" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+              <a routerLink="/dashboard" class="btn-cta-predict">
                 VER / EDITAR MI PRONÓSTICO
               </a>
             } @else {
