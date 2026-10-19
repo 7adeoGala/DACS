@@ -360,7 +360,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       width: 52px;
       height: 52px;
       border-radius: 10px;
-      background: linear-gradient(135deg, var(--team-color, #ff8000), #d96200);
+      background: var(--team-color, #ff8000);
       color: #000000;
       font-size: 1.3rem;
       font-weight: 900;
@@ -409,7 +409,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       font-weight: 800;
       font-family: var(--font-mono);
       color: var(--team-color, #ff8000);
-      background: rgba(255, 128, 0, 0.12);
+      background: color-mix(in srgb, var(--team-color, #ff8000) 16%, transparent);
       border: 1px solid var(--team-color, #ff8000);
       padding: 2px 6px;
       border-radius: 4px;
