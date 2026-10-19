@@ -57,18 +57,20 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
           @if (auth.isAuthenticated()) {
             <!-- CONTENEDOR RELATIVO PARA EL DROPDOWN -->
             <div class="profile-dropdown-wrapper">
-              <!-- BOTÓN ACTIVADOR (PILL EXACTO AL DISEÑO) -->
+              <!-- BOTÓN ACTIVADOR (PILL FIJO CON DATOS GUARDADOS) -->
               <button 
                 type="button" 
                 class="profile-trigger-btn" 
                 (click)="toggleProfileMenu($event)"
-                [style.--team-color]="currentTeam().color"
+                [style.--team-color]="savedTeam().color"
                 aria-label="Abrir opciones de perfil">
                 <div class="avatar-circle">
-                  {{ userInitials() }}
+                  {{ savedInitials() }}
                 </div>
                 <div class="user-meta-column">
-                  <span class="user-name-text">{{ displayName() || auth.username() || 'Piloto' }}</span>
+                  <span class="user-name-text" [title]="savedDisplayName()">
+                    {{ savedDisplayName() }}
+                  </span>
                   <span class="user-pts-text">{{ auth.userPoints() }} PTS</span>
                 </div>
                 <span class="chevron-icon">{{ isProfileOpen() ? '▲' : '▼' }}</span>
@@ -77,17 +79,19 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
               <!-- MENÚ FLOTANTE DROPDOWN -->
               @if (isProfileOpen()) {
                 <div class="profile-dropdown-menu" (click)="$event.stopPropagation()">
-                  <!-- ENCABEZADO DEL PERFIL -->
+                  <!-- ENCABEZADO DEL PERFIL (REFLEJA ESTADO GUARDADO CONFIRMADO) -->
                   <div class="dropdown-header">
-                    <div class="avatar-box" [style.--team-color]="currentTeam().color">
-                      <span>{{ userInitials() }}</span>
+                    <div class="avatar-box" [style.--team-color]="savedTeam().color">
+                      <span>{{ savedInitials() }}</span>
                       <span class="status-indicator-dot"></span>
                     </div>
                     <div class="header-user-info">
                       <div class="header-title-row">
-                        <h4 class="header-name">{{ displayName() || auth.username() || 'Piloto' }}</h4>
-                        <span class="team-tag-badge" [style.--team-color]="currentTeam().color">
-                          {{ teamTag() }}
+                        <h4 class="header-name" [title]="savedDisplayName()">
+                          {{ savedDisplayName() }}
+                        </h4>
+                        <span class="team-tag-badge" [style.--team-color]="savedTeam().color">
+                          {{ savedTeamTag() }}
                         </span>
                       </div>
                       <span class="header-handle">&#64;{{ auth.username() || 'tadeo' }} · Apex Paddock</span>
@@ -103,30 +107,33 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                     </span>
                   </div>
 
-                  <!-- CAMPO 1: NOMBRE PÚBLICO -->
+                  <!-- CAMPO 1: NOMBRE PÚBLICO (LIMITADO A 20 CARACTERES) -->
                   <div class="form-field-group">
-                    <label class="field-label" for="displayNameInput">NOMBRE PÚBLICO</label>
+                    <div class="field-label-row">
+                      <label class="field-label" for="displayNameInput">NOMBRE PÚBLICO</label>
+                      <span class="char-count">{{ formDisplayName().length }}/20</span>
+                    </div>
                     <div class="input-with-icon">
                       <span class="input-icon">👤</span>
                       <input 
                         type="text" 
                         id="displayNameInput"
                         class="field-input" 
-                        [(ngModel)]="displayName" 
+                        [(ngModel)]="formDisplayName" 
                         placeholder="Tu nombre en la tabla"
-                        maxlength="40" />
+                        maxlength="20" />
                     </div>
                   </div>
 
                   <!-- CAMPO 2: ESCUDERÍA FAVORITA -->
                   <div class="form-field-group">
                     <label class="field-label" for="favTeamSelect">ESCUDERÍA FAVORITA</label>
-                    <div class="select-wrapper team-highlight" [style.--team-color]="currentTeam().color">
-                      <span class="team-color-indicator" [style.background]="currentTeam().color"></span>
+                    <div class="select-wrapper team-highlight" [style.--team-color]="formTeam().color">
+                      <span class="team-color-indicator" [style.background]="formTeam().color"></span>
                       <select 
                         id="favTeamSelect"
                         class="field-select with-color" 
-                        [(ngModel)]="favoriteTeamId"
+                        [(ngModel)]="formTeamId"
                         (ngModelChange)="onTeamSelected($event)">
                         @for (team of teams; track team.id) {
                           <option [value]="team.id">{{ team.name }}</option>
@@ -144,7 +151,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                       <select 
                         id="favDriverSelect"
                         class="field-select with-icon" 
-                        [(ngModel)]="favoriteDriverId">
+                        [(ngModel)]="formDriverId">
                         @for (driver of drivers; track driver.id) {
                           <option [value]="driver.id">
                             {{ driver.name }} #{{ driver.number }} ({{ driver.code }})
@@ -164,7 +171,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                     <label class="toggle-switch">
                       <input 
                         type="checkbox" 
-                        [(ngModel)]="notificationsEnabled" />
+                        [(ngModel)]="formNotifications" />
                       <span class="toggle-slider"></span>
                     </label>
                   </div>
@@ -271,6 +278,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       cursor: pointer;
       transition: all 0.2s ease;
       color: #ffffff;
+      max-width: 220px;
     }
     .profile-trigger-btn:hover {
       background: rgba(30, 36, 52, 0.95);
@@ -296,11 +304,17 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       align-items: flex-start;
       text-align: left;
       line-height: 1.15;
+      overflow: hidden;
+      min-width: 0;
     }
     .user-name-text {
       font-size: 0.84rem;
       font-weight: 700;
       color: #ffffff;
+      max-width: 130px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .user-pts-text {
       font-size: 0.72rem;
@@ -312,6 +326,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       font-size: 0.62rem;
       color: #94a3b8;
       margin-left: 2px;
+      flex-shrink: 0;
     }
 
     /* DROPDOWN MENU CARD */
@@ -371,6 +386,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       flex-direction: column;
       gap: 2px;
       overflow: hidden;
+      min-width: 0;
     }
     .header-title-row {
       display: flex;
@@ -383,6 +399,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       font-size: 1.05rem;
       font-weight: 800;
       color: #ffffff;
+      max-width: 170px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -444,14 +461,23 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     .form-field-group {
       margin-bottom: 0.75rem;
     }
+    .field-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.35rem;
+    }
     .field-label {
-      display: block;
       font-size: 0.7rem;
       font-weight: 700;
       color: #94a3b8;
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      margin-bottom: 0.35rem;
+    }
+    .char-count {
+      font-size: 0.68rem;
+      font-family: var(--font-mono);
+      color: #64748b;
     }
     .input-with-icon {
       position: relative;
@@ -715,32 +741,43 @@ export class NavbarComponent implements OnInit {
   readonly isSaving = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'success' | 'error'>('idle');
 
-  // Campos de formulario
-  readonly displayName = signal<string>('Tadeo Gala');
-  readonly favoriteTeamId = signal<string>('mclaren');
-  readonly favoriteDriverId = signal<string>('norris');
-  readonly notificationsEnabled = signal<boolean>(true);
+  // ESTADO GUARDADO (Confirma los valores visibles en navbar y encabezado)
+  readonly savedDisplayName = signal<string>('Tadeo Gala');
+  readonly savedTeamId = signal<string>('mclaren');
+  readonly savedDriverId = signal<string>('norris');
+  readonly savedNotifications = signal<boolean>(true);
 
-  // Computados para UI dinámica
-  readonly currentTeam = computed(() => {
-    return this.teams.find((t) => t.id === this.favoriteTeamId()) || this.teams[0];
+  // ESTADO BORRADOR / FORMULARIO (Se edita sin afectar el navbar hasta presionar Guardar)
+  readonly formDisplayName = signal<string>('Tadeo Gala');
+  readonly formTeamId = signal<string>('mclaren');
+  readonly formDriverId = signal<string>('norris');
+  readonly formNotifications = signal<boolean>(true);
+
+  // Computados para el estado GUARDADO (visible en la píldora superior y badge confirmado)
+  readonly savedTeam = computed(() => {
+    return this.teams.find((t) => t.id === this.savedTeamId()) || this.teams[0];
   });
 
-  readonly currentDriver = computed(() => {
-    return this.drivers.find((d) => d.id === this.favoriteDriverId()) || this.drivers[1];
+  readonly savedDriver = computed(() => {
+    return this.drivers.find((d) => d.id === this.savedDriverId()) || this.drivers[1];
   });
 
-  readonly teamTag = computed(() => {
-    return `${this.currentTeam().tag} #${this.currentDriver().number}`;
+  readonly savedTeamTag = computed(() => {
+    return `${this.savedTeam().tag} #${this.savedDriver().number}`;
   });
 
-  readonly userInitials = computed(() => {
-    const name = this.displayName() || this.auth.username() || 'TG';
+  readonly savedInitials = computed(() => {
+    const name = this.savedDisplayName() || this.auth.username() || 'TG';
     const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
     return name.slice(0, 2).toUpperCase();
+  });
+
+  // Computado para el estado BORRADOR (se muestra dentro del select mientras se elige)
+  readonly formTeam = computed(() => {
+    return this.teams.find((t) => t.id === this.formTeamId()) || this.teams[0];
   });
 
   readonly userEmail = computed(() => {
@@ -775,55 +812,99 @@ export class NavbarComponent implements OnInit {
 
   toggleProfileMenu(event: MouseEvent) {
     event.stopPropagation();
+    if (!this.isProfileOpen()) {
+      // Al abrir, sincronizar el borrador con los últimos datos guardados
+      this.formDisplayName.set(this.savedDisplayName());
+      this.formTeamId.set(this.savedTeamId());
+      this.formDriverId.set(this.savedDriverId());
+      this.formNotifications.set(this.savedNotifications());
+      this.saveStatus.set('idle');
+    }
     this.isProfileOpen.update((v) => !v);
   }
 
   onTeamSelected(teamId: string) {
-    // Si cambia de escudería, podemos alinear con el primer piloto de esa escudería
+    // Si cambia de escudería en el selector, sugerir el primer piloto de ese equipo
     const driverOfTeam = this.drivers.find((d) => {
       const teamObj = this.teams.find((t) => t.id === teamId);
       return teamObj && d.team.toLowerCase().includes(teamObj.name.split(' ')[0].toLowerCase());
     });
     if (driverOfTeam) {
-      this.favoriteDriverId.set(driverOfTeam.id);
+      this.formDriverId.set(driverOfTeam.id);
     }
   }
 
   loadProfile() {
     this.api.getProfile().subscribe({
       next: (profile) => {
-        if (profile.displayName) this.displayName.set(profile.displayName);
-        if (profile.favoriteTeamId) this.favoriteTeamId.set(profile.favoriteTeamId);
-        if (profile.favoriteDriverId) this.favoriteDriverId.set(profile.favoriteDriverId);
+        const name = profile.displayName || this.auth.username() || 'Piloto';
+        this.savedDisplayName.set(name);
+        this.formDisplayName.set(name);
+
+        if (profile.favoriteTeamId) {
+          this.savedTeamId.set(profile.favoriteTeamId);
+          this.formTeamId.set(profile.favoriteTeamId);
+        }
+        if (profile.favoriteDriverId) {
+          this.savedDriverId.set(profile.favoriteDriverId);
+          this.formDriverId.set(profile.favoriteDriverId);
+        }
         if (profile.notificationsEnabled !== undefined) {
-          this.notificationsEnabled.set(profile.notificationsEnabled);
+          this.savedNotifications.set(profile.notificationsEnabled);
+          this.formNotifications.set(profile.notificationsEnabled);
         }
         if (profile.totalScore !== undefined) {
           this.auth.userPoints.set(profile.totalScore);
         }
       },
       error: () => {
-        if (this.auth.username()) {
-          this.displayName.set(this.auth.username());
-        }
+        const fallback = this.auth.username() || 'Piloto';
+        this.savedDisplayName.set(fallback);
+        this.formDisplayName.set(fallback);
       }
     });
   }
 
   saveProfile() {
+    const raw = this.formDisplayName() || '';
+    const trimmed = raw.trim();
+    // Limitar a 20 caracteres y fallback al username si está vacío
+    const finalName = trimmed.length > 0 ? trimmed.slice(0, 20) : (this.auth.username() || 'Piloto');
+    this.formDisplayName.set(finalName);
+
     this.isSaving.set(true);
     this.saveStatus.set('idle');
+
     this.api.updateProfile({
-      displayName: this.displayName(),
-      favoriteTeamId: this.favoriteTeamId(),
-      favoriteDriverId: this.favoriteDriverId(),
-      notificationsEnabled: this.notificationsEnabled()
+      displayName: finalName,
+      favoriteTeamId: this.formTeamId(),
+      favoriteDriverId: this.formDriverId(),
+      notificationsEnabled: this.formNotifications()
     }).subscribe({
       next: (profile) => {
         this.isSaving.set(false);
         this.saveStatus.set('success');
-        if (profile.displayName) this.displayName.set(profile.displayName);
-        if (profile.totalScore !== undefined) this.auth.userPoints.set(profile.totalScore);
+
+        // AHORA SÍ reflejamos los cambios guardados arriba en el navbar y en el encabezado
+        const confirmedName = profile.displayName || finalName;
+        this.savedDisplayName.set(confirmedName);
+        this.formDisplayName.set(confirmedName);
+
+        if (profile.favoriteTeamId) {
+          this.savedTeamId.set(profile.favoriteTeamId);
+          this.formTeamId.set(profile.favoriteTeamId);
+        }
+        if (profile.favoriteDriverId) {
+          this.savedDriverId.set(profile.favoriteDriverId);
+          this.formDriverId.set(profile.favoriteDriverId);
+        }
+        if (profile.notificationsEnabled !== undefined) {
+          this.savedNotifications.set(profile.notificationsEnabled);
+          this.formNotifications.set(profile.notificationsEnabled);
+        }
+        if (profile.totalScore !== undefined) {
+          this.auth.userPoints.set(profile.totalScore);
+        }
         setTimeout(() => this.saveStatus.set('idle'), 2500);
       },
       error: (err) => {
