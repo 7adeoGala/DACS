@@ -45,7 +45,14 @@ public class DomainController {
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PlayerService.Profile getProfile(@AuthenticationPrincipal Jwt jwt) {
-        return players.getProfile(jwt.getIssuer().toString(), jwt.getSubject());
+        String name = jwt.getClaimAsString("preferred_username");
+        String email = jwt.getClaimAsString("email");
+        return players.getOrProvisionProfile(
+            jwt.getIssuer().toString(),
+            jwt.getSubject(),
+            name != null ? name : jwt.getSubject(),
+            email
+        );
     }
 
 

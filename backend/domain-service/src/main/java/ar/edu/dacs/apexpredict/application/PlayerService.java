@@ -59,6 +59,15 @@ public class PlayerService {
         return getProfile(issuer, subject);
     }
 
+    @Transactional
+    public Profile getOrProvisionProfile(String issuer, String subject, String name, String email) {
+        Optional<User> existing = users.findByIssuerAndSubject(issuer, subject);
+        if (existing.isEmpty() || (name != null && existing.get().getDisplayName().equals(subject))) {
+            users.upsert(UUID.randomUUID(), issuer, subject, name, email);
+        }
+        return getProfile(issuer, subject);
+    }
+
     @Transactional(readOnly = true)
     public Profile getProfile(String issuer, String subject) {
         User user = getOrCreateUser(issuer, subject);

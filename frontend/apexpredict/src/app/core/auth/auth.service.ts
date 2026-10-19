@@ -44,12 +44,14 @@ export class AuthService {
       this.keycloak.clearToken();
       sessionStorage.removeItem('apex_token');
       sessionStorage.removeItem('apex_refresh_token');
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_refresh_token');
       sync();
     };
 
-    // Restaurar token si se inició sesión con credenciales directas
-    const savedToken = sessionStorage.getItem('apex_token');
-    const savedRefresh = sessionStorage.getItem('apex_refresh_token');
+    // Restaurar token si se inició sesión previamente (soporta localStorage y sessionStorage)
+    const savedToken = localStorage.getItem('apex_token') || sessionStorage.getItem('apex_token');
+    const savedRefresh = localStorage.getItem('apex_refresh_token') || sessionStorage.getItem('apex_refresh_token');
     if (savedToken) {
       try {
         (this.keycloak as any).token = savedToken;
@@ -64,6 +66,7 @@ export class AuthService {
           };
         }
         sync();
+        this.provisionUserInBackend(savedToken);
       } catch (e) {
         console.warn('Error restaurando token de sesión:', e);
       }
@@ -153,17 +156,41 @@ export class AuthService {
       }
 
       sessionStorage.setItem('apex_token', data.access_token);
+      localStorage.setItem('apex_token', data.access_token);
       if (data.refresh_token) {
         sessionStorage.setItem('apex_refresh_token', data.refresh_token);
+        localStorage.setItem('apex_refresh_token', data.refresh_token);
       }
 
       this.authenticated.set(true);
-      this.username.set((this.keycloak as any).tokenParsed?.['preferred_username'] || username);
+      const finalUsername = (this.keycloak as any).tokenParsed?.['preferred_username'] || username;
+      this.username.set(finalUsername);
+      localStorage.setItem('apex_username', finalUsername);
       this.roles.set((this.keycloak as any).realmAccess?.roles ?? []);
+
+      // Provisionar y registrar de inmediato el usuario en el backend (app_users)
+      this.provisionUserInBackend(data.access_token);
       return true;
     } catch (err) {
       console.error('Error al autenticar credenciales:', err);
       return false;
+    }
+  }
+
+  async provisionUserInBackend(token?: string): Promise<void> {
+    try {
+      const authToken = token || (this.keycloak as any).token || localStorage.getItem('apex_token') || sessionStorage.getItem('apex_token');
+      if (!authToken) return;
+      await fetch(`${environment.apiUrl}/me`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+      });
+    } catch (e) {
+      console.warn('Registro de usuario en backend diferido:', e);
     }
   }
 
@@ -188,6 +215,9 @@ export class AuthService {
   logout(): Promise<void> {
     sessionStorage.removeItem('apex_token');
     sessionStorage.removeItem('apex_refresh_token');
+    localStorage.removeItem('apex_token');
+    localStorage.removeItem('apex_refresh_token');
+    localStorage.removeItem('apex_username');
     return this.keycloak.logout({ redirectUri: new URL('.', document.baseURI).href });
   }
 

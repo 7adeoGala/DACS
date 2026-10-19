@@ -131,7 +131,11 @@ import { ApiService } from '../../core/services/api.service';
 
               <div class="form-options">
                 <label class="checkbox-label">
-                  <input type="checkbox" checked />
+                  <input 
+                    type="checkbox" 
+                    [ngModel]="rememberMe()" 
+                    (ngModelChange)="rememberMe.set($event)" 
+                    name="rememberMe" />
                   <span>Recordarme en este equipo</span>
                 </label>
                 <a href="https://dacs-3-dswy.onrender.com/auth/realms/apexpredict/login-actions/reset-credentials" target="_blank" rel="noopener" class="link-muted">¿Olvidaste tu contraseña?</a>
@@ -177,7 +181,12 @@ export class LoginComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
 
-  readonly username = signal<string>('tadeogala7');
+  readonly rememberMe = signal<boolean>(true);
+  readonly username = signal<string>(
+    typeof localStorage !== 'undefined'
+      ? (localStorage.getItem('apex_remembered_username') || localStorage.getItem('apex_username') || 'tadeogala7')
+      : 'tadeogala7'
+  );
   readonly password = signal<string>('');
   readonly showPassword = signal<boolean>(false);
   readonly isLoading = signal<boolean>(false);
@@ -206,6 +215,11 @@ export class LoginComponent implements OnInit {
     try {
       const ok = await this.auth.loginWithCredentials(user, pwd);
       if (ok) {
+        if (this.rememberMe()) {
+          localStorage.setItem('apex_remembered_username', user);
+        } else {
+          localStorage.removeItem('apex_remembered_username');
+        }
         this.router.navigate(['/dashboard']);
       } else {
         this.errorMessage.set('Credenciales no válidas. Revisá tu usuario y contraseña.');
