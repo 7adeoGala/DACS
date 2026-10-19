@@ -11,20 +11,92 @@ export interface F1TeamOption {
   id: string;
   name: string;
   color: string;
+  gradient: string;
+  textColor: string;
   tag: string;
 }
 
 export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
-  { id: 'mclaren', name: 'McLaren F1 Team', color: '#FF8000', tag: 'PAPAYA' },
-  { id: 'ferrari', name: 'Scuderia Ferrari', color: '#E80020', tag: 'SCUDERIA' },
-  { id: 'redbull', name: 'Red Bull Racing', color: '#3671C6', tag: 'RED BULL' },
-  { id: 'mercedes', name: 'Mercedes-AMG PETRONAS', color: '#27F4D2', tag: 'SILVER' },
-  { id: 'williams', name: 'Williams Racing', color: '#64C4FF', tag: 'WILLIAMS' },
-  { id: 'astonmartin', name: 'Aston Martin Aramco', color: '#229971', tag: 'AMR' },
-  { id: 'alpine', name: 'BWT Alpine F1 Team', color: '#0093CC', tag: 'ALPINE' },
-  { id: 'rb', name: 'Visa Cash App RB', color: '#6692FF', tag: 'VCARB' },
-  { id: 'sauber', name: 'Stake F1 Team Kick Sauber', color: '#52E252', tag: 'KICK' },
-  { id: 'haas', name: 'MoneyGram Haas F1 Team', color: '#B6BABD', tag: 'HAAS' }
+  { 
+    id: 'mclaren', 
+    name: 'McLaren F1 Team', 
+    color: '#FF8000', 
+    gradient: 'linear-gradient(135deg, #FF8000 0%, #D85600 100%)',
+    textColor: '#000000',
+    tag: 'PAPAYA' 
+  },
+  { 
+    id: 'ferrari', 
+    name: 'Scuderia Ferrari', 
+    color: '#E8002D', 
+    gradient: 'linear-gradient(135deg, #EF1A2D 0%, #8A000E 100%)',
+    textColor: '#FFFFFF',
+    tag: 'SCUDERIA' 
+  },
+  { 
+    id: 'redbull', 
+    name: 'Red Bull Racing', 
+    color: '#1E41FF', 
+    gradient: 'linear-gradient(135deg, #1E3D7B 0%, #061026 100%)',
+    textColor: '#FFFFFF',
+    tag: 'RED BULL' 
+  },
+  { 
+    id: 'mercedes', 
+    name: 'Mercedes-AMG PETRONAS', 
+    color: '#00A19C', 
+    gradient: 'linear-gradient(135deg, #27F4D2 0%, #007A6C 100%)',
+    textColor: '#031E19',
+    tag: 'PETRONAS' 
+  },
+  { 
+    id: 'astonmartin', 
+    name: 'Aston Martin Aramco', 
+    color: '#00594F', 
+    gradient: 'linear-gradient(135deg, #00665E 0%, #002B26 100%)',
+    textColor: '#FFFFFF',
+    tag: 'AMR' 
+  },
+  { 
+    id: 'alpine', 
+    name: 'BWT Alpine F1 Team', 
+    color: '#FD4BC7', 
+    gradient: 'linear-gradient(135deg, #0093CC 0%, #FD4BC7 100%)',
+    textColor: '#FFFFFF',
+    tag: 'ALPINE' 
+  },
+  { 
+    id: 'williams', 
+    name: 'Williams Racing', 
+    color: '#00A0DE', 
+    gradient: 'linear-gradient(135deg, #00A0DE 0%, #041E42 100%)',
+    textColor: '#FFFFFF',
+    tag: 'WILLIAMS' 
+  },
+  { 
+    id: 'rb', 
+    name: 'Visa Cash App RB', 
+    color: '#3858EC', 
+    gradient: 'linear-gradient(135deg, #4E71FF 0%, #10217D 100%)',
+    textColor: '#FFFFFF',
+    tag: 'VCARB' 
+  },
+  { 
+    id: 'sauber', 
+    name: 'Stake F1 Team Kick Sauber', 
+    color: '#52E252', 
+    gradient: 'linear-gradient(135deg, #52E252 0%, #166B16 100%)',
+    textColor: '#000000',
+    tag: 'KICK' 
+  },
+  { 
+    id: 'haas', 
+    name: 'MoneyGram Haas F1 Team', 
+    color: '#ED1A3B', 
+    gradient: 'linear-gradient(135deg, #FFFFFF 0%, #BAC1CB 100%)',
+    textColor: '#ED1A3B',
+    tag: 'HAAS' 
+  }
 ];
 
 @Component({
@@ -64,7 +136,9 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                 (click)="toggleProfileMenu($event)"
                 [style.--team-color]="savedTeam().color"
                 aria-label="Abrir opciones de perfil">
-                <div class="avatar-circle">
+                <div class="avatar-circle"
+                  [style.background]="savedTeam().gradient || savedTeam().color"
+                  [style.color]="savedTeam().textColor || '#ffffff'">
                   {{ savedInitials() }}
                 </div>
                 <div class="user-meta-column">
@@ -81,7 +155,9 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                 <div class="profile-dropdown-menu" (click)="$event.stopPropagation()">
                   <!-- ENCABEZADO DEL PERFIL (REFLEJA ESTADO GUARDADO CONFIRMADO) -->
                   <div class="dropdown-header">
-                    <div class="avatar-box" [style.--team-color]="savedTeam().color">
+                    <div class="avatar-box" 
+                      [style.background]="savedTeam().gradient || savedTeam().color"
+                      [style.color]="savedTeam().textColor || '#ffffff'">
                       <span>{{ savedInitials() }}</span>
                       <span class="status-indicator-dot"></span>
                     </div>
@@ -119,7 +195,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                   <div class="form-field-group">
                     <label class="field-label" for="favTeamSelect">ESCUDERÍA FAVORITA</label>
                     <div class="select-wrapper team-highlight" [style.--team-color]="formTeam().color">
-                      <span class="team-color-indicator" [style.background]="formTeam().color"></span>
+                      <span class="team-color-indicator" [style.background]="formTeam().gradient || formTeam().color"></span>
                       <select 
                         id="favTeamSelect"
                         class="field-select with-color" 
@@ -279,14 +355,16 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       height: 32px;
       border-radius: 50%;
       background: var(--team-color, #ff8000);
-      color: #000000;
-      font-weight: 800;
+      color: #ffffff;
+      font-weight: 900;
       font-size: 0.82rem;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      letter-spacing: -0.02em;
     }
     .user-meta-column {
       display: flex;
@@ -351,17 +429,19 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     .avatar-box {
       width: 52px;
       height: 52px;
-      border-radius: 10px;
+      border-radius: 12px;
       background: var(--team-color, #ff8000);
-      color: #000000;
-      font-size: 1.3rem;
+      color: #ffffff;
+      font-size: 1.35rem;
       font-weight: 900;
       display: flex;
       align-items: center;
       justify-content: center;
       position: relative;
       flex-shrink: 0;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      letter-spacing: -0.02em;
     }
     .status-indicator-dot {
       position: absolute;
