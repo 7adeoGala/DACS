@@ -33,51 +33,120 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       @if (activeTab() === 'pronostico') {
         <section class="tab-content">
           <div class="section-hero">
-            <div>
+            <div class="hero-intro">
               <span class="badge-round">ROUND {{ session()?.round || 18 }} // {{ session()?.circuit || 'COTA' }}</span>
               <h2>Configuración de Pronósticos Oficiales</h2>
               <p class="subtitle">Asigná los 3 puestos de podio sin duplicar, poleman, duelo de la fecha y telemetría de carrera.</p>
             </div>
-            <div class="points-badge">
-              <span class="dim">POTENCIAL MÁXIMO:</span>
-              <span class="pts-val">+118 PTS</span>
+
+            <!-- DETALLE DE LOS PUNTOS QUE SUMA CADA COSA -->
+            <div class="scoring-guide-grid">
+              <div class="guide-item">
+                <span class="guide-label">P1 Ganador</span>
+                <span class="guide-val gold">+25 pts</span>
+              </div>
+              <div class="guide-item">
+                <span class="guide-label">P2 Segundo</span>
+                <span class="guide-val silver">+18 pts</span>
+              </div>
+              <div class="guide-item">
+                <span class="guide-label">P3 Tercero</span>
+                <span class="guide-val bronze">+15 pts</span>
+              </div>
+              <div class="guide-item">
+                <span class="guide-label">Pleno Podio</span>
+                <span class="guide-val bonus">+15 pts</span>
+              </div>
+              <div class="guide-item">
+                <span class="guide-label">Pole Position</span>
+                <span class="guide-val cyan">+20 pts</span>
+              </div>
+              <div class="guide-item">
+                <span class="guide-label">Duelo Directo</span>
+                <span class="guide-val amber">+10 pts</span>
+              </div>
+              <div class="guide-item">
+                <span class="guide-label">Safety Car</span>
+                <span class="guide-val sc">+10 pts</span>
+              </div>
+              <div class="guide-item">
+                <span class="guide-label">Abandonos DNF</span>
+                <span class="guide-val dnf">+5 pts</span>
+              </div>
             </div>
           </div>
 
-          <!-- AVISO DE PRONÓSTICO YA REGISTRADO EN BASE DE DATOS -->
-          @if (hasExistingPrediction()) {
-            <div class="alert-box success" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-              <div>
-                <strong>Pronóstico Registrado en la Base de Datos:</strong> 
-                Tenés tu pronóstico activo guardado en el servidor para este GP.
-                @if (predictionSubmittedAt()) {
-                  <span class="dim" style="margin-left: 6px; font-size: 0.85rem;">
-                    (Último envío: {{ predictionSubmittedAt() | date:'d/MM HH:mm':'America/Argentina/Buenos_Aires' }} hs Arg)
-                  </span>
-                }
+          <!-- CARTEL DINÁMICO DE ESTADO CON SEMÁFORO F1 -->
+          @if (isSaving()) {
+            <!-- ESTADO AMARILLO: CARGANDO -->
+            <div class="prediction-status-card status-yellow">
+              <div class="traffic-lights-box" aria-hidden="true">
+                <div class="traffic-housing">
+                  <span class="traffic-light light-red off"></span>
+                  <span class="traffic-light light-yellow on pulse"></span>
+                  <span class="traffic-light light-green off"></span>
+                </div>
               </div>
-              <span class="badge" style="background: rgba(16, 185, 129, 0.25); color: #fff; font-weight: 700; padding: 4px 10px; border-radius: var(--radius-sm); font-size: 0.78rem;">
-                SINCRONIZADO
-              </span>
+              <div class="status-content">
+                <div class="status-headline">
+                  <span class="status-indicator-tag yellow">EN PROCESO</span>
+                  <h3 class="status-text yellow">Cargando pronóstico...</h3>
+                </div>
+                <p class="status-subtext">
+                  Conectando con los servidores y sincronizando tus elecciones en la base de datos...
+                </p>
+              </div>
+            </div>
+          } @else if (hasExistingPrediction()) {
+            <!-- ESTADO VERDE: CARGADO -->
+            <div class="prediction-status-card status-green">
+              <div class="traffic-lights-box" aria-hidden="true">
+                <div class="traffic-housing">
+                  <span class="traffic-light light-red off"></span>
+                  <span class="traffic-light light-yellow off"></span>
+                  <span class="traffic-light light-green on"></span>
+                </div>
+              </div>
+              <div class="status-content">
+                <div class="status-headline">
+                  <span class="status-indicator-tag green">GUARDADO</span>
+                  <h3 class="status-text green">Pronóstico cargado</h3>
+                </div>
+                <p class="status-subtext">
+                  Tu pronóstico oficial está activo y registrado en la base de datos para este Gran Premio.
+                  @if (predictionSubmittedAt()) {
+                    <span class="status-timestamp">
+                      (Último envío: {{ predictionSubmittedAt() | date:'d/MM HH:mm':'America/Argentina/Buenos_Aires' }} hs Arg)
+                    </span>
+                  }
+                </p>
+              </div>
+            </div>
+          } @else {
+            <!-- ESTADO ROJO: SIN CARGAR -->
+            <div class="prediction-status-card status-red">
+              <div class="traffic-lights-box" aria-hidden="true">
+                <div class="traffic-housing">
+                  <span class="traffic-light light-red on"></span>
+                  <span class="traffic-light light-yellow off"></span>
+                  <span class="traffic-light light-green off"></span>
+                </div>
+              </div>
+              <div class="status-content">
+                <div class="status-headline">
+                  <span class="status-indicator-tag red">PENDIENTE</span>
+                  <h3 class="status-text red">Pronóstico sin cargar</h3>
+                </div>
+                <p class="status-subtext">
+                  Aún no has registrado tu pronóstico oficial para este Gran Premio. Completá tus selecciones abajo y presioná "Guardar Pronóstico".
+                </p>
+              </div>
             </div>
           }
 
           @if (isLocked()) {
             <div class="alert-box error" style="margin-bottom: 1rem;">
               <strong>PRONÓSTICOS BLOQUEADOS:</strong> La sesión oficial ya ha comenzado. El pronóstico se encuentra en modo solo lectura.
-            </div>
-          }
-
-          @if (isSaving()) {
-            <div class="alert-box" style="margin-bottom: 1rem; background: rgba(0, 242, 254, 0.1); border: 1px solid var(--cyan); color: #e0f2fe; display: flex; align-items: center; gap: 8px;">
-              <span class="spinner-dot"></span>
-              <span>Conectando con servidores de telemetría y sincronizando pronóstico con la base de datos...</span>
-            </div>
-          }
-
-          @if (saveSuccess()) {
-            <div class="alert-box success" style="margin-bottom: 1rem;">
-              ¡Pronóstico guardado exitosamente en el servidor y la base de datos!
             </div>
           }
 
@@ -1195,20 +1264,176 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       margin-top: 0.25rem;
       font-size: 0.95rem;
     }
-    .points-badge {
-      text-align: right;
+    .scoring-guide-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem 0.75rem;
+      background: rgba(10, 14, 20, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      max-width: 620px;
     }
-    .points-badge .dim {
+    .guide-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.4rem;
       font-size: 0.8rem;
-      color: var(--text-dim);
-      font-weight: 700;
     }
-    .points-badge .pts-val {
-      font-size: 1.5rem;
-      font-weight: 800;
+    .guide-label {
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .guide-val {
       font-family: var(--font-mono);
-      color: var(--gold);
-      margin-left: 0.5rem;
+      font-weight: 800;
+      font-size: 0.78rem;
+    }
+    .guide-val.gold { color: var(--gold); }
+    .guide-val.silver { color: var(--silver); }
+    .guide-val.bronze { color: #ea580c; }
+    .guide-val.bonus { color: #f43f5e; }
+    .guide-val.cyan { color: var(--cyan); }
+    .guide-val.amber { color: #fbbf24; }
+    .guide-val.sc { color: #eab308; }
+    .guide-val.dnf { color: #ec4899; }
+
+    /* CARTEL DINÁMICO DE ESTADO CON SEMÁFORO */
+    .prediction-status-card {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 1.1rem 1.4rem;
+      border-radius: var(--radius-md);
+      margin-bottom: 1.5rem;
+      transition: all 0.25s ease;
+      box-sizing: border-box;
+    }
+    .traffic-lights-box {
+      flex-shrink: 0;
+    }
+    .traffic-housing {
+      background: #080b11;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 9999px;
+      padding: 6px 12px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7);
+    }
+    .traffic-light {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      display: inline-block;
+      transition: all 0.2s ease;
+    }
+    .traffic-light.light-red.off {
+      background: #340c0c;
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      opacity: 0.35;
+    }
+    .traffic-light.light-red.on {
+      background: #ef4444;
+      border: 1px solid #ff7878;
+      box-shadow: 0 0 12px #ef4444, 0 0 3px #fff;
+    }
+    .traffic-light.light-yellow.off {
+      background: #2e2105;
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      opacity: 0.35;
+    }
+    .traffic-light.light-yellow.on {
+      background: #f59e0b;
+      border: 1px solid #fde68a;
+      box-shadow: 0 0 12px #f59e0b, 0 0 3px #fff;
+    }
+    .traffic-light.light-yellow.pulse {
+      animation: trafficPulse 1s infinite ease-in-out;
+    }
+    .traffic-light.light-green.off {
+      background: #062b1d;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      opacity: 0.35;
+    }
+    .traffic-light.light-green.on {
+      background: #10b981;
+      border: 1px solid #6ee7b7;
+      box-shadow: 0 0 12px #10b981, 0 0 3px #fff;
+    }
+    @keyframes trafficPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.55; transform: scale(0.92); }
+    }
+    .status-content {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+    }
+    .status-headline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-indicator-tag {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+    .status-indicator-tag.red {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .status-indicator-tag.yellow {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fde68a;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    .status-indicator-tag.green {
+      background: rgba(16, 185, 129, 0.2);
+      color: #a7f3d0;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .status-text {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+    .status-text.red { color: #f87171; }
+    .status-text.yellow { color: #fbbf24; }
+    .status-text.green { color: #34d399; }
+    .status-subtext {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+    .status-timestamp {
+      margin-left: 6px;
+      font-size: 0.82rem;
+      color: var(--text-dim);
+    }
+
+    .prediction-status-card.status-red {
+      background: rgba(225, 6, 0, 0.08);
+      border: 1px solid rgba(225, 6, 0, 0.35);
+      border-left: 5px solid var(--red);
+    }
+    .prediction-status-card.status-yellow {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      border-left: 5px solid #f59e0b;
+    }
+    .prediction-status-card.status-green {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-left: 5px solid #10b981;
     }
     .card-title-row {
       display: flex;
@@ -2170,6 +2395,16 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       color: var(--text-dim);
     }
     @media (max-width: 768px) {
+      .scoring-guide-grid {
+        grid-template-columns: repeat(2, 1fr);
+        width: 100%;
+        max-width: 100%;
+      }
+      .prediction-status-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+      }
       .podium-grid, .grid-two-cols, .counters-grid {
         grid-template-columns: 1fr;
       }
