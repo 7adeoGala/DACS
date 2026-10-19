@@ -1,4 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import Keycloak from 'keycloak-js';
 import { AppRole } from '../models/api.models';
 import { environment } from '../../../environments/environment';
@@ -6,6 +7,7 @@ import { environment } from '../../../environments/environment';
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly keycloak = inject(Keycloak);
+  private readonly router = inject(Router);
   readonly authenticated = signal(false);
   readonly isAuthenticated = this.authenticated;
   readonly available = signal(true);
@@ -170,13 +172,13 @@ export class AuthService {
   }
 
   login(route = 'dashboard', idpHint?: string): Promise<void> {
-    const target = new URL(route.replace(/^\/+/, ''), document.baseURI);
-    if (target.origin !== location.origin) return Promise.reject(new Error('Destino invalido.'));
-    const options: Parameters<Keycloak['login']>[0] = { redirectUri: target.href };
     if (idpHint) {
-      options.idpHint = idpHint;
+      const target = new URL(route.replace(/^\/+/, ''), document.baseURI);
+      if (target.origin !== location.origin) return Promise.reject(new Error('Destino invalido.'));
+      const options: Parameters<Keycloak['login']>[0] = { redirectUri: target.href, idpHint };
+      return this.keycloak.login(options);
     }
-    return this.keycloak.login(options);
+    return this.router.navigate(['/login'], { queryParams: { returnUrl: route } }).then(() => {});
   }
 
   loginWithGoogle(route = 'dashboard'): Promise<void> {
@@ -190,6 +192,6 @@ export class AuthService {
   }
 
   register(): Promise<void> {
-    return this.keycloak.register({ redirectUri: new URL('dashboard', document.baseURI).href });
+    return this.router.navigate(['/register']).then(() => {});
   }
 }

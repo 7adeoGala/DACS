@@ -150,9 +150,9 @@
               </a>
             }
           } @else {
-            <button type="button" (click)="auth.login()" class="btn-cta-predict">
+            <a routerLink="/login" class="btn-cta-predict">
               INICIAR SESIÓN Y PREDECIR
-            </button>
+            </a>
           }
         </div>
       </div>
@@ -251,12 +251,12 @@
             <div class="feat-item"><span class="feat-bullet">●</span> Podio y tabla global en vivo</div>
           </div>
           <div class="welcome-actions">
-            <button type="button" class="btn-welcome-login" (click)="auth.login()">
+            <a routerLink="/login" class="btn-welcome-login">
               Iniciar Sesión
-            </button>
-            <button type="button" class="btn-welcome-register" (click)="auth.register()">
+            </a>
+            <a routerLink="/register" class="btn-welcome-register">
               Crear Cuenta Gratis
-            </button>
+            </a>
           </div>
         </div>
 

@@ -107,7 +107,7 @@ import { ApiService } from '../../core/services/api.service';
               @if (isLoading()) {
                 <span>INICIANDO SESIÓN...</span>
               } @else {
-                <span>INICIAR SESIÓN</span>
+                <span>INICIAR SESIÓN →</span>
               }
             </button>
 
@@ -142,6 +142,11 @@ import { ApiService } from '../../core/services/api.service';
             <a routerLink="/register" class="link-action">Registrarse</a>
           </div>
         </div>
+
+        <p class="telemetry-footer-status">
+          <span class="status-indicator"></span>
+          PADDOCK TELEMETRY SERVERS ONLINE | PKCE 256-BIT ENCRYPTED
+        </p>
       </main>
     </div>
   `,

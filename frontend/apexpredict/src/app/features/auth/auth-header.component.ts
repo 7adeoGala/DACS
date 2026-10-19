@@ -19,6 +19,14 @@ import { Component } from '@angular/core';
             <span class="brand-sub">OFFICIAL F1 COMPETITION LEAGUE</span>
           </div>
         </a>
+
+        <!-- BADGE TELEMÉTRICO DE SEGURIDAD F1 -->
+        <div class="auth-badge">
+          <span class="pulse-dot"></span>
+          <span class="badge-text-primary">KEYCLOAK OIDC PROTECTED</span>
+          <span class="badge-divider">|</span>
+          <span class="badge-text-secondary">TEMPORADA 2026</span>
+        </div>
       </div>
     </header>
   `,

@@ -28,12 +28,12 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
               Ir a mi Centro de Control
             </a>
           } @else {
-            <button class="button" [disabled]="!auth.available()" (click)="auth.login()">
+            <a class="button" routerLink="/login">
               Iniciar sesión
-            </button>
-            <button class="button quiet" [disabled]="!auth.available()" (click)="auth.register()">
+            </a>
+            <a class="button quiet" routerLink="/register">
               Crear cuenta gratis
-            </button>
+            </a>
           }
         </div>
       </div>

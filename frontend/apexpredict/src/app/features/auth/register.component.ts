@@ -127,7 +127,7 @@ import { AuthService } from '../../core/auth/auth.service';
               @if (isLoading()) {
                 <span>CREANDO CUENTA...</span>
               } @else {
-                <span>REGISTRARSE</span>
+                <span>REGISTRARSE →</span>
               }
             </button>
 
@@ -151,9 +151,14 @@ import { AuthService } from '../../core/auth/auth.service';
           </form>
 
           <div class="card-footer">
-            <a routerLink="/login" class="link-back">Volver a Iniciar Sesión</a>
+            <a routerLink="/login" class="link-back">« Volver a Iniciar Sesión</a>
           </div>
         </div>
+
+        <p class="telemetry-footer-status">
+          <span class="status-indicator"></span>
+          PADDOCK TELEMETRY SERVERS ONLINE | PKCE 256-BIT ENCRYPTED
+        </p>
       </main>
     </div>
   `,
