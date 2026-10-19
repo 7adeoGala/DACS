@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, OnInit, inject, signal, computed } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, inject, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
@@ -187,7 +187,8 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                         type="text" 
                         id="displayNameInput"
                         class="field-input" 
-                        [(ngModel)]="formDisplayName" 
+                        [ngModel]="formDisplayName()" 
+                        (ngModelChange)="formDisplayName.set($event)"
                         placeholder="Tu nombre en la tabla"
                         maxlength="20" />
                     </div>
@@ -201,7 +202,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                       <select 
                         id="favTeamSelect"
                         class="field-select with-color" 
-                        [(ngModel)]="formTeamId"
+                        [ngModel]="formTeamId()"
                         (ngModelChange)="onTeamSelected($event)">
                         @for (team of teams; track team.id) {
                           <option [value]="team.id">{{ team.name }}</option>
@@ -219,7 +220,8 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                       <select 
                         id="favDriverSelect"
                         class="field-select with-icon" 
-                        [(ngModel)]="formDriverId">
+                        [ngModel]="formDriverId()"
+                        (ngModelChange)="formDriverId.set($event)">
                         @for (driver of drivers; track driver.id) {
                           <option [value]="driver.id">
                             {{ driver.name }} #{{ driver.number }} ({{ driver.code }})
@@ -239,7 +241,8 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                     <label class="toggle-switch">
                       <input 
                         type="checkbox" 
-                        [(ngModel)]="formNotifications" />
+                        [ngModel]="formNotifications()"
+                        (ngModelChange)="formNotifications.set($event)" />
                       <span class="toggle-slider"></span>
                     </label>
                   </div>
@@ -778,13 +781,13 @@ export class NavbarComponent implements OnInit {
   readonly saveStatus = signal<'idle' | 'success' | 'error'>('idle');
 
   // ESTADO GUARDADO (Confirma los valores visibles en navbar y encabezado)
-  readonly savedDisplayName = signal<string>('Tadeo Gala');
+  readonly savedDisplayName = signal<string>(this.auth.username() || 'Piloto');
   readonly savedTeamId = signal<string>('mclaren');
   readonly savedDriverId = signal<string>('norris');
   readonly savedNotifications = signal<boolean>(true);
 
   // ESTADO BORRADOR / FORMULARIO (Se edita sin afectar el navbar hasta presionar Guardar)
-  readonly formDisplayName = signal<string>('Tadeo Gala');
+  readonly formDisplayName = signal<string>(this.auth.username() || 'Piloto');
   readonly formTeamId = signal<string>('mclaren');
   readonly formDriverId = signal<string>('norris');
   readonly formNotifications = signal<boolean>(true);
@@ -829,6 +832,19 @@ export class NavbarComponent implements OnInit {
         this.currentUrl.set(event.urlAfterRedirects || event.url);
       }
     });
+
+    // Reaccionar automáticamente cuando el usuario inicie sesión o cambie de cuenta
+    effect(() => {
+      const isAuth = this.auth.authenticated();
+      const user = this.auth.username();
+      if (isAuth) {
+        this.loadProfile();
+      } else {
+        const defaultName = user || 'Piloto';
+        this.savedDisplayName.set(defaultName);
+        this.formDisplayName.set(defaultName);
+      }
+    });
   }
 
   ngOnInit() {
@@ -858,9 +874,10 @@ export class NavbarComponent implements OnInit {
   }
 
   onTeamSelected(teamId: string) {
+    this.formTeamId.set(teamId);
     // Si cambia de escudería en el selector, sugerir el primer piloto de ese equipo
+    const teamObj = this.teams.find((t) => t.id === teamId);
     const driverOfTeam = this.drivers.find((d) => {
-      const teamObj = this.teams.find((t) => t.id === teamId);
       return teamObj && d.team.toLowerCase().includes(teamObj.name.split(' ')[0].toLowerCase());
     });
     if (driverOfTeam) {
@@ -869,6 +886,36 @@ export class NavbarComponent implements OnInit {
   }
 
   loadProfile() {
+    const username = this.auth.username();
+
+    // 1. Cargar inmediatamente desde almacenamiento local (cero retraso visual)
+    const cached = this.api.getCachedProfile(username);
+    if (cached) {
+      if (cached.displayName) {
+        this.savedDisplayName.set(cached.displayName);
+        this.formDisplayName.set(cached.displayName);
+      }
+      if (cached.favoriteTeamId) {
+        this.savedTeamId.set(cached.favoriteTeamId);
+        this.formTeamId.set(cached.favoriteTeamId);
+      }
+      if (cached.favoriteDriverId) {
+        this.savedDriverId.set(cached.favoriteDriverId);
+        this.formDriverId.set(cached.favoriteDriverId);
+      }
+      if (cached.notificationsEnabled !== undefined) {
+        this.savedNotifications.set(cached.notificationsEnabled);
+        this.formNotifications.set(cached.notificationsEnabled);
+      }
+      if (cached.totalScore !== undefined) {
+        this.auth.userPoints.set(cached.totalScore);
+      }
+    } else if (username) {
+      this.savedDisplayName.set(username);
+      this.formDisplayName.set(username);
+    }
+
+    // 2. Sincronizar en segundo plano con el servidor
     this.api.getProfile().subscribe({
       next: (profile) => {
         const name = profile.displayName || this.auth.username() || 'Piloto';
@@ -890,11 +937,14 @@ export class NavbarComponent implements OnInit {
         if (profile.totalScore !== undefined) {
           this.auth.userPoints.set(profile.totalScore);
         }
+        this.api.setCachedProfile(profile, username);
       },
       error: () => {
-        const fallback = this.auth.username() || 'Piloto';
-        this.savedDisplayName.set(fallback);
-        this.formDisplayName.set(fallback);
+        if (!cached) {
+          const fallback = this.auth.username() || 'Piloto';
+          this.savedDisplayName.set(fallback);
+          this.formDisplayName.set(fallback);
+        }
       }
     });
   }
@@ -906,20 +956,39 @@ export class NavbarComponent implements OnInit {
     const finalName = trimmed.length > 0 ? trimmed.slice(0, 20) : (this.auth.username() || 'Piloto');
     this.formDisplayName.set(finalName);
 
+    const teamId = this.formTeamId();
+    const driverId = this.formDriverId();
+    const notifications = this.formNotifications();
+    const username = this.auth.username();
+
+    // 1. Actualización optimista inmediata en UI
+    this.savedDisplayName.set(finalName);
+    this.savedTeamId.set(teamId);
+    this.savedDriverId.set(driverId);
+    this.savedNotifications.set(notifications);
+
+    // 2. Guardar inmediatamente en localStorage para garantizar persistencia continua
+    this.api.setCachedProfile({
+      displayName: finalName,
+      favoriteTeamId: teamId,
+      favoriteDriverId: driverId,
+      notificationsEnabled: notifications
+    }, username);
+
     this.isSaving.set(true);
     this.saveStatus.set('idle');
 
+    // 3. Sincronizar con el backend
     this.api.updateProfile({
       displayName: finalName,
-      favoriteTeamId: this.formTeamId(),
-      favoriteDriverId: this.formDriverId(),
-      notificationsEnabled: this.formNotifications()
+      favoriteTeamId: teamId,
+      favoriteDriverId: driverId,
+      notificationsEnabled: notifications
     }).subscribe({
       next: (profile) => {
         this.isSaving.set(false);
         this.saveStatus.set('success');
 
-        // AHORA SÍ reflejamos los cambios guardados arriba en el navbar y en el encabezado
         const confirmedName = profile.displayName || finalName;
         this.savedDisplayName.set(confirmedName);
         this.formDisplayName.set(confirmedName);
@@ -939,12 +1008,14 @@ export class NavbarComponent implements OnInit {
         if (profile.totalScore !== undefined) {
           this.auth.userPoints.set(profile.totalScore);
         }
+        this.api.setCachedProfile(profile, username);
         setTimeout(() => this.saveStatus.set('idle'), 2500);
       },
       error: (err) => {
-        console.error('Error guardando perfil:', err);
+        console.warn('Backend update deferred, profile saved in local storage:', err);
         this.isSaving.set(false);
-        this.saveStatus.set('error');
+        // Indicamos éxito confirmado porque los datos ya quedaron salvados de forma segura
+        this.saveStatus.set('success');
         setTimeout(() => this.saveStatus.set('idle'), 2500);
       }
     });

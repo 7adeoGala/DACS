@@ -86,11 +86,15 @@ export class ApiService {
   }
 
   getProfile(): Observable<Profile> {
-    return this.http.get<Profile>(`${this.base}/me`);
+    return this.http.get<Profile>(`${this.base}/me`).pipe(
+      this.retryOnColdStart<Profile>()
+    );
   }
 
   updateProfile(payload: UpdateProfileRequest): Observable<Profile> {
-    return this.http.patch<Profile>(`${this.base}/me/profile`, payload);
+    return this.http.patch<Profile>(`${this.base}/me/profile`, payload).pipe(
+      this.retryOnColdStart<Profile>()
+    );
   }
 
   private readonly ROUND_18_UUID = 'f0c23d70-f7ca-411d-b827-7a9d45037100';
@@ -156,6 +160,25 @@ export class ApiService {
     try {
       const key = username ? `apex_leagues_${username.toLowerCase()}` : 'apex_leagues';
       localStorage.setItem(key, JSON.stringify(leagues));
+    } catch {}
+  }
+
+  getCachedProfile(username?: string): Profile | null {
+    try {
+      const key = username ? `apex_profile_${username.toLowerCase()}` : 'apex_profile';
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  setCachedProfile(profile: Partial<Profile>, username?: string) {
+    try {
+      const key = username ? `apex_profile_${username.toLowerCase()}` : 'apex_profile';
+      const existing = this.getCachedProfile(username) || {} as Profile;
+      const merged = { ...existing, ...profile };
+      localStorage.setItem(key, JSON.stringify(merged));
     } catch {}
   }
 

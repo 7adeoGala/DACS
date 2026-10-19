@@ -49,7 +49,7 @@ public class DomainController {
     }
 
 
-    @PatchMapping("/me/profile")
+    @RequestMapping(value = "/me/profile", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PlayerService.Profile updateProfile(
         @AuthenticationPrincipal Jwt jwt,

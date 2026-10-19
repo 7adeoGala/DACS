@@ -63,7 +63,7 @@ public class ApiController {
         return domainClient.getProfile();
     }
 
-    @PatchMapping("/me/profile")
+    @RequestMapping(value = "/me/profile", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public Profile updateProfile(@RequestBody UpdateProfileRequest request) {
         return domainClient.updateProfile(request);
