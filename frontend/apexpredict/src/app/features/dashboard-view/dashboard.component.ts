@@ -239,7 +239,14 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
             <div class="spotlight-card duel-spotlight-card">
               <div class="card-title-row">
                 <div class="duel-title-wrap">
-                  <span class="duel-badge-icon">⚔️</span>
+                  <div class="duel-badge-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M14.5 17.5L3 6V3h3l11.5 11.5"/>
+                      <path d="m13 19 6 2 2-6-2-2-6 6Z"/>
+                      <path d="M9.5 6.5 21 18v3h-3L6.5 9.5"/>
+                      <path d="m11 5-6-2-2 6 2 2 6-6Z"/>
+                    </svg>
+                  </div>
                   <div>
                     <h4>Duelo Directo de la Fecha</h4>
                     <span class="dim" style="font-size: 0.82rem;">Elegí qué piloto superará a su rival directo en el fin de semana</span>
@@ -256,6 +263,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     type="button"
                     class="duel-driver-card"
                     [class.selected]="duelWinnerId() === d1.id"
+                    [class.unselected]="duelWinnerId() && duelWinnerId() !== d1.id"
                     [style.--driver-team-color]="d1.teamColor"
                     [disabled]="isLocked()"
                     (click)="duelWinnerId.set(d1.id)"
@@ -269,7 +277,12 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     <div class="ddc-name">{{ d1.name }}</div>
                     <div class="ddc-selection-status">
                       @if (duelWinnerId() === d1.id) {
-                        <span class="status-picked">✓ GANADOR ELEGIDO</span>
+                        <span class="status-picked">
+                          <svg class="check-icon-svg" viewBox="0 0 20 20" width="13" height="13" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                          </svg>
+                          GANADOR ELEGIDO
+                        </span>
                       } @else {
                         <span class="status-choose">Elegir Piloto</span>
                       }
@@ -280,6 +293,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     type="button"
                     class="duel-driver-card"
                     [class.selected]="duelWinnerId() === matchupDriver1()"
+                    [class.unselected]="duelWinnerId() && duelWinnerId() !== matchupDriver1()"
                     [disabled]="isLocked()"
                     (click)="duelWinnerId.set(matchupDriver1())">
                     <div class="ddc-name">{{ getDriverName(matchupDriver1()) }}</div>
@@ -297,6 +311,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     type="button"
                     class="duel-driver-card"
                     [class.selected]="duelWinnerId() === d2.id"
+                    [class.unselected]="duelWinnerId() && duelWinnerId() !== d2.id"
                     [style.--driver-team-color]="d2.teamColor"
                     [disabled]="isLocked()"
                     (click)="duelWinnerId.set(d2.id)"
@@ -310,7 +325,12 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     <div class="ddc-name">{{ d2.name }}</div>
                     <div class="ddc-selection-status">
                       @if (duelWinnerId() === d2.id) {
-                        <span class="status-picked">✓ GANADOR ELEGIDO</span>
+                        <span class="status-picked">
+                          <svg class="check-icon-svg" viewBox="0 0 20 20" width="13" height="13" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                          </svg>
+                          GANADOR ELEGIDO
+                        </span>
                       } @else {
                         <span class="status-choose">Elegir Piloto</span>
                       }
@@ -321,6 +341,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     type="button"
                     class="duel-driver-card"
                     [class.selected]="duelWinnerId() === matchupDriver2()"
+                    [class.unselected]="duelWinnerId() && duelWinnerId() !== matchupDriver2()"
                     [disabled]="isLocked()"
                     (click)="duelWinnerId.set(matchupDriver2())">
                     <div class="ddc-name">{{ getDriverName(matchupDriver2()) }}</div>
@@ -331,7 +352,13 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               <!-- BLOQUE EXPLICATIVO DE CRITERIOS DE VICTORIA Y DESEMPATE -->
               <div class="duel-criteria-panel">
                 <div class="criteria-header-row">
-                  <span class="criteria-icon">⚖️</span>
+                  <svg class="criteria-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                    <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                    <path d="M7 21h10"/>
+                    <path d="M12 3v18"/>
+                    <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>
+                  </svg>
                   <span class="criteria-label">Criterio de definición del duelo:</span>
                 </div>
                 <div class="criteria-items-list">
@@ -2051,11 +2078,19 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       gap: 0.65rem;
     }
     .duel-badge-icon {
-      font-size: 1.25rem;
-      background: rgba(225, 6, 0, 0.12);
-      border: 1px solid rgba(225, 6, 0, 0.3);
-      padding: 0.3rem 0.5rem;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(225, 6, 0, 0.14);
+      border: 1px solid rgba(225, 6, 0, 0.35);
       border-radius: var(--radius-sm);
+      color: #ff3b30;
+      flex-shrink: 0;
+    }
+    .duel-badge-icon svg {
+      display: block;
     }
     .duel-pts-tag {
       font-family: var(--font-mono);
@@ -2074,32 +2109,52 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       gap: 0.85rem;
     }
     .duel-driver-card {
-      background: #0d1118;
-      border: 1px solid var(--line-strong);
-      border-left: 4px solid var(--driver-team-color, var(--line));
-      border-radius: var(--radius-sm);
-      padding: 0.95rem 1rem;
+      background: #0d121c;
+      border: 1.5px solid rgba(255, 255, 255, 0.1);
+      border-left: 5px solid var(--driver-team-color, var(--line));
+      border-radius: var(--radius-md, 8px);
+      padding: 1rem 1.1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.55rem;
       cursor: pointer;
       text-align: left;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
     }
     .duel-driver-card:hover:not(:disabled) {
       transform: translateY(-2px);
-      border-color: rgba(255, 255, 255, 0.3);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45), 0 0 12px -2px var(--driver-team-color, rgba(255,255,255,0.2));
+      border-color: rgba(255, 255, 255, 0.35);
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 14px -2px var(--driver-team-color, rgba(255,255,255,0.2));
     }
+    /* PILOTO ELEGIDO: MÁXIMA VISIBILIDAD Y CONTRASTE */
     .duel-driver-card.selected {
-      background: linear-gradient(135deg, rgba(225, 6, 0, 0.22) 0%, #151016 100%);
-      border-color: var(--red);
-      border-left: 4px solid var(--driver-team-color, var(--red));
-      box-shadow: 0 0 18px rgba(225, 6, 0, 0.35), 0 4px 12px rgba(0, 0, 0, 0.5);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(225, 6, 0, 0.2) 60%, #1a1016 100%), #111622;
+      border: 2px solid #ff3b30;
+      border-left: 6px solid var(--driver-team-color, #ff3b30);
+      box-shadow: 0 0 0 1px rgba(255, 59, 48, 0.45) inset,
+                  0 0 28px rgba(225, 6, 0, 0.45),
+                  0 0 16px -2px var(--driver-team-color, rgba(255, 59, 48, 0.5)),
+                  0 12px 28px rgba(0, 0, 0, 0.65);
+      transform: translateY(-2px) scale(1.025);
+      z-index: 2;
+    }
+    /* PILOTO NO ELEGIDO: ATENUADO PARA DAR PROTAGONISMO AL ELEGIDO */
+    .duel-driver-card.unselected {
+      opacity: 0.55;
+      filter: saturate(0.65);
+      background: #090c12;
+      border-color: rgba(255, 255, 255, 0.06);
+      border-left-width: 3px;
+    }
+    .duel-driver-card.unselected:hover:not(:disabled) {
+      opacity: 0.92;
+      filter: saturate(1);
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.25);
     }
     .duel-driver-card:disabled {
-      opacity: 0.6;
+      opacity: 0.5;
       cursor: not-allowed;
     }
     .ddc-top {
@@ -2121,30 +2176,75 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       font-size: 0.76rem;
       font-weight: 800;
       color: var(--text-muted);
+      transition: color 0.2s ease;
+    }
+    .duel-driver-card.selected .ddc-number {
+      color: #ffffff;
+      font-weight: 900;
     }
     .ddc-name {
-      font-size: 0.98rem;
+      font-size: 1rem;
       font-weight: 800;
       color: #ffffff;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      transition: all 0.2s ease;
+    }
+    .duel-driver-card.selected .ddc-name {
+      font-size: 1.08rem;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+    }
+    .duel-driver-card.unselected .ddc-name {
+      color: #94a3b8;
     }
     .ddc-selection-status {
-      margin-top: 0.25rem;
-      font-size: 0.72rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .status-picked {
-      color: #34d399;
+      margin-top: 0.35rem;
       display: flex;
       align-items: center;
-      gap: 3px;
+    }
+    .status-picked {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #10b981;
+      color: #022c22;
+      font-weight: 900;
+      font-size: 0.72rem;
+      letter-spacing: 0.06em;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.55);
+      animation: pulse-picked 2.5s infinite ease-in-out;
+    }
+    @keyframes pulse-picked {
+      0%, 100% { box-shadow: 0 0 14px rgba(16, 185, 129, 0.55); }
+      50% { box-shadow: 0 0 22px rgba(16, 185, 129, 0.9); }
+    }
+    .check-icon-svg {
+      display: block;
+      flex-shrink: 0;
     }
     .status-choose {
-      color: var(--text-dim);
+      display: inline-flex;
+      align-items: center;
+      color: #64748b;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px dashed rgba(255, 255, 255, 0.14);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      transition: all 0.2s ease;
+    }
+    .duel-driver-card:hover:not(:disabled) .status-choose {
+      color: #e2e8f0;
+      border-color: rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.08);
     }
     .duel-vs-separator {
       display: flex;
@@ -2176,10 +2276,11 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
     .criteria-header-row {
       display: flex;
       align-items: center;
-      gap: 0.45rem;
+      gap: 0.5rem;
     }
-    .criteria-icon {
-      font-size: 0.85rem;
+    .criteria-svg {
+      color: #ff3b30;
+      flex-shrink: 0;
     }
     .criteria-label {
       font-size: 0.74rem;
