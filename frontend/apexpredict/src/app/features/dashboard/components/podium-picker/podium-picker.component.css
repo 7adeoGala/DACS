@@ -124,7 +124,7 @@
 
 .podium-col-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
   margin-bottom: 0.4rem;
 }
@@ -208,7 +208,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
   border-radius: var(--radius-sm, 8px);
   margin-top: 0.85rem;
   font-family: var(--font-mono, 'JetBrains Mono', monospace);
@@ -219,7 +218,7 @@
 }
 
 .gold-base {
-  height: 52px;
+  height: 56px;
   background: linear-gradient(180deg, rgba(245, 176, 0, 0.18) 0%, rgba(245, 176, 0, 0.06) 100%);
   border: 1px solid rgba(245, 176, 0, 0.4);
   color: var(--gold, #f5b000);
@@ -231,7 +230,7 @@
 }
 
 .silver-base {
-  height: 42px;
+  height: 48px;
   background: linear-gradient(180deg, rgba(203, 213, 225, 0.14) 0%, rgba(203, 213, 225, 0.04) 100%);
   border: 1px solid rgba(203, 213, 225, 0.3);
   color: var(--silver, #cbd5e1);
@@ -242,7 +241,7 @@
 }
 
 .bronze-base {
-  height: 32px;
+  height: 42px;
   background: linear-gradient(180deg, rgba(205, 127, 50, 0.14) 0%, rgba(205, 127, 50, 0.04) 100%);
   border: 1px solid rgba(205, 127, 50, 0.3);
   color: #ea580c;
@@ -253,14 +252,10 @@
 }
 
 .ped-number {
-  font-size: 1.45rem;
+  font-size: 1.85rem;
+  font-weight: 900;
   line-height: 1;
-}
-
-.ped-name {
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  opacity: 0.85;
+  letter-spacing: -0.02em;
 }
 
 /* ======================================================== */

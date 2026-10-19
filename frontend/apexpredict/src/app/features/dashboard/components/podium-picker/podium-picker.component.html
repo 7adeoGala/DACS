@@ -14,14 +14,13 @@
   <!-- GRILLA PRINCIPAL DE 3 COLUMNAS EN FORMA DE PODIO F1 (P2 - P1 - P3) -->
   <div class="podium-grid">
 
-    <!-- P2: SEGUNDO LUGAR (PLATA) - IZQUIERDA -->
+    <!-- P2: SEGUNDO LUGAR - IZQUIERDA -->
     <div class="podium-col silver-border slot-p2">
       <div class="podium-col-top">
         <div class="podium-col-header">
           <span class="podium-badge silver">P2 SEGUNDO</span>
-          <span class="pts-tag silver">PLATA</span>
         </div>
-        <div class="podium-slot-label">Segundo Clasificado</div>
+        <div class="podium-slot-label">Segundo Lugar</div>
       </div>
 
       @if (getDriver(p2DriverId()); as d) {
@@ -48,12 +47,11 @@
       }
 
       <div class="podium-pedestal-base silver-base" (click)="openDriverPicker('p2')">
-        <span class="ped-number">2</span>
-        <span class="ped-name">SEGUNDO PUESTO</span>
+        <span class="ped-number">#2</span>
       </div>
     </div>
 
-    <!-- P1: GANADOR (ORO) - CENTRO -->
+    <!-- P1: GANADOR - CENTRO -->
     <div class="podium-col gold-border slot-p1">
       <div class="podium-col-top">
         <div class="podium-col-header">
@@ -65,11 +63,10 @@
               <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h10c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-2c-.55 0-1-.45-1-1v-2.34"/>
               <path d="M6 4h12a2 2 0 0 1 2 2v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V6a2 2 0 0 1 2-2z"/>
             </svg>
-            <span class="podium-badge gold">P1 WINNER</span>
+            <span class="podium-badge gold">P1 GANADOR</span>
           </div>
-          <span class="pts-tag gold">ORO</span>
         </div>
-        <div class="podium-slot-label">Vencedor del Gran Premio</div>
+        <div class="podium-slot-label">Ganador</div>
       </div>
 
       @if (getDriver(p1DriverId()); as d) {
@@ -96,19 +93,17 @@
       }
 
       <div class="podium-pedestal-base gold-base" (click)="openDriverPicker('p1')">
-        <span class="ped-number">1</span>
-        <span class="ped-name">PRIMER PUESTO</span>
+        <span class="ped-number">#1</span>
       </div>
     </div>
 
-    <!-- P3: TERCER LUGAR (BRONCE) - DERECHA -->
+    <!-- P3: TERCER LUGAR - DERECHA -->
     <div class="podium-col bronze-border slot-p3">
       <div class="podium-col-top">
         <div class="podium-col-header">
           <span class="podium-badge bronze">P3 TERCERO</span>
-          <span class="pts-tag bronze">BRONCE</span>
         </div>
-        <div class="podium-slot-label">Tercer Clasificado</div>
+        <div class="podium-slot-label">Tercer Lugar</div>
       </div>
 
       @if (getDriver(p3DriverId()); as d) {
@@ -135,8 +130,7 @@
       }
 
       <div class="podium-pedestal-base bronze-base" (click)="openDriverPicker('p3')">
-        <span class="ped-number">3</span>
-        <span class="ped-name">TERCER PUESTO</span>
+        <span class="ped-number">#3</span>
       </div>
     </div>
 
