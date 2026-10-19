@@ -215,69 +215,51 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md, 10px);
-  margin-top: 1rem;
+  margin-top: 0.85rem;
   font-family: var(--font-display, 'Outfit', 'Montserrat', -apple-system, sans-serif);
   cursor: pointer;
   user-select: none;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.podium-pedestal-base::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 10%;
-  right: 10%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
-  pointer-events: none;
+  border: none;
+  outline: none;
 }
 
 .gold-base {
-  height: 62px;
-  background: linear-gradient(180deg, rgba(245, 176, 0, 0.24) 0%, rgba(245, 176, 0, 0.05) 50%, rgba(10, 14, 22, 0.95) 100%), #0a0e16;
-  border: 1.5px solid rgba(245, 176, 0, 0.45);
-  border-top: 2.5px solid #ffd043;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 24px rgba(245, 176, 0, 0.22), 0 8px 24px rgba(0, 0, 0, 0.55);
+  height: 60px;
+  background: linear-gradient(180deg, rgba(245, 176, 0, 0.15) 0%, rgba(245, 176, 0, 0.03) 60%, transparent 100%);
+  border: none;
+  box-shadow: none;
 }
 
 .gold-base:hover {
-  background: linear-gradient(180deg, rgba(245, 176, 0, 0.32) 0%, rgba(245, 176, 0, 0.1) 50%, rgba(10, 14, 22, 0.95) 100%), #0a0e16;
-  border-color: rgba(245, 176, 0, 0.75);
-  border-top-color: #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 32px rgba(245, 176, 0, 0.45), 0 12px 28px rgba(0, 0, 0, 0.65);
+  background: linear-gradient(180deg, rgba(245, 176, 0, 0.26) 0%, rgba(245, 176, 0, 0.07) 60%, transparent 100%);
+  box-shadow: 0 0 24px rgba(245, 176, 0, 0.25);
   transform: translateY(-2px);
 }
 
 .silver-base {
-  height: 52px;
-  background: linear-gradient(180deg, rgba(226, 232, 240, 0.22) 0%, rgba(203, 213, 225, 0.05) 50%, rgba(10, 14, 22, 0.95) 100%), #0a0e16;
-  border: 1.5px solid rgba(203, 213, 225, 0.4);
-  border-top: 2.5px solid #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 0 20px rgba(203, 213, 225, 0.18), 0 8px 24px rgba(0, 0, 0, 0.55);
+  height: 50px;
+  background: linear-gradient(180deg, rgba(226, 232, 240, 0.13) 0%, rgba(203, 213, 225, 0.03) 60%, transparent 100%);
+  border: none;
+  box-shadow: none;
 }
 
 .silver-base:hover {
-  background: linear-gradient(180deg, rgba(226, 232, 240, 0.3) 0%, rgba(203, 213, 225, 0.1) 50%, rgba(10, 14, 22, 0.95) 100%), #0a0e16;
-  border-color: rgba(203, 213, 225, 0.7);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 28px rgba(203, 213, 225, 0.35), 0 12px 28px rgba(0, 0, 0, 0.65);
+  background: linear-gradient(180deg, rgba(226, 232, 240, 0.24) 0%, rgba(203, 213, 225, 0.06) 60%, transparent 100%);
+  box-shadow: 0 0 20px rgba(203, 213, 225, 0.2);
   transform: translateY(-2px);
 }
 
 .bronze-base {
-  height: 46px;
-  background: linear-gradient(180deg, rgba(234, 88, 12, 0.22) 0%, rgba(205, 127, 50, 0.05) 50%, rgba(10, 14, 22, 0.95) 100%), #0a0e16;
-  border: 1.5px solid rgba(205, 127, 50, 0.4);
-  border-top: 2.5px solid #fb923c;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 20px rgba(205, 127, 50, 0.18), 0 8px 24px rgba(0, 0, 0, 0.55);
+  height: 44px;
+  background: linear-gradient(180deg, rgba(234, 88, 12, 0.13) 0%, rgba(205, 127, 50, 0.03) 60%, transparent 100%);
+  border: none;
+  box-shadow: none;
 }
 
 .bronze-base:hover {
-  background: linear-gradient(180deg, rgba(234, 88, 12, 0.3) 0%, rgba(205, 127, 50, 0.1) 50%, rgba(10, 14, 22, 0.95) 100%), #0a0e16;
-  border-color: rgba(205, 127, 50, 0.75);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 0 28px rgba(234, 88, 12, 0.38), 0 12px 28px rgba(0, 0, 0, 0.65);
+  background: linear-gradient(180deg, rgba(234, 88, 12, 0.24) 0%, rgba(205, 127, 50, 0.06) 60%, transparent 100%);
+  box-shadow: 0 0 20px rgba(234, 88, 12, 0.2);
   transform: translateY(-2px);
 }
 
