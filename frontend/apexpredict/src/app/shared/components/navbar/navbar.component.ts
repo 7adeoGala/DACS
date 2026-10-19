@@ -97,14 +97,6 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                     </div>
                   </div>
 
-                  <!-- SECCIÓN DE PREFERENCIAS -->
-                  <div class="dropdown-section-title-row">
-                    <span class="section-title">PREFERENCIAS DE CARRERA</span>
-                    <span class="sync-status">
-                      <span class="sync-dot">●</span> SINCRONIZADO
-                    </span>
-                  </div>
-
                   <!-- CAMPO 1: NOMBRE PÚBLICO (LIMITADO A 20 CARACTERES) -->
                   <div class="form-field-group">
                     <div class="field-label-row">
@@ -352,7 +344,9 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       display: flex;
       align-items: center;
       gap: 0.85rem;
-      margin-bottom: 1.15rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     }
     .avatar-box {
       width: 52px;
@@ -416,35 +410,6 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       width: fit-content;
     }
 
-    /* SECTION TITLE ROW */
-    .dropdown-section-title-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 0.85rem;
-      padding-top: 0.35rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.07);
-    }
-    .section-title {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #64748b;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-    .sync-status {
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: #10b981;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .sync-dot {
-      font-size: 0.6rem;
-    }
 
     /* FORM FIELDS */
     .form-field-group {
