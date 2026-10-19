@@ -86,16 +86,14 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                       <span class="status-indicator-dot"></span>
                     </div>
                     <div class="header-user-info">
-                      <div class="header-title-row">
-                        <h4 class="header-name" [title]="savedDisplayName()">
-                          {{ savedDisplayName() }}
-                        </h4>
+                      <h4 class="header-name" [title]="savedDisplayName()">
+                        {{ savedDisplayName() }}
+                      </h4>
+                      <div class="header-badge-row">
                         <span class="team-tag-badge" [style.--team-color]="savedTeam().color">
                           {{ savedTeamTag() }}
                         </span>
                       </div>
-                      <span class="header-handle">&#64;{{ auth.username() || 'tadeo' }} · Apex Paddock</span>
-                      <span class="header-email">{{ userEmail() }}</span>
                     </div>
                   </div>
 
@@ -384,47 +382,38 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     .header-user-info {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 5px;
       overflow: hidden;
       min-width: 0;
-    }
-    .header-title-row {
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-      flex-wrap: wrap;
+      justify-content: center;
     }
     .header-name {
       margin: 0;
-      font-size: 1.05rem;
+      font-size: 1.12rem;
       font-weight: 800;
       color: #ffffff;
-      max-width: 170px;
+      max-width: 220px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      line-height: 1.2;
+    }
+    .header-badge-row {
+      display: flex;
+      align-items: center;
     }
     .team-tag-badge {
-      font-size: 0.65rem;
+      font-size: 0.68rem;
       font-weight: 800;
       font-family: var(--font-mono);
       color: var(--team-color, #ff8000);
       background: color-mix(in srgb, var(--team-color, #ff8000) 16%, transparent);
       border: 1px solid var(--team-color, #ff8000);
-      padding: 2px 6px;
+      padding: 2px 7px;
       border-radius: 4px;
       letter-spacing: 0.05em;
-    }
-    .header-handle {
-      font-size: 0.74rem;
-      color: #64748b;
-    }
-    .header-email {
-      font-size: 0.74rem;
-      color: #94a3b8;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      display: inline-flex;
+      width: fit-content;
     }
 
     /* SECTION TITLE ROW */
@@ -780,10 +769,6 @@ export class NavbarComponent implements OnInit {
     return this.teams.find((t) => t.id === this.formTeamId()) || this.teams[0];
   });
 
-  readonly userEmail = computed(() => {
-    const user = this.auth.username();
-    return user ? `${user}@apexpredict.com` : 'usuario@apexpredict.com';
-  });
 
   readonly keycloakAccountUrl = computed(() => {
     return `${environment.keycloak.url}/realms/${environment.keycloak.realm}/account`;
