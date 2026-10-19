@@ -53,79 +53,73 @@
   font-weight: 400;
 }
 
-.pts-badge-hero {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  background: rgba(245, 176, 0, 0.06);
-  border: 1px solid rgba(245, 176, 0, 0.35);
-  padding: 0.75rem 1.4rem;
-  border-radius: var(--radius-md, 12px);
-  box-shadow: 0 0 24px rgba(245, 176, 0, 0.12);
-  flex-shrink: 0;
-}
-
-.pts-hero-icon {
-  font-size: 1.5rem;
-  color: var(--gold, #f5b000);
-}
-
-.pts-hero-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.pts-hero-label {
-  font-size: 0.65rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
-  color: var(--text-dim, #64748b);
-  text-transform: uppercase;
-}
-
-.pts-hero-val {
-  font-family: var(--font-mono, 'JetBrains Mono', monospace);
-  font-size: 1.35rem;
-  font-weight: 900;
-  color: var(--gold, #f5b000);
-  letter-spacing: -0.01em;
-}
-
 /* ======================================================== */
-/* GRILLA DEL PODIO (3 COLUMNAS ANCHAS)                      */
+/* GRILLA DEL PODIO (ESTRUCTURA DE ESCALÓN F1)              */
 /* ======================================================== */
 .podium-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
+  align-items: end;
   width: 100%;
   box-sizing: border-box;
+  margin-top: 1.5rem;
 }
 
 .podium-col {
   border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
   border-radius: var(--radius-md, 12px);
-  padding: 1.25rem 1.35rem 1.35rem;
+  padding: 1.35rem;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  justify-content: space-between;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
   box-sizing: border-box;
+  position: relative;
 }
 
+/* ORDEN VISUAL EN DESKTOP: P2 (IZQ), P1 (CENTRO), P3 (DER) */
+.slot-p2 {
+  order: 1;
+}
+
+.slot-p1 {
+  order: 2;
+}
+
+.slot-p3 {
+  order: 3;
+}
+
+/* ELEVACIÓN Y ESCALONADO DE PODIO: 1 POR ENCIMA DE 2, Y 2 POR ENCIMA DE 3 */
 .gold-border {
-  border-top: 3px solid var(--gold, #f5b000);
-  background: linear-gradient(180deg, rgba(245, 176, 0, 0.08) 0%, rgba(13, 17, 24, 0.98) 100%);
+  border-top: 4px solid var(--gold, #f5b000);
+  background: linear-gradient(180deg, rgba(245, 176, 0, 0.12) 0%, rgba(13, 17, 24, 0.98) 100%);
+  box-shadow: 0 0 32px rgba(245, 176, 0, 0.1);
+  min-height: 360px;
+  padding-top: 1.5rem;
 }
 
 .silver-border {
-  border-top: 3px solid var(--silver, #cbd5e1);
-  background: linear-gradient(180deg, rgba(203, 213, 225, 0.06) 0%, rgba(13, 17, 24, 0.98) 100%);
+  border-top: 4px solid var(--silver, #cbd5e1);
+  background: linear-gradient(180deg, rgba(203, 213, 225, 0.08) 0%, rgba(13, 17, 24, 0.98) 100%);
+  box-shadow: 0 0 24px rgba(203, 213, 225, 0.06);
+  min-height: 310px;
+  padding-top: 1.35rem;
 }
 
 .bronze-border {
-  border-top: 3px solid var(--bronze, #cd7f32);
-  background: linear-gradient(180deg, rgba(205, 127, 50, 0.06) 0%, rgba(13, 17, 24, 0.98) 100%);
+  border-top: 4px solid var(--bronze, #cd7f32);
+  background: linear-gradient(180deg, rgba(205, 127, 50, 0.08) 0%, rgba(13, 17, 24, 0.98) 100%);
+  min-height: 265px;
+  padding-top: 1.25rem;
+}
+
+.podium-col-top {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .podium-col-header {
@@ -133,6 +127,16 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.4rem;
+}
+
+.podium-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trophy-gold {
+  flex-shrink: 0;
 }
 
 .podium-badge {
@@ -171,18 +175,21 @@
 }
 
 .pts-tag.gold {
-  background: rgba(245, 176, 0, 0.12);
+  background: rgba(245, 176, 0, 0.14);
   color: var(--gold, #f5b000);
+  border: 1px solid rgba(245, 176, 0, 0.35);
 }
 
 .pts-tag.silver {
-  background: rgba(203, 213, 225, 0.12);
+  background: rgba(203, 213, 225, 0.14);
   color: var(--silver, #cbd5e1);
+  border: 1px solid rgba(203, 213, 225, 0.3);
 }
 
 .pts-tag.bronze {
-  background: rgba(234, 88, 12, 0.12);
+  background: rgba(234, 88, 12, 0.14);
   color: #ea580c;
+  border: 1px solid rgba(234, 88, 12, 0.3);
 }
 
 .podium-slot-label {
@@ -190,8 +197,70 @@
   color: var(--text-dim, #64748b);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 1rem;
+  margin-bottom: 0.85rem;
   font-weight: 700;
+}
+
+/* ======================================================== */
+/* PEDESTAL BASE INFERIOR (PUESTO 1, 2, 3)                   */
+/* ======================================================== */
+.podium-pedestal-base {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border-radius: var(--radius-sm, 8px);
+  margin-top: 0.85rem;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-weight: 900;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.gold-base {
+  height: 52px;
+  background: linear-gradient(180deg, rgba(245, 176, 0, 0.18) 0%, rgba(245, 176, 0, 0.06) 100%);
+  border: 1px solid rgba(245, 176, 0, 0.4);
+  color: var(--gold, #f5b000);
+}
+
+.gold-base:hover {
+  background: rgba(245, 176, 0, 0.24);
+  box-shadow: 0 0 20px rgba(245, 176, 0, 0.2);
+}
+
+.silver-base {
+  height: 42px;
+  background: linear-gradient(180deg, rgba(203, 213, 225, 0.14) 0%, rgba(203, 213, 225, 0.04) 100%);
+  border: 1px solid rgba(203, 213, 225, 0.3);
+  color: var(--silver, #cbd5e1);
+}
+
+.silver-base:hover {
+  background: rgba(203, 213, 225, 0.2);
+}
+
+.bronze-base {
+  height: 32px;
+  background: linear-gradient(180deg, rgba(205, 127, 50, 0.14) 0%, rgba(205, 127, 50, 0.04) 100%);
+  border: 1px solid rgba(205, 127, 50, 0.3);
+  color: #ea580c;
+}
+
+.bronze-base:hover {
+  background: rgba(205, 127, 50, 0.2);
+}
+
+.ped-number {
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.ped-name {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  opacity: 0.85;
 }
 
 /* ======================================================== */
@@ -528,13 +597,17 @@
   .podium-grid {
     grid-template-columns: 1fr;
     gap: 1.25rem;
+    align-items: stretch;
   }
+  .gold-border, .silver-border, .bronze-border {
+    min-height: auto;
+    padding-top: 1.25rem;
+  }
+  .slot-p1 { order: 1; }
+  .slot-p2 { order: 2; }
+  .slot-p3 { order: 3; }
   .card-title-row {
     flex-direction: column;
     align-items: flex-start;
-  }
-  .pts-badge-hero {
-    width: 100%;
-    justify-content: space-between;
   }
 }

@@ -1960,15 +1960,15 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       justify-content: flex-end;
     }
     .gold-ped {
-      min-height: 190px;
+      min-height: 220px;
       border-top: 5px solid var(--gold);
     }
     .silver-ped {
-      min-height: 160px;
+      min-height: 180px;
       border-top: 5px solid var(--silver);
     }
     .bronze-ped {
-      min-height: 140px;
+      min-height: 145px;
       border-top: 5px solid var(--bronze);
     }
     .pos-badge {

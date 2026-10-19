@@ -9,54 +9,20 @@
         Tocá o hacé clic en cualquier posición para seleccionar al piloto desde la grilla interactiva.
       </p>
     </div>
-    <div class="pts-badge-hero">
-      <div class="pts-hero-text">
-        <span class="pts-hero-label">PUNTAJE ESTIMADO</span>
-        <span class="pts-hero-val">+{{ totalEstimatedPoints() }} PTS TOTALES</span>
-      </div>
-    </div>
   </div>
 
-  <!-- GRILLA PRINCIPAL DE 3 COLUMNAS -->
+  <!-- GRILLA PRINCIPAL DE 3 COLUMNAS EN FORMA DE PODIO F1 (P2 - P1 - P3) -->
   <div class="podium-grid">
 
-    <!-- P1: GANADOR (ORO) -->
-    <div class="podium-col gold-border">
-      <div class="podium-col-header">
-        <span class="podium-badge gold">P1 WINNER</span>
-      </div>
-      <div class="podium-slot-label">Vencedor del Gran Premio</div>
-
-      @if (getDriver(p1DriverId()); as d) {
-        <div class="driver-template-card gold-slot" 
-             [style.--driver-color]="d.teamColor"
-             (click)="openDriverPicker('p1')">
-          <div class="dtc-header">
-            <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
-              {{ d.team }}
-            </span>
-            <div class="dtc-badges">
-              <span class="dtc-code">{{ d.code }}</span>
-              <span class="dtc-num">#{{ d.number }}</span>
-            </div>
-          </div>
-          <div class="dtc-main">
-            <div class="dtc-name">{{ d.name }}</div>
-          </div>
-          <div class="dtc-action">
-            <span>Cambiar Piloto</span>
-            <span class="action-icon">⇄</span>
-          </div>
+    <!-- P2: SEGUNDO LUGAR (PLATA) - IZQUIERDA -->
+    <div class="podium-col silver-border slot-p2">
+      <div class="podium-col-top">
+        <div class="podium-col-header">
+          <span class="podium-badge silver">P2 SEGUNDO</span>
+          <span class="pts-tag silver">+18 PTS</span>
         </div>
-      }
-    </div>
-
-    <!-- P2: SEGUNDO LUGAR (PLATA) -->
-    <div class="podium-col silver-border">
-      <div class="podium-col-header">
-        <span class="podium-badge silver">P2 SEGUNDO</span>
+        <div class="podium-slot-label">Segundo Clasificado</div>
       </div>
-      <div class="podium-slot-label">Segundo Clasificado</div>
 
       @if (getDriver(p2DriverId()); as d) {
         <div class="driver-template-card silver-slot" 
@@ -80,14 +46,70 @@
           </div>
         </div>
       }
+
+      <div class="podium-pedestal-base silver-base" (click)="openDriverPicker('p2')">
+        <span class="ped-number">2</span>
+        <span class="ped-name">SEGUNDO PUESTO</span>
+      </div>
     </div>
 
-    <!-- P3: TERCER LUGAR (BRONCE) -->
-    <div class="podium-col bronze-border">
-      <div class="podium-col-header">
-        <span class="podium-badge bronze">P3 TERCERO</span>
+    <!-- P1: GANADOR (ORO) - CENTRO -->
+    <div class="podium-col gold-border slot-p1">
+      <div class="podium-col-top">
+        <div class="podium-col-header">
+          <div class="podium-badge-wrap">
+            <svg class="trophy-gold" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold, #f5b000)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/>
+              <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
+              <path d="M4 22h16"/>
+              <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h10c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-2c-.55 0-1-.45-1-1v-2.34"/>
+              <path d="M6 4h12a2 2 0 0 1 2 2v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V6a2 2 0 0 1 2-2z"/>
+            </svg>
+            <span class="podium-badge gold">P1 WINNER</span>
+          </div>
+          <span class="pts-tag gold">+25 PTS</span>
+        </div>
+        <div class="podium-slot-label">Vencedor del Gran Premio</div>
       </div>
-      <div class="podium-slot-label">Tercer Clasificado</div>
+
+      @if (getDriver(p1DriverId()); as d) {
+        <div class="driver-template-card gold-slot" 
+             [style.--driver-color]="d.teamColor"
+             (click)="openDriverPicker('p1')">
+          <div class="dtc-header">
+            <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
+              {{ d.team }}
+            </span>
+            <div class="dtc-badges">
+              <span class="dtc-code">{{ d.code }}</span>
+              <span class="dtc-num">#{{ d.number }}</span>
+            </div>
+          </div>
+          <div class="dtc-main">
+            <div class="dtc-name">{{ d.name }}</div>
+          </div>
+          <div class="dtc-action">
+            <span>Cambiar Piloto</span>
+            <span class="action-icon">⇄</span>
+          </div>
+        </div>
+      }
+
+      <div class="podium-pedestal-base gold-base" (click)="openDriverPicker('p1')">
+        <span class="ped-number">1</span>
+        <span class="ped-name">PRIMER PUESTO</span>
+      </div>
+    </div>
+
+    <!-- P3: TERCER LUGAR (BRONCE) - DERECHA -->
+    <div class="podium-col bronze-border slot-p3">
+      <div class="podium-col-top">
+        <div class="podium-col-header">
+          <span class="podium-badge bronze">P3 TERCERO</span>
+          <span class="pts-tag bronze">+15 PTS</span>
+        </div>
+        <div class="podium-slot-label">Tercer Clasificado</div>
+      </div>
 
       @if (getDriver(p3DriverId()); as d) {
         <div class="driver-template-card bronze-slot" 
@@ -111,6 +133,11 @@
           </div>
         </div>
       }
+
+      <div class="podium-pedestal-base bronze-base" (click)="openDriverPicker('p3')">
+        <span class="ped-number">3</span>
+        <span class="ped-name">TERCER PUESTO</span>
+      </div>
     </div>
 
   </div>
@@ -128,4 +155,3 @@
   [p3DriverId]="p3DriverId()"
   (onClose)="closeModal()"
   (onDriverSelected)="handleModalDriverSelected($event)" />
-
