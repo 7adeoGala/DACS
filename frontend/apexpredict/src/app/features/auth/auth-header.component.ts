@@ -19,14 +19,6 @@ import { Component } from '@angular/core';
             <span class="brand-sub">OFFICIAL F1 COMPETITION LEAGUE</span>
           </div>
         </a>
-
-        <!-- BADGE TELEMÉTRICO DE SEGURIDAD F1 -->
-        <div class="auth-badge">
-          <span class="pulse-dot"></span>
-          <span class="badge-text-primary">KEYCLOAK OIDC PROTECTED</span>
-          <span class="badge-divider">|</span>
-          <span class="badge-text-secondary">TEMPORADA 2026</span>
-        </div>
       </div>
     </header>
   `,
@@ -94,42 +86,9 @@ import { Component } from '@angular/core';
       letter-spacing: 0.22em;
       color: #94a3b8;
     }
-    .auth-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 4px 12px;
-      border-radius: 9999px;
-      background: rgba(18, 23, 34, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.65rem;
-      color: #cbd5e1;
-    }
-    .pulse-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #10b981;
-      box-shadow: 0 0 8px #10b981;
-      animation: pulseGlow 2s infinite ease-in-out;
-    }
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
-    .badge-divider {
-      color: rgba(255, 255, 255, 0.2);
-    }
-    .badge-text-secondary {
-      color: #94a3b8;
-    }
     @media (max-width: 640px) {
       .auth-header-inner {
         padding: 0 1rem;
-      }
-      .badge-text-primary, .badge-divider {
-        display: none;
       }
     }
   `]

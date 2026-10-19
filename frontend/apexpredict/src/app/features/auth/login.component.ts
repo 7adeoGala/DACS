@@ -50,11 +50,6 @@ import { ApiService } from '../../core/services/api.service';
                 Conectando con servidores de autenticación... Aguardá un instante mientras se valida tu cuenta.
               </p>
             </div>
-
-            <div class="loading-telemetry-badge">
-              <span class="badge-status-dot"></span>
-              <span>SYNCHRONIZING PADDOCK SERVERS // 256-BIT ENCRYPTION</span>
-            </div>
           </div>
         } @else {
           <div class="auth-card">
@@ -171,11 +166,6 @@ import { ApiService } from '../../core/services/api.service';
               <a routerLink="/register" class="link-action">Registrarse</a>
             </div>
           </div>
-
-          <p class="telemetry-footer-status">
-            <span class="status-indicator"></span>
-            PADDOCK TELEMETRY SERVERS ONLINE | PKCE 256-BIT ENCRYPTED
-          </p>
         }
       </main>
     </div>
