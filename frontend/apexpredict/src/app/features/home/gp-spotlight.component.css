@@ -129,42 +129,7 @@
   font-size: 0.95rem;
 }
 
-.gp-lockout-card {
-  background: var(--surface-card);
-  border: 1px solid var(--line);
-  padding: 12px 18px;
-  border-radius: var(--radius-md);
-  text-align: right;
-  font-family: var(--font-mono);
-}
 
-.lockout-badge {
-  color: var(--green);
-  font-size: 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
-.lock-dot {
-  width: 6px;
-  height: 6px;
-  background: var(--green);
-  border-radius: 50%;
-}
-
-.lockout-time span {
-  font-size: 0.7rem;
-  color: var(--text-dim);
-  display: block;
-}
-
-.lockout-time strong {
-  font-size: 0.95rem;
-  color: var(--gold);
-}
 
 /* Grilla Principal */
 .telemetry-main-grid {
@@ -1301,13 +1266,6 @@
   font-size: 0.75rem;
 }
 
-.lockout-badge.locked {
-  color: var(--red-bright);
-}
-
-.lock-dot.locked {
-  background: var(--red-bright);
-}
 
 .val-code.silver {
   color: var(--silver);

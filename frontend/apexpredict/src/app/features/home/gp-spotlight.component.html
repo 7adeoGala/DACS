@@ -14,26 +14,6 @@
       <p class="gp-location">{{ circuit().name }} • {{ circuit().city }}, {{ circuit().country }}</p>
     </div>
 
-    @if (auth.authenticated()) {
-      <div class="gp-lockout-card">
-        <div class="lockout-badge" [class.locked]="isLocked()">
-          <span class="lock-dot" [class.locked]="isLocked()"></span>
-          ESTADO: <strong>{{ isLocked() ? 'PRONÓSTICOS BLOQUEADOS' : 'PRONÓSTICOS ABIERTOS' }}</strong>
-        </div>
-        <div class="lockout-time">
-          <span>HORARIO DE CARRERA (ARGENTINA)</span>
-          <strong>
-            @if (session()?.startsAt) {
-              {{ session()?.startsAt | date:'EEE d MMM · HH:mm':'America/Argentina/Buenos_Aires' }} hs (Arg)
-            } @else if (isLoading()) {
-              Sincronizando cronograma...
-            } @else {
-              Domingo 16:00 hs (Arg)
-            }
-          </strong>
-        </div>
-      </div>
-    }
   </header>
 
   <!-- Grilla Principal: Cronograma, Circuito Vectorial y Countdown + Leaderboard -->
