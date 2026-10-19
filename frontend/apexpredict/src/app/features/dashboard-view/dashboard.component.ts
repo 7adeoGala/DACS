@@ -37,41 +37,47 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               <span class="badge-round">ROUND {{ session()?.round || 18 }} // {{ session()?.circuit || 'COTA' }}</span>
               <h2>Configuración de Pronósticos Oficiales</h2>
               <p class="subtitle">Asigná los 3 puestos de podio sin duplicar, poleman, duelo de la fecha y telemetría de carrera.</p>
-            </div>
 
-            <!-- DETALLE DE LOS PUNTOS QUE SUMA CADA COSA -->
-            <div class="scoring-guide-grid">
-              <div class="guide-item">
-                <span class="guide-label">P1 Ganador</span>
-                <span class="guide-val gold">+25 pts</span>
-              </div>
-              <div class="guide-item">
-                <span class="guide-label">P2 Segundo</span>
-                <span class="guide-val silver">+18 pts</span>
-              </div>
-              <div class="guide-item">
-                <span class="guide-label">P3 Tercero</span>
-                <span class="guide-val bronze">+15 pts</span>
-              </div>
-              <div class="guide-item">
-                <span class="guide-label">Pleno Podio</span>
-                <span class="guide-val bonus">+15 pts</span>
-              </div>
-              <div class="guide-item">
-                <span class="guide-label">Pole Position</span>
-                <span class="guide-val cyan">+20 pts</span>
-              </div>
-              <div class="guide-item">
-                <span class="guide-label">Duelo Directo</span>
-                <span class="guide-val amber">+10 pts</span>
-              </div>
-              <div class="guide-item">
-                <span class="guide-label">Safety Car</span>
-                <span class="guide-val sc">+10 pts</span>
-              </div>
-              <div class="guide-item">
-                <span class="guide-label">Abandonos DNF</span>
-                <span class="guide-val dnf">+5 pts</span>
+              <!-- DETALLE DE LOS PUNTAJES OFICIALES DE LA PREDICCIÓN -->
+              <div class="scoring-rules-panel">
+                <div class="scoring-rules-title">Los puntajes:</div>
+                <div class="scoring-rules-grid">
+                  <div class="scoring-rule-card">
+                    <span class="rule-card-indicator gold"></span>
+                    <span class="rule-card-label">Acierto de podio completo:</span>
+                    <span class="rule-card-pts gold">+10 pts</span>
+                  </div>
+                  <div class="scoring-rule-card">
+                    <span class="rule-card-indicator silver"></span>
+                    <span class="rule-card-label">Acierto de 2 posiciones del podio:</span>
+                    <span class="rule-card-pts silver">+7 pts</span>
+                  </div>
+                  <div class="scoring-rule-card">
+                    <span class="rule-card-indicator bronze"></span>
+                    <span class="rule-card-label">Acierto 1 posición del podio:</span>
+                    <span class="rule-card-pts bronze">+3 pts</span>
+                  </div>
+                  <div class="scoring-rule-card">
+                    <span class="rule-card-indicator cyan"></span>
+                    <span class="rule-card-label">Poleman:</span>
+                    <span class="rule-card-pts cyan">+4 pts</span>
+                  </div>
+                  <div class="scoring-rule-card">
+                    <span class="rule-card-indicator sc"></span>
+                    <span class="rule-card-label">Safety car /VSC:</span>
+                    <span class="rule-card-pts sc">+10 pts</span>
+                  </div>
+                  <div class="scoring-rule-card">
+                    <span class="rule-card-indicator dnf"></span>
+                    <span class="rule-card-label">DNF:</span>
+                    <span class="rule-card-pts dnf">+15 pts</span>
+                  </div>
+                  <div class="scoring-rule-card">
+                    <span class="rule-card-indicator duel"></span>
+                    <span class="rule-card-label">Ganador del duelo de pilotos:</span>
+                    <span class="rule-card-pts duel">+3 pts</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -948,10 +954,10 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                           Podio: +{{ h.scoreBreakdown.podiumPoints }} pts ({{ h.scoreBreakdown.podiumHits }}/3)
                         </span>
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.poleHit">
-                          Pole: {{ h.scoreBreakdown.poleHit ? '+20 pts' : '0 pts' }}
+                          Pole: {{ h.scoreBreakdown.poleHit ? '+' + (h.scoreBreakdown.polePoints || 4) + ' pts' : '0 pts' }}
                         </span>
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.duelHit">
-                          Duelo: {{ h.scoreBreakdown.duelHit ? '+15 pts' : '0 pts' }}
+                          Duelo: {{ h.scoreBreakdown.duelHit ? '+' + (h.scoreBreakdown.duelPoints || 3) + ' pts' : '0 pts' }}
                         </span>
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.safetyCarHit">
                           Safety Car: {{ h.scoreBreakdown.safetyCarHit ? '+10 pts' : '0 pts' }}
@@ -1043,7 +1049,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 <span class="c-col official dim">
                   {{ item.officialResults?.podium?.[0] ? getDriverName(item.officialResults?.podium?.[0]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts gold">25 pts</span>
+                <span class="c-col pts gold">Top 3</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.podiumHits >= 1) {
@@ -1064,7 +1070,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 <span class="c-col official dim">
                   {{ item.officialResults?.podium?.[1] ? getDriverName(item.officialResults?.podium?.[1]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts silver">18 pts</span>
+                <span class="c-col pts silver">Top 3</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.podiumHits >= 2) {
@@ -1085,7 +1091,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 <span class="c-col official dim">
                   {{ item.officialResults?.podium?.[2] ? getDriverName(item.officialResults?.podium?.[2]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts bronze">15 pts</span>
+                <span class="c-col pts bronze">Top 3</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.podiumHits >= 3) {
@@ -1106,7 +1112,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 <span class="c-col official dim">
                   {{ item.officialResults?.polePositionDriverId ? getDriverName(item.officialResults?.polePositionDriverId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts cyan">20 pts</span>
+                <span class="c-col pts cyan">4 pts</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.poleHit) {
@@ -1127,7 +1133,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 <span class="c-col official dim">
                   {{ item.officialResults?.duelWinnerId ? getDriverName(item.officialResults?.duelWinnerId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                 </span>
-                <span class="c-col pts">15 pts</span>
+                <span class="c-col pts">3 pts</span>
                 <span class="c-col status">
                   @if (item.scoreBreakdown) {
                     @if (item.scoreBreakdown.duelHit) {
@@ -1241,14 +1247,15 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
     }
     .section-hero {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: column;
       background: linear-gradient(135deg, rgba(225, 6, 0, 0.12) 0%, var(--surface) 100%);
       border: 1px solid var(--line-accent);
       border-radius: var(--radius-md);
       padding: 1.5rem 2rem;
-      flex-wrap: wrap;
-      gap: 1rem;
+      gap: 1.25rem;
+    }
+    .hero-intro {
+      width: 100%;
     }
     .badge-round {
       background: var(--red);
@@ -1263,41 +1270,76 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       color: var(--text-muted);
       margin-top: 0.25rem;
       font-size: 0.95rem;
+      line-height: 1.45;
     }
-    .scoring-guide-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.5rem 0.75rem;
-      background: rgba(10, 14, 20, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: var(--radius-sm);
-      padding: 0.75rem 1rem;
-      max-width: 620px;
+    .scoring-rules-panel {
+      margin-top: 1.25rem;
+      padding-top: 1.1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      width: 100%;
     }
-    .guide-item {
+    .scoring-rules-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.75rem;
       display: flex;
-      justify-content: space-between;
       align-items: center;
       gap: 0.4rem;
-      font-size: 0.8rem;
     }
-    .guide-label {
-      color: var(--text-dim);
-      white-space: nowrap;
+    .scoring-rules-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem 0.85rem;
     }
-    .guide-val {
+    .scoring-rule-card {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      background: rgba(10, 14, 20, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 6px;
+      padding: 0.45rem 0.85rem;
+      font-size: 0.83rem;
+      transition: all 0.2s ease;
+    }
+    .scoring-rule-card:hover {
+      border-color: rgba(255, 255, 255, 0.22);
+      transform: translateY(-1px);
+      background: rgba(16, 22, 32, 0.95);
+    }
+    .rule-card-indicator {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .rule-card-indicator.gold { background: var(--gold); box-shadow: 0 0 6px rgba(255, 209, 102, 0.55); }
+    .rule-card-indicator.silver { background: var(--silver); box-shadow: 0 0 6px rgba(226, 232, 240, 0.55); }
+    .rule-card-indicator.bronze { background: #f97316; box-shadow: 0 0 6px rgba(249, 115, 22, 0.55); }
+    .rule-card-indicator.cyan { background: var(--cyan); box-shadow: 0 0 6px rgba(0, 242, 254, 0.55); }
+    .rule-card-indicator.sc { background: #facc15; box-shadow: 0 0 6px rgba(250, 204, 21, 0.55); }
+    .rule-card-indicator.dnf { background: #f43f5e; box-shadow: 0 0 6px rgba(244, 63, 94, 0.55); }
+    .rule-card-indicator.duel { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.55); }
+
+    .rule-card-label {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+    .rule-card-pts {
       font-family: var(--font-mono);
       font-weight: 800;
-      font-size: 0.78rem;
+      font-size: 0.83rem;
     }
-    .guide-val.gold { color: var(--gold); }
-    .guide-val.silver { color: var(--silver); }
-    .guide-val.bronze { color: #ea580c; }
-    .guide-val.bonus { color: #f43f5e; }
-    .guide-val.cyan { color: var(--cyan); }
-    .guide-val.amber { color: #fbbf24; }
-    .guide-val.sc { color: #eab308; }
-    .guide-val.dnf { color: #ec4899; }
+    .rule-card-pts.gold { color: var(--gold); }
+    .rule-card-pts.silver { color: var(--silver); }
+    .rule-card-pts.bronze { color: #f97316; }
+    .rule-card-pts.cyan { color: var(--cyan); }
+    .rule-card-pts.sc { color: #facc15; }
+    .rule-card-pts.dnf { color: #f43f5e; }
+    .rule-card-pts.duel { color: #10b981; }
 
     /* CARTEL DINÁMICO DE ESTADO CON SEMÁFORO */
     .prediction-status-card {
@@ -2395,10 +2437,15 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       color: var(--text-dim);
     }
     @media (max-width: 768px) {
-      .scoring-guide-grid {
-        grid-template-columns: repeat(2, 1fr);
+      .scoring-rules-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .scoring-rule-card {
         width: 100%;
-        max-width: 100%;
+        box-sizing: border-box;
+        justify-content: space-between;
       }
       .prediction-status-card {
         flex-direction: column;
