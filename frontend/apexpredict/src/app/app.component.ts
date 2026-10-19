@@ -33,7 +33,7 @@ export class App {
         const link = (document.querySelector("link[rel*='icon']") as HTMLLinkElement) || document.createElement('link');
         link.type = 'image/svg+xml';
         link.rel = 'icon';
-        link.href = 'favicon.svg?v=apex3';
+        link.href = 'favicon.svg?v=apex-original';
         document.head.appendChild(link);
       } catch {}
 

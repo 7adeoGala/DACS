@@ -6,16 +6,15 @@ import { Component } from '@angular/core';
   template: `
     <header class="auth-header">
       <div class="auth-header-inner">
-        <!-- LOGO OFICIAL APEXPREDICT (ESQUINA SUPERIOR IZQUIERDA) -->
+        <!-- LOGO ORIGINAL APEXPREDICT (FOTO OFICIAL) -->
         <a class="brand-link" href="/">
-          <div class="brand-icon">
-            <svg class="brand-bolt" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z"/>
-            </svg>
-          </div>
+          <svg class="logo-racing-mark" viewBox="0 0 18 18" width="22" height="22" fill="none" style="margin-right: 4px;">
+            <path d="M2 14L8 4H12L6 14H2Z" fill="#e10600"/>
+            <path d="M8 14L14 4H18L12 14H8Z" fill="#ffffff"/>
+          </svg>
           <div class="brand-text">
             <div class="brand-title">
-              <span class="brand-apex">APEX</span><span class="brand-predict">PREDICT</span>
+              <span class="brand-apex">APEX</span> <span class="brand-predict">PREDICT</span>
             </div>
             <span class="brand-sub">OFFICIAL F1 COMPETITION LEAGUE</span>
           </div>
@@ -58,22 +57,8 @@ import { Component } from '@angular/core';
     .brand-link:hover {
       transform: scale(1.02);
     }
-    .brand-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #e10600 0%, #b30500 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 16px rgba(225, 6, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-    .brand-bolt {
-      width: 20px;
-      height: 20px;
-      color: #ffffff;
-      transform: skewX(-6deg);
+    .logo-racing-mark {
+      flex-shrink: 0;
     }
     .brand-text {
       display: flex;
@@ -81,10 +66,10 @@ import { Component } from '@angular/core';
       text-align: left;
     }
     .brand-title {
-      font-size: 1.25rem;
+      font-size: 1.35rem;
       font-weight: 900;
-      font-style: italic;
-      letter-spacing: 0.03em;
+      font-style: normal;
+      letter-spacing: -0.01em;
       line-height: 1.1;
     }
     .brand-apex {
@@ -92,7 +77,7 @@ import { Component } from '@angular/core';
     }
     .brand-predict {
       color: #e10600;
-      margin-left: 2px;
+      margin-left: 4px;
     }
     .brand-sub {
       font-family: 'JetBrains Mono', monospace;

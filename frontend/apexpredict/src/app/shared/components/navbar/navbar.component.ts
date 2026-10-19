@@ -12,11 +12,11 @@ import { ApiService } from '../../../core/services/api.service';
       <div class="navbar-container">
         <!-- LOGO ESTILIZADO APEXPREDICT -->
         <a routerLink="/" class="brand-logo">
-          <svg class="logo-racing-mark" viewBox="0 0 18 18" width="18" height="18" fill="none" style="margin-right: 2px;">
+          <svg class="logo-racing-mark" viewBox="0 0 18 18" width="20" height="20" fill="none" style="margin-right: 3px;">
             <path d="M2 14L8 4H12L6 14H2Z" fill="var(--red)"/>
-            <path d="M8 14L14 4H18L12 14H8Z" fill="#ffffff" fill-opacity="0.85"/>
+            <path d="M8 14L14 4H18L12 14H8Z" fill="#ffffff"/>
           </svg>
-          <span class="txt-apex">APEX</span><span class="txt-predict">PREDICT</span>
+          <span class="txt-apex">APEX</span> <span class="txt-predict">PREDICT</span>
         </a>
 
         <!-- NAVEGACIÓN EN UN SOLO RENGLÓN CON ESPACIADO AMPLIO -->
