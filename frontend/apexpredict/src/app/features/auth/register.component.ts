@@ -16,149 +16,186 @@ import { AuthService } from '../../core/auth/auth.service';
 
       <!-- CONTENEDOR CENTRADO DE LA TARJETA -->
       <main class="auth-main">
-        <div class="auth-card register-mode">
-          <div class="card-header">
-            <div>
-              <h1 class="card-title">Registrarse</h1>
-              <p class="card-subtitle">* Campos obligatorios</p>
+        @if (isLoading()) {
+          <!-- PANTALLA DE CARGA EN EL CENTRO -->
+          <div class="auth-loading-screen">
+            <!-- ANIMACIÓN F1 QUE HACE AL USUARIO ESPERAR -->
+            <div class="f1-loader-wrap">
+              <div class="f1-loader-rings">
+                <div class="ring-outer"></div>
+                <div class="ring-inner"></div>
+                <div class="f1-loader-logo">
+                  <svg viewBox="0 0 18 18" width="34" height="34" fill="none">
+                    <path d="M2 14L8 4H12L6 14H2Z" fill="#e10600"/>
+                    <path d="M8 14L14 4H18L12 14H8Z" fill="#ffffff"/>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- 5 LUCES DE SEMÁFORO DE LARGADA F1 EN SECUENCIA -->
+              <div class="f1-start-lights" aria-hidden="true">
+                <div class="light-unit"><span class="light-bulb bulb-1"></span></div>
+                <div class="light-unit"><span class="light-bulb bulb-2"></span></div>
+                <div class="light-unit"><span class="light-bulb bulb-3"></span></div>
+                <div class="light-unit"><span class="light-bulb bulb-4"></span></div>
+                <div class="light-unit"><span class="light-bulb bulb-5"></span></div>
+              </div>
             </div>
-            <div class="lang-selector">
-              <span>ES</span>
-              <span class="chevron">▼</span>
+
+            <!-- CARTEL SOLO EN EL CENTRO -->
+            <div class="loading-cartel-box">
+              <span class="loading-cartel-dot"></span>
+              <p class="loading-cartel-text">
+                Registrando usuario en los servidores de autenticación... Aguardá un instante mientras se crea tu cuenta.
+              </p>
+            </div>
+
+            <div class="loading-telemetry-badge">
+              <span class="badge-status-dot"></span>
+              <span>SYNCHRONIZING PADDOCK SERVERS // 256-BIT ENCRYPTION</span>
             </div>
           </div>
-
-          @if (errorMessage()) {
-            <div class="alert-message error">
-              {{ errorMessage() }}
-            </div>
-          }
-
-          @if (successMessage()) {
-            <div class="alert-message success">
-              {{ successMessage() }}
-            </div>
-          }
-
-          <form (ngSubmit)="handleRegister()" class="auth-form">
-            <div class="form-group">
-              <label for="reg-username">USUARIO *</label>
-              <input 
-                id="reg-username" 
-                type="text" 
-                [ngModel]="username()" 
-                (ngModelChange)="username.set($event)" 
-                name="username" 
-                placeholder="Elegí tu nombre de usuario" 
-                required 
-                autocomplete="username" />
+        } @else {
+          <div class="auth-card register-mode">
+            <div class="card-header">
+              <div>
+                <h1 class="card-title">Registrarse</h1>
+                <p class="card-subtitle">* Campos obligatorios</p>
+              </div>
+              <div class="lang-selector">
+                <span>ES</span>
+                <span class="chevron">▼</span>
+              </div>
             </div>
 
-            <div class="form-row">
+            @if (errorMessage()) {
+              <div class="alert-message error">
+                {{ errorMessage() }}
+              </div>
+            }
+
+            @if (successMessage()) {
+              <div class="alert-message success">
+                {{ successMessage() }}
+              </div>
+            }
+
+            <form (ngSubmit)="handleRegister()" class="auth-form">
               <div class="form-group">
-                <label for="firstName">NOMBRE *</label>
+                <label for="reg-username">USUARIO *</label>
                 <input 
-                  id="firstName" 
+                  id="reg-username" 
                   type="text" 
-                  [ngModel]="firstName()" 
-                  (ngModelChange)="firstName.set($event)" 
-                  name="firstName" 
-                  placeholder="Nombre" 
+                  [ngModel]="username()" 
+                  (ngModelChange)="username.set($event)" 
+                  name="username" 
+                  placeholder="Elegí tu nombre de usuario" 
                   required 
-                  autocomplete="given-name" />
+                  autocomplete="username" />
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="firstName">NOMBRE *</label>
+                  <input 
+                    id="firstName" 
+                    type="text" 
+                    [ngModel]="firstName()" 
+                    (ngModelChange)="firstName.set($event)" 
+                    name="firstName" 
+                    placeholder="Nombre" 
+                    required 
+                    autocomplete="given-name" />
+                </div>
+
+                <div class="form-group">
+                  <label for="lastName">APELLIDO *</label>
+                  <input 
+                    id="lastName" 
+                    type="text" 
+                    [ngModel]="lastName()" 
+                    (ngModelChange)="lastName.set($event)" 
+                    name="lastName" 
+                    placeholder="Apellido" 
+                    required 
+                    autocomplete="family-name" />
+                </div>
               </div>
 
               <div class="form-group">
-                <label for="lastName">APELLIDO *</label>
+                <label for="reg-email">CORREO ELECTRÓNICO *</label>
                 <input 
-                  id="lastName" 
-                  type="text" 
-                  [ngModel]="lastName()" 
-                  (ngModelChange)="lastName.set($event)" 
-                  name="lastName" 
-                  placeholder="Apellido" 
+                  id="reg-email" 
+                  type="email" 
+                  [ngModel]="email()" 
+                  (ngModelChange)="email.set($event)" 
+                  name="email" 
+                  placeholder="correo@ejemplo.com" 
                   required 
-                  autocomplete="family-name" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="reg-email">CORREO ELECTRÓNICO *</label>
-              <input 
-                id="reg-email" 
-                type="email" 
-                [ngModel]="email()" 
-                (ngModelChange)="email.set($event)" 
-                name="email" 
-                placeholder="correo@ejemplo.com" 
-                required 
-                autocomplete="email" />
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="reg-pwd">CONTRASEÑA *</label>
-                <input 
-                  id="reg-pwd" 
-                  type="password" 
-                  [ngModel]="password()" 
-                  (ngModelChange)="password.set($event)" 
-                  name="password" 
-                  placeholder="••••••••" 
-                  required 
-                  autocomplete="new-password" />
+                  autocomplete="email" />
               </div>
 
-              <div class="form-group">
-                <label for="reg-pwd-confirm">CONFIRMAR CONTRASEÑA *</label>
-                <input 
-                  id="reg-pwd-confirm" 
-                  type="password" 
-                  [ngModel]="confirmPassword()" 
-                  (ngModelChange)="confirmPassword.set($event)" 
-                  name="confirmPassword" 
-                  placeholder="••••••••" 
-                  required 
-                  autocomplete="new-password" />
-              </div>
-            </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="reg-pwd">CONTRASEÑA *</label>
+                  <input 
+                    id="reg-pwd" 
+                    type="password" 
+                    [ngModel]="password()" 
+                    (ngModelChange)="password.set($event)" 
+                    name="password" 
+                    placeholder="••••••••" 
+                    required 
+                    autocomplete="new-password" />
+                </div>
 
-            <button type="submit" class="btn-primary" [disabled]="isLoading()">
-              @if (isLoading()) {
-                <span>CREANDO CUENTA...</span>
-              } @else {
+                <div class="form-group">
+                  <label for="reg-pwd-confirm">CONFIRMAR CONTRASEÑA *</label>
+                  <input 
+                    id="reg-pwd-confirm" 
+                    type="password" 
+                    [ngModel]="confirmPassword()" 
+                    (ngModelChange)="confirmPassword.set($event)" 
+                    name="confirmPassword" 
+                    placeholder="••••••••" 
+                    required 
+                    autocomplete="new-password" />
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary" [disabled]="isLoading()">
                 <span>REGISTRARSE →</span>
-              }
-            </button>
+              </button>
 
-            <!-- SEPARADOR CON GOOGLE -->
-            <div class="divider-wrap">
-              <div class="divider-line"></div>
-              <span class="divider-text">O CONTINUAR CON</span>
-              <div class="divider-line"></div>
+              <!-- SEPARADOR CON GOOGLE -->
+              <div class="divider-wrap">
+                <div class="divider-line"></div>
+                <span class="divider-text">O CONTINUAR CON</span>
+                <div class="divider-line"></div>
+              </div>
+
+              <!-- REGISTRO CON GOOGLE -->
+              <button type="button" class="btn-google" (click)="registerWithGoogle()">
+                <svg class="google-icon" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
+                  <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                  <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"/>
+                  <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+                </svg>
+                <span>Registrarse con Google</span>
+              </button>
+            </form>
+
+            <div class="card-footer">
+              <a routerLink="/login" class="link-back">« Volver a Iniciar Sesión</a>
             </div>
-
-            <!-- REGISTRO CON GOOGLE -->
-            <button type="button" class="btn-google" (click)="registerWithGoogle()">
-              <svg class="google-icon" viewBox="0 0 24 24">
-                <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
-                <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-                <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.8s.2-2.1.4-2.8L1.9 6.3C.7 8.7 0 10.3 0 12s.7 3.3 1.9 5.7l3.7-2.9z"/>
-                <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.4-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
-              </svg>
-              <span>Registrarse con Google</span>
-            </button>
-          </form>
-
-          <div class="card-footer">
-            <a routerLink="/login" class="link-back">« Volver a Iniciar Sesión</a>
           </div>
-        </div>
 
-        <p class="telemetry-footer-status">
-          <span class="status-indicator"></span>
-          PADDOCK TELEMETRY SERVERS ONLINE | PKCE 256-BIT ENCRYPTED
-        </p>
+          <p class="telemetry-footer-status">
+            <span class="status-indicator"></span>
+            PADDOCK TELEMETRY SERVERS ONLINE | PKCE 256-BIT ENCRYPTED
+          </p>
+        }
       </main>
     </div>
   `,
@@ -233,6 +270,7 @@ export class RegisterComponent implements OnInit {
   }
 
   registerWithGoogle() {
+    this.isLoading.set(true);
     this.auth.loginWithGoogle();
   }
 }
