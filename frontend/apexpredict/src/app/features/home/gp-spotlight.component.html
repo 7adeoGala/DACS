@@ -21,7 +21,15 @@
       </div>
       <div class="lockout-time">
         <span>HORARIO DE CARRERA (ARGENTINA)</span>
-        <strong>{{ session()?.startsAt | date:'EEE d MMM · HH:mm':'America/Argentina/Buenos_Aires' }} hs (Arg)</strong>
+        <strong>
+          @if (session()?.startsAt) {
+            {{ session()?.startsAt | date:'EEE d MMM · HH:mm':'America/Argentina/Buenos_Aires' }} hs (Arg)
+          } @else if (isLoading()) {
+            Sincronizando cronograma...
+          } @else {
+            Domingo 16:00 hs (Arg)
+          }
+        </strong>
       </div>
     </div>
   </header>

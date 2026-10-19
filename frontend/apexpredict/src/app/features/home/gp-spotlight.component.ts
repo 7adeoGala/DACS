@@ -146,6 +146,21 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.isLoading.set(false);
+        this.session.set({
+          id: 'round-18-cota',
+          season: 2026,
+          round: 18,
+          name: 'United States Grand Prix',
+          circuit: 'Circuit of the Americas',
+          circuitId: 'americas',
+          type: 'RACE',
+          raceDate: '2026-10-25',
+          startsAt: '2026-10-25T19:00:00Z',
+          isLocked: false,
+          matchupDriver1: 'norris',
+          matchupDriver2: 'verstappen'
+        });
+        this.updateCountdownFromDate('2026-10-25T19:00:00Z');
         this.fetchRealWeather('30.1328', '-97.6411');
       }
     });

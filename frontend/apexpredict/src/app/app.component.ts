@@ -27,8 +27,16 @@ export class App {
     // Despertar todos los microservicios (Keycloak, BFF, Domain, Connector) inmediatamente
     this.api.wakeServices();
 
-    // Mantener todos los microservicios activos mientras la app esté abierta (cada 3 minutos)
-    if (typeof window !== 'undefined') {
+    // Asegurar que la pestaña del navegador aplique el logo oficial ApexPredict sin bloqueos de caché
+    if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+      try {
+        const link = (document.querySelector("link[rel*='icon']") as HTMLLinkElement) || document.createElement('link');
+        link.type = 'image/svg+xml';
+        link.rel = 'icon';
+        link.href = 'favicon.svg?v=apex3';
+        document.head.appendChild(link);
+      } catch {}
+
       setInterval(() => {
         this.api.wakeServices();
       }, 3 * 60 * 1000);
