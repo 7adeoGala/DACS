@@ -181,10 +181,10 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                     }
                   </button>
 
-                  <!-- FOOTER: SEGURIDAD KEYCLOAK & CERRAR SESIÓN -->
+                  <!-- FOOTER: CAMBIAR CONTRASEÑA & CERRAR SESIÓN -->
                   <div class="dropdown-footer">
-                    <a [href]="keycloakAccountUrl()" target="_blank" rel="noopener noreferrer" class="link-security">
-                      🔒 Seguridad Keycloak ↗
+                    <a [href]="changePasswordUrl()" target="_blank" rel="noopener noreferrer" class="link-security" title="Cambiar contraseña">
+                      🔒 Cambiar contraseña ↗
                     </a>
                     <button type="button" class="btn-dropdown-logout" (click)="auth.logout()">
                       🚪 Cerrar Sesión
@@ -735,8 +735,10 @@ export class NavbarComponent implements OnInit {
   });
 
 
-  readonly keycloakAccountUrl = computed(() => {
-    return `${environment.keycloak.url}/realms/${environment.keycloak.realm}/account`;
+  readonly changePasswordUrl = computed(() => {
+    const base = `${environment.keycloak.url}/realms/${environment.keycloak.realm}/account`;
+    const referrer = encodeURIComponent(environment.keycloak.clientId);
+    return `${base}/?referrer=${referrer}#/account-security/signing-in`;
   });
 
   constructor() {
