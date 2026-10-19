@@ -7,11 +7,10 @@
       <div class="picker-header">
         <div class="header-titles">
           <div class="slot-badge-row">
-            <span class="slot-medal-badge">{{ getSlotIcon() }}</span>
             <h3 class="picker-title">{{ getSlotTitle() }}</h3>
           </div>
           <p class="picker-subtitle">
-            Elegí el piloto. Si ya fue asignado a otro puesto del podio, se intercambiarán automáticamente.
+            {{ currentSlot() === 'pole' ? 'Elegí el piloto para la Pole Position.' : 'Elegí el piloto. Si ya fue asignado a otro puesto del podio, se intercambiarán automáticamente.' }}
           </p>
         </div>
         <button type="button" class="picker-close-btn" (click)="close()" aria-label="Cerrar modal">✕</button>
