@@ -139,8 +139,13 @@
   margin-bottom: 32px;
 }
 
+.telemetry-main-grid.guest-mode {
+  grid-template-columns: 280px 1fr 1.35fr;
+}
+
 @media (max-width: 1100px) {
-  .telemetry-main-grid {
+  .telemetry-main-grid,
+  .telemetry-main-grid.guest-mode {
     grid-template-columns: 1fr;
   }
 }
@@ -1156,7 +1161,11 @@
 }
 
 .btn-welcome-login {
+  display: block;
   width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  text-decoration: none;
   padding: 12px;
   background: var(--red);
   color: #fff;
@@ -1173,7 +1182,11 @@
 }
 
 .btn-welcome-register {
+  display: block;
   width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  text-decoration: none;
   padding: 10px;
   background: var(--surface-elevated);
   color: var(--text-main);
@@ -1276,4 +1289,61 @@
   color: var(--bronze);
   font-weight: 700;
 }
+
+/* Modo Invitado: Centro de Predicciones y Columna Derecha de Circuito/Cuenta Regresiva */
+.guest-center {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar-right-circuit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar-right-circuit .countdown-banner {
+  padding: 16px 20px;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.sidebar-right-circuit .countdown-boxes {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sidebar-right-circuit .time-box {
+  min-width: 52px;
+  padding: 8px 10px;
+}
+
+.sidebar-right-circuit .time-box .num {
+  font-size: 1.35rem;
+}
+
+.sidebar-right-circuit .countdown-right {
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-right-circuit .btn-cta-predict {
+  padding: 12px 18px;
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 1250px) {
+  .sidebar-right-circuit .countdown-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sidebar-right-circuit .countdown-right .btn-cta-predict {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
 

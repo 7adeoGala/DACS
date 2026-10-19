@@ -17,7 +17,7 @@
   </header>
 
   <!-- Grilla Principal: Cronograma, Circuito Vectorial y Countdown + Leaderboard -->
-  <div class="telemetry-main-grid">
+  <div class="telemetry-main-grid" [class.guest-mode]="!auth.authenticated()">
 
     <!-- Columna Izquierda: Cronograma Oficial ART Dinámico -->
     <aside class="sidebar-schedule">
@@ -88,22 +88,23 @@
       </div>
     </aside>
 
-    <!-- Columna Central: Countdown, Botón CTA y Trazado SVG Real -->
-    <main class="center-stage">
-      <!-- Countdown Banner -->
-      <div class="countdown-banner">
-        <div class="countdown-left">
-          <div class="timer-title">
-            <span>TIEMPO RESTANTE PARA LA CARRERA</span>
-          </div>
-          <div class="countdown-boxes">
-            <div class="time-box"><span class="num">{{ days() }}</span><span class="label">DÍAS</span></div>
-            <div class="time-box"><span class="num">{{ hours() }}</span><span class="label">HORAS</span></div>
-            <div class="time-box"><span class="num">{{ minutes() }}</span><span class="label">MINUTOS</span></div>
-            <div class="time-box highlight"><span class="num">{{ seconds() }}</span><span class="label">SEGUNDOS</span></div>
-          </div>
-          <div class="sync-hint">
-            @if (auth.authenticated()) {
+    @if (auth.authenticated()) {
+      <!-- ================= MODO AUTENTICADO: LAYOUT COMPLETO ================= -->
+      <!-- Columna Central: Countdown, Botón CTA y Trazado SVG Real -->
+      <main class="center-stage">
+        <!-- Countdown Banner -->
+        <div class="countdown-banner">
+          <div class="countdown-left">
+            <div class="timer-title">
+              <span>TIEMPO RESTANTE PARA LA CARRERA</span>
+            </div>
+            <div class="countdown-boxes">
+              <div class="time-box"><span class="num">{{ days() }}</span><span class="label">DÍAS</span></div>
+              <div class="time-box"><span class="num">{{ hours() }}</span><span class="label">HORAS</span></div>
+              <div class="time-box"><span class="num">{{ minutes() }}</span><span class="label">MINUTOS</span></div>
+              <div class="time-box highlight"><span class="num">{{ seconds() }}</span><span class="label">SEGUNDOS</span></div>
+            </div>
+            <div class="sync-hint">
               @if (currentPrediction()?.predictionId || (currentPrediction()?.podium && currentPrediction()!.podium.length > 0)) {
                 <span class="check-icon" style="color: var(--green); display: inline-flex; align-items: center;">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -112,14 +113,10 @@
               } @else {
                 <span class="check-icon">●</span> Sesión iniciada · Podés registrar tu pronóstico para el GP
               }
-            } @else {
-              <span class="check-icon">●</span> Iniciá sesión para guardar y competir en ligas
-            }
+            </div>
           </div>
-        </div>
 
-        <div class="countdown-right">
-          @if (auth.authenticated()) {
+          <div class="countdown-right">
             @if (currentPrediction()?.predictionId || (currentPrediction()?.podium && currentPrediction()!.podium.length > 0)) {
               <a routerLink="/dashboard" class="btn-cta-predict">
                 VER / EDITAR MI PRONÓSTICO
@@ -129,51 +126,45 @@
                 CARGAR MI PRONÓSTICO
               </a>
             }
-          } @else {
-            <a routerLink="/login" class="btn-cta-predict">
-              INICIAR SESIÓN Y PREDECIR
-            </a>
-          }
-        </div>
-      </div>
-
-      <!-- Vector Circuit Display SVG (Trazado Oficial Real Homologado) -->
-      <div class="circuit-display-card">
-        <div class="circuit-card-header">
-          <div>
-            <h3>{{ circuit().name.toUpperCase() }} // TRAZADO OFICIAL FIA</h3>
-            <p>{{ circuit().drsZones }} Zonas DRS Activas • Longitud Oficial {{ circuit().lengthKm }}</p>
-          </div>
-          <div class="circuit-tags">
-            <span class="tag-drs">{{ circuit().drsZones }} ZONAS DRS</span>
-            <span class="tag-sector">OFICIAL FIA</span>
           </div>
         </div>
 
-        <div class="circuit-svg-wrapper">
-          <svg viewBox="0 0 420 300" class="track-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Trazado de base ancho -->
-            <path [attr.d]="circuit().svgPath" stroke="rgba(255,255,255,0.18)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
-            <!-- Trazado principal blanco nítido -->
-            <path [attr.d]="circuit().svgPath" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
-            <!-- Resplandor en cyan de telemetría -->
-            <path [attr.d]="circuit().svgPath" class="track-glow" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-          </svg>
-          <div class="drs-detection-pill">TRAZADO HOMOLOGADO: <strong>{{ circuit().name }}</strong></div>
-        </div>
+        <!-- Vector Circuit Display SVG (Trazado Oficial Real Homologado) -->
+        <div class="circuit-display-card">
+          <div class="circuit-card-header">
+            <div>
+              <h3>{{ circuit().name.toUpperCase() }} // TRAZADO OFICIAL FIA</h3>
+              <p>{{ circuit().drsZones }} Zonas DRS Activas • Longitud Oficial {{ circuit().lengthKm }}</p>
+            </div>
+            <div class="circuit-tags">
+              <span class="tag-drs">{{ circuit().drsZones }} ZONAS DRS</span>
+              <span class="tag-sector">OFICIAL FIA</span>
+            </div>
+          </div>
 
-        <div class="circuit-stats-grid">
-          <div class="stat"><span class="lbl">LONGITUD TOTAL</span><span class="val">{{ circuit().lengthKm }}</span><span class="sub">Distancia por vuelta</span></div>
-          <div class="stat"><span class="lbl">VUELTAS DE CARRERA</span><span class="val">{{ circuit().laps }}</span><span class="sub">Distancia total oficial</span></div>
-          <div class="stat"><span class="lbl">NÚMERO DE CURVAS</span><span class="val">20</span><span class="sub">11 Izq • 9 Der</span></div>
-          <div class="stat"><span class="lbl">RÉCORD DE PISTA</span><span class="val gold">{{ circuit().lapRecord }}</span><span class="sub">{{ circuit().lapRecordHolder }}</span></div>
-        </div>
-      </div>
-    </main>
+          <div class="circuit-svg-wrapper">
+            <svg viewBox="0 0 420 300" class="track-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Trazado de base ancho -->
+              <path [attr.d]="circuit().svgPath" stroke="rgba(255,255,255,0.18)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+              <!-- Trazado principal blanco nítido -->
+              <path [attr.d]="circuit().svgPath" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+              <!-- Resplandor en cyan de telemetría -->
+              <path [attr.d]="circuit().svgPath" class="track-glow" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+            </svg>
+            <div class="drs-detection-pill">TRAZADO HOMOLOGADO: <strong>{{ circuit().name }}</strong></div>
+          </div>
 
-    <!-- Columna Derecha: Sidebar de Usuario / Landing Page Genérica -->
-    <aside class="sidebar-user">
-      @if (auth.authenticated()) {
+          <div class="circuit-stats-grid">
+            <div class="stat"><span class="lbl">LONGITUD TOTAL</span><span class="val">{{ circuit().lengthKm }}</span><span class="sub">Distancia por vuelta</span></div>
+            <div class="stat"><span class="lbl">VUELTAS DE CARRERA</span><span class="val">{{ circuit().laps }}</span><span class="sub">Distancia total oficial</span></div>
+            <div class="stat"><span class="lbl">NÚMERO DE CURVAS</span><span class="val">20</span><span class="sub">11 Izq • 9 Der</span></div>
+            <div class="stat"><span class="lbl">RÉCORD DE PISTA</span><span class="val gold">{{ circuit().lapRecord }}</span><span class="sub">{{ circuit().lapRecordHolder }}</span></div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Columna Derecha: Sidebar de Usuario -->
+      <aside class="sidebar-user">
         <!-- Tarjeta de Usuario Autenticado -->
         <div class="user-pred-card">
           <div class="card-head">
@@ -219,8 +210,12 @@
           </div>
           <a routerLink="/dashboard" [queryParams]="{ tab: 'global' }" class="btn-view-table">Ver Campeonato Completo</a>
         </div>
-      } @else {
-        <!-- Landing Page Genérica cuando el usuario NO ha iniciado sesión -->
+      </aside>
+    } @else {
+      <!-- ================= MODO INVITADO (RECIÉN INGRESA) ================= -->
+      <!-- Columna Central: Información de las predicciones (Foto 2 + Sistema de puntos) -->
+      <main class="center-stage guest-center">
+        <!-- Landing Page Genérica cuando el usuario NO ha iniciado sesión (Foto 2) -->
         <div class="landing-welcome-card">
           <p class="welcome-text">
             El prode oficial de Fórmula 1 en tiempo real. Predecí podios, poles y duelos mano a mano en cada Gran Premio y competí con tus amigos en ligas privadas.
@@ -257,9 +252,68 @@
             <div class="scoring-item"><span>Ganador Duelo</span><strong>+3 pts</strong></div>
           </div>
         </div>
-      }
+      </main>
 
-    </aside>
+      <!-- Columna Derecha: Información del circuito y la cuenta regresiva -->
+      <aside class="sidebar-right-circuit">
+        <!-- Vector Circuit Display SVG (Trazado Oficial Real Homologado) -->
+        <div class="circuit-display-card">
+          <div class="circuit-card-header">
+            <div>
+              <h3>{{ circuit().name.toUpperCase() }} // TRAZADO OFICIAL FIA</h3>
+              <p>{{ circuit().drsZones }} Zonas DRS Activas • Longitud Oficial {{ circuit().lengthKm }}</p>
+            </div>
+            <div class="circuit-tags">
+              <span class="tag-drs">{{ circuit().drsZones }} ZONAS DRS</span>
+              <span class="tag-sector">OFICIAL FIA</span>
+            </div>
+          </div>
+
+          <div class="circuit-svg-wrapper">
+            <svg viewBox="0 0 420 300" class="track-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Trazado de base ancho -->
+              <path [attr.d]="circuit().svgPath" stroke="rgba(255,255,255,0.18)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+              <!-- Trazado principal blanco nítido -->
+              <path [attr.d]="circuit().svgPath" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+              <!-- Resplandor en cyan de telemetría -->
+              <path [attr.d]="circuit().svgPath" class="track-glow" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+            </svg>
+            <div class="drs-detection-pill">TRAZADO HOMOLOGADO: <strong>{{ circuit().name }}</strong></div>
+          </div>
+
+          <div class="circuit-stats-grid">
+            <div class="stat"><span class="lbl">LONGITUD TOTAL</span><span class="val">{{ circuit().lengthKm }}</span><span class="sub">Distancia por vuelta</span></div>
+            <div class="stat"><span class="lbl">VUELTAS DE CARRERA</span><span class="val">{{ circuit().laps }}</span><span class="sub">Distancia total oficial</span></div>
+            <div class="stat"><span class="lbl">NÚMERO DE CURVAS</span><span class="val">20</span><span class="sub">11 Izq • 9 Der</span></div>
+            <div class="stat"><span class="lbl">RÉCORD DE PISTA</span><span class="val gold">{{ circuit().lapRecord }}</span><span class="sub">{{ circuit().lapRecordHolder }}</span></div>
+          </div>
+        </div>
+
+        <!-- Countdown Banner -->
+        <div class="countdown-banner">
+          <div class="countdown-left">
+            <div class="timer-title">
+              <span>TIEMPO RESTANTE PARA LA CARRERA</span>
+            </div>
+            <div class="countdown-boxes">
+              <div class="time-box"><span class="num">{{ days() }}</span><span class="label">DÍAS</span></div>
+              <div class="time-box"><span class="num">{{ hours() }}</span><span class="label">HORAS</span></div>
+              <div class="time-box"><span class="num">{{ minutes() }}</span><span class="label">MINUTOS</span></div>
+              <div class="time-box highlight"><span class="num">{{ seconds() }}</span><span class="label">SEGUNDOS</span></div>
+            </div>
+            <div class="sync-hint">
+              <span class="check-icon">●</span> Iniciá sesión para guardar y competir en ligas
+            </div>
+          </div>
+
+          <div class="countdown-right">
+            <a routerLink="/login" class="btn-cta-predict">
+              INICIAR SESIÓN Y PREDECIR
+            </a>
+          </div>
+        </div>
+      </aside>
+    }
   </div>
 
   <!-- Sección Head-to-Head: Norris vs Verstappen -->

@@ -115,14 +115,16 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
           <span class="txt-apex">APEX</span> <span class="txt-predict">PREDICT</span>
         </a>
 
-        <!-- NAVEGACIÓN EN UN SOLO RENGLÓN CON ESPACIADO AMPLIO -->
-        <nav class="nav-links">
-          <a routerLink="/" [class.active]="isCurrent('inicio')">Inicio</a>
-          <a routerLink="/dashboard" [queryParams]="{ tab: 'pronostico' }" [class.active]="isCurrent('predicciones')">Predicciones</a>
-          <a routerLink="/dashboard" [queryParams]="{ tab: 'ligas' }" [class.active]="isCurrent('ligas')">Mis Ligas</a>
-          <a routerLink="/dashboard" [queryParams]="{ tab: 'posiciones' }" [class.active]="isCurrent('posiciones')">Posiciones</a>
-          <a routerLink="/dashboard" [queryParams]="{ tab: 'historial' }" [class.active]="isCurrent('historial')">Historial</a>
-        </nav>
+        <!-- NAVEGACIÓN EN UN SOLO RENGLÓN CON ESPACIADO AMPLIO (SOLO USUARIOS AUTENTICADOS) -->
+        @if (auth.isAuthenticated()) {
+          <nav class="nav-links">
+            <a routerLink="/" [class.active]="isCurrent('inicio')">Inicio</a>
+            <a routerLink="/dashboard" [queryParams]="{ tab: 'pronostico' }" [class.active]="isCurrent('predicciones')">Predicciones</a>
+            <a routerLink="/dashboard" [queryParams]="{ tab: 'ligas' }" [class.active]="isCurrent('ligas')">Mis Ligas</a>
+            <a routerLink="/dashboard" [queryParams]="{ tab: 'posiciones' }" [class.active]="isCurrent('posiciones')">Posiciones</a>
+            <a routerLink="/dashboard" [queryParams]="{ tab: 'historial' }" [class.active]="isCurrent('historial')">Historial</a>
+          </nav>
+        }
 
         <!-- ACCIONES DE SESIÓN / PERFIL -->
         <div class="nav-actions">
