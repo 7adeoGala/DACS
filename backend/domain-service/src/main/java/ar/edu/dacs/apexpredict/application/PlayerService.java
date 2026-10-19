@@ -38,6 +38,7 @@ public class PlayerService {
         boolean isMember = explicitIsMember != null ? explicitIsMember : (currentUser != null && members.existsByLeagueAndUser(l, currentUser));
         long count = members.countByLeague(l);
         String ownerName = l.getOwner() != null ? l.getOwner().getDisplayName() : "Desconocido";
+        String visiblePassword = isMember ? l.getPassword() : null;
         return new LeagueView(
             l.getId(),
             l.getName(),
@@ -47,7 +48,8 @@ public class PlayerService {
             ownerName,
             count,
             l.hasPassword(),
-            isMember
+            isMember,
+            visiblePassword
         );
     }
 
@@ -210,10 +212,11 @@ public class PlayerService {
         String ownerName,
         long memberCount,
         boolean hasPassword,
-        boolean isMember
+        boolean isMember,
+        String password
     ) {
         public LeagueView(UUID id, String name, String description, UUID inviteCode, UUID ownerId) {
-            this(id, name, description, inviteCode, ownerId, null, 1, false, true);
+            this(id, name, description, inviteCode, ownerId, null, 1, false, true, null);
         }
     }
 

@@ -331,22 +331,66 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
 
               <!-- CAJA DE INVITACIÓN DIRECTA DE LA LIGA SELECCIONADA -->
               <div class="invite-strip">
-                <div>
-                  <span class="badge-red">ENLACE OFICIAL DE ACCESO RÁPIDO</span>
-                  <p style="margin-top: 4px; font-size: 0.95rem;">
-                    Compartí este enlace con tus amigos para que se sumen a <strong>{{ selectedLeague()?.name }}</strong>:
-                  </p>
+                <div class="invite-row">
+                  <div>
+                    <span class="badge-red">ENLACE OFICIAL DE ACCESO RÁPIDO</span>
+                    <p style="margin-top: 4px; font-size: 0.95rem;">
+                      Compartí este enlace con tus amigos para que se sumen a <strong>{{ selectedLeague()?.name }}</strong>:
+                    </p>
+                  </div>
+                  <div class="copy-group">
+                    <input 
+                      type="text" 
+                      readonly 
+                      [value]="getInviteUrl(selectedLeague()?.inviteCode)" 
+                      class="copy-input"/>
+                    <button class="button small" type="button" (click)="copyInviteUrl()">
+                      {{ copySuccess() ? 'Copiado' : 'Copiar Link' }}
+                    </button>
+                  </div>
                 </div>
-                <div class="copy-group">
-                  <input 
-                    type="text" 
-                    readonly 
-                    [value]="getInviteUrl(selectedLeague()?.inviteCode)" 
-                    class="copy-input"/>
-                  <button class="button small" type="button" (click)="copyInviteUrl()">
-                    {{ copySuccess() ? 'Copiado' : 'Copiar Link' }}
-                  </button>
-                </div>
+
+                @if (selectedLeague()?.hasPassword) {
+                  <div class="league-password-bar">
+                    <div class="password-label-group">
+                      <span class="password-tag">CONTRASEÑA DE ACCESO</span>
+                      <p class="password-hint">
+                        Esta liga está protegida. Los corredores necesitarán esta clave para ingresar.
+                      </p>
+                    </div>
+                    <div class="password-action-group">
+                      <div class="password-field-container">
+                        <input 
+                          [type]="showLeaguePassword() ? 'text' : 'password'" 
+                          readonly 
+                          [value]="getLeaguePassword(selectedLeague())" 
+                          class="password-display-input"
+                          aria-label="Contraseña de la liga" />
+                        <button 
+                          type="button" 
+                          class="password-visibility-btn" 
+                          (click)="toggleLeaguePasswordVisibility()"
+                          [title]="showLeaguePassword() ? 'Ocultar contraseña' : 'Ver contraseña'"
+                          [attr.aria-label]="showLeaguePassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
+                          @if (showLeaguePassword()) {
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                              <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                          } @else {
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                              <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                          }
+                        </button>
+                      </div>
+                      <button class="button small quiet" type="button" (click)="copyLeaguePassword()">
+                        {{ copyPasswordSuccess() ? 'Copiada' : 'Copiar Clave' }}
+                      </button>
+                    </div>
+                  </div>
+                }
               </div>
 
               <!-- PODIO TOP 3 DE LA LIGA -->
@@ -354,9 +398,21 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                   <h3 class="podium-title" style="margin: 0;">Podio de la Liga: {{ selectedLeague()?.name }}</h3>
                   @if (selectedLeague()?.hasPassword) {
-                    <span style="font-size: 0.8rem; background: rgba(245, 176, 0, 0.15); color: var(--gold); border: 1px solid rgba(245, 176, 0, 0.3); padding: 3px 8px; border-radius: var(--radius-sm);">
-                      Protegida con Contraseña
-                    </span>
+                    <div 
+                      class="password-pill-badge" 
+                      (click)="toggleLeaguePasswordVisibility()"
+                      role="button"
+                      tabindex="0"
+                      title="Clic para mostrar u ocultar la contraseña">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                      <span>Clave: <strong class="font-mono">{{ showLeaguePassword() ? getLeaguePassword(selectedLeague()) : '••••••••' }}</strong></span>
+                      <span class="pill-toggle-action">
+                        {{ showLeaguePassword() ? '(Ocultar)' : '(Mostrar)' }}
+                      </span>
+                    </div>
                   }
                 </div>
 
@@ -1766,10 +1822,16 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       border-radius: var(--radius-md);
       padding: 1.25rem 1.75rem;
       display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .invite-row {
+      display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 1rem;
+      width: 100%;
     }
     .badge-red {
       font-size: 0.72rem;
@@ -1790,6 +1852,94 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       font-size: 0.85rem;
       border-radius: var(--radius-sm);
       width: 360px;
+    }
+    .league-password-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding-top: 1rem;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1);
+      width: 100%;
+    }
+    .password-label-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .password-tag {
+      font-size: 0.72rem;
+      color: var(--gold);
+      font-weight: 800;
+      letter-spacing: 0.05em;
+    }
+    .password-hint {
+      margin: 0;
+      font-size: 0.88rem;
+      color: var(--text-dim);
+    }
+    .password-action-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .password-field-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .password-display-input {
+      background: #0d1015;
+      border: 1px solid rgba(245, 176, 0, 0.4);
+      color: var(--gold);
+      padding: 0.5rem 2.4rem 0.5rem 0.8rem;
+      font-family: var(--font-mono);
+      font-size: 0.95rem;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      border-radius: var(--radius-sm);
+      width: 220px;
+    }
+    .password-visibility-btn {
+      position: absolute;
+      right: 6px;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: 4px;
+      transition: color 0.15s ease;
+    }
+    .password-visibility-btn:hover {
+      color: #fff;
+    }
+    .password-pill-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.82rem;
+      background: rgba(245, 176, 0, 0.12);
+      color: var(--gold);
+      border: 1px solid rgba(245, 176, 0, 0.35);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+    .password-pill-badge:hover {
+      background: rgba(245, 176, 0, 0.22);
+      border-color: var(--gold);
+    }
+    .pill-toggle-action {
+      font-size: 0.75rem;
+      opacity: 0.75;
+      margin-left: 2px;
     }
     .league-podium-pedestals {
       display: flex;
@@ -2045,6 +2195,26 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
         gap: 1rem;
         align-items: flex-start;
       }
+      .invite-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+      .league-password-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+      .password-action-group {
+        width: 100%;
+        flex-wrap: wrap;
+      }
+      .password-field-container {
+        width: 100%;
+      }
+      .password-display-input {
+        width: 100%;
+      }
       .copy-input {
         width: 100%;
       }
@@ -2131,6 +2301,8 @@ export class DashboardComponent implements OnInit {
   readonly saveSuccess = signal(false);
   readonly saveError = signal('');
   readonly copySuccess = signal(false);
+  readonly showLeaguePassword = signal(false);
+  readonly copyPasswordSuccess = signal(false);
 
   readonly isCreatingLeague = signal(false);
   readonly isJoiningLeague = signal(false);
@@ -2211,6 +2383,16 @@ export class DashboardComponent implements OnInit {
     }
     const cachedLeagues = this.api.getCachedLeagues?.(user);
     if (cachedLeagues && cachedLeagues.length > 0) {
+      if (typeof localStorage !== 'undefined') {
+        for (const l of cachedLeagues) {
+          if (!l.password && l.hasPassword) {
+            const cached = localStorage.getItem('apex_lpwd_' + l.id);
+            if (cached) {
+              l.password = cached;
+            }
+          }
+        }
+      }
       this.myLeagues.set(cachedLeagues);
       if (!this.selectedLeague()) {
         this.selectedLeague.set(cachedLeagues[0]);
@@ -2256,6 +2438,16 @@ export class DashboardComponent implements OnInit {
   private loadUserLeagues() {
     this.api.leagues(this.auth.username()).subscribe({
       next: (leagues) => {
+        if (typeof localStorage !== 'undefined') {
+          for (const l of leagues) {
+            if (!l.password && l.hasPassword) {
+              const cached = localStorage.getItem('apex_lpwd_' + l.id);
+              if (cached) {
+                l.password = cached;
+              }
+            }
+          }
+        }
         this.myLeagues.set(leagues);
         if (leagues.length > 0) {
           const current = this.selectedLeague();
@@ -2273,6 +2465,7 @@ export class DashboardComponent implements OnInit {
 
   selectLeague(league: League) {
     this.selectedLeague.set(league);
+    this.showLeaguePassword.set(false);
     this.api.leagueLeaderboard(league.id).subscribe({
       next: (lb) => {
         this.leagueLeaderboard.set(lb);
@@ -2506,6 +2699,31 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  toggleLeaguePasswordVisibility() {
+    this.showLeaguePassword.update((v) => !v);
+  }
+
+  getLeaguePassword(league?: League | null): string {
+    if (!league) return '';
+    if (league.password) return league.password;
+    if (typeof localStorage !== 'undefined' && league.id) {
+      const cached = localStorage.getItem('apex_lpwd_' + league.id);
+      if (cached) return cached;
+    }
+    return '';
+  }
+
+  copyLeaguePassword() {
+    const pwd = this.getLeaguePassword(this.selectedLeague());
+    if (!pwd) return;
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(pwd).then(() => {
+        this.copyPasswordSuccess.set(true);
+        setTimeout(() => this.copyPasswordSuccess.set(false), 2000);
+      }).catch(() => {});
+    }
+  }
+
   createLeague() {
     const name = this.newLeagueName.trim();
     if (!name || this.isCreatingLeague()) return;
@@ -2520,6 +2738,12 @@ export class DashboardComponent implements OnInit {
     this.api.createLeague(name, desc, pwd).subscribe({
       next: (created) => {
         this.isCreatingLeague.set(false);
+        if (pwd) {
+          created.password = pwd;
+          try {
+            localStorage.setItem('apex_lpwd_' + created.id, pwd);
+          } catch {}
+        }
         this.myLeagues.update((prev) => [created, ...prev]);
         this.selectLeague(created);
         this.newLeagueName = '';
@@ -2556,6 +2780,12 @@ export class DashboardComponent implements OnInit {
     this.api.joinLeague(inviteCode, pwd).subscribe({
       next: (joined) => {
         this.isJoiningLeague.set(false);
+        if (pwd) {
+          joined.password = pwd;
+          try {
+            localStorage.setItem('apex_lpwd_' + joined.id, pwd);
+          } catch {}
+        }
         this.loadUserLeagues();
         this.selectLeague(joined);
         this.joinCode = '';

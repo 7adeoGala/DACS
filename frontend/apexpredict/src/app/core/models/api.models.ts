@@ -25,6 +25,7 @@ export interface League {
   ownerName?: string;
   memberCount?: number;
   hasPassword?: boolean;
+  password?: string | null;
   isMember?: boolean;
   isPrivate?: boolean;
   userRank?: number;
