@@ -41,41 +41,74 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               <!-- DETALLE DE LOS PUNTAJES OFICIALES DE LA PREDICCIÓN -->
               <div class="scoring-rules-panel">
                 <div class="scoring-rules-title">Los puntajes:</div>
-                <div class="scoring-rules-grid">
-                  <div class="scoring-rule-card">
-                    <span class="rule-card-indicator gold"></span>
-                    <span class="rule-card-label">Acierto de podio completo:</span>
-                    <span class="rule-card-pts gold">+10 pts</span>
+                <div class="scoring-groups-list">
+                  <!-- PREDICCIONES DEL PODIO DE LA CARRERA -->
+                  <div class="scoring-group">
+                    <div class="scoring-group-label">Predicciones del podio de la carrera:</div>
+                    <div class="scoring-group-cards">
+                      <div class="scoring-rule-card">
+                        <span class="rule-card-indicator gold"></span>
+                        <span class="rule-card-label">Acierto de podio completo:</span>
+                        <span class="rule-card-pts gold">+10 pts</span>
+                      </div>
+                      <div class="scoring-rule-card">
+                        <span class="rule-card-indicator silver"></span>
+                        <span class="rule-card-label">Acierto de 2 posiciones del podio:</span>
+                        <span class="rule-card-pts silver">+7 pts</span>
+                      </div>
+                      <div class="scoring-rule-card">
+                        <span class="rule-card-indicator bronze"></span>
+                        <span class="rule-card-label">Acierto 1 posición del podio:</span>
+                        <span class="rule-card-pts bronze">+3 pts</span>
+                      </div>
+                    </div>
                   </div>
-                  <div class="scoring-rule-card">
-                    <span class="rule-card-indicator silver"></span>
-                    <span class="rule-card-label">Acierto de 2 posiciones del podio:</span>
-                    <span class="rule-card-pts silver">+7 pts</span>
-                  </div>
-                  <div class="scoring-rule-card">
-                    <span class="rule-card-indicator bronze"></span>
-                    <span class="rule-card-label">Acierto 1 posición del podio:</span>
-                    <span class="rule-card-pts bronze">+3 pts</span>
-                  </div>
-                  <div class="scoring-rule-card">
-                    <span class="rule-card-indicator cyan"></span>
-                    <span class="rule-card-label">Poleman:</span>
-                    <span class="rule-card-pts cyan">+4 pts</span>
-                  </div>
-                  <div class="scoring-rule-card">
-                    <span class="rule-card-indicator sc"></span>
-                    <span class="rule-card-label">Safety car /VSC:</span>
-                    <span class="rule-card-pts sc">+10 pts</span>
-                  </div>
-                  <div class="scoring-rule-card">
-                    <span class="rule-card-indicator dnf"></span>
-                    <span class="rule-card-label">DNF:</span>
-                    <span class="rule-card-pts dnf">+15 pts</span>
-                  </div>
-                  <div class="scoring-rule-card">
-                    <span class="rule-card-indicator duel"></span>
-                    <span class="rule-card-label">Ganador del duelo de pilotos:</span>
-                    <span class="rule-card-pts duel">+3 pts</span>
+
+                  <!-- SUBGRUPOS DE OTRAS PREDICCIONES -->
+                  <div class="scoring-subgroups-grid">
+                    <div class="scoring-group">
+                      <div class="scoring-group-label">Predicción del poleman:</div>
+                      <div class="scoring-group-cards">
+                        <div class="scoring-rule-card">
+                          <span class="rule-card-indicator cyan"></span>
+                          <span class="rule-card-label">Poleman:</span>
+                          <span class="rule-card-pts cyan">+4 pts</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="scoring-group">
+                      <div class="scoring-group-label">Predicción del duelo de pilotos:</div>
+                      <div class="scoring-group-cards">
+                        <div class="scoring-rule-card">
+                          <span class="rule-card-indicator duel"></span>
+                          <span class="rule-card-label">Ganador del duelo de pilotos:</span>
+                          <span class="rule-card-pts duel">+3 pts</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="scoring-group">
+                      <div class="scoring-group-label">Predicción de Safety Car / VSC:</div>
+                      <div class="scoring-group-cards">
+                        <div class="scoring-rule-card">
+                          <span class="rule-card-indicator sc"></span>
+                          <span class="rule-card-label">Safety car /VSC:</span>
+                          <span class="rule-card-pts sc">+10 pts</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="scoring-group">
+                      <div class="scoring-group-label">Predicción de abandonos (DNF):</div>
+                      <div class="scoring-group-cards">
+                        <div class="scoring-rule-card">
+                          <span class="rule-card-indicator dnf"></span>
+                          <span class="rule-card-label">DNF:</span>
+                          <span class="rule-card-pts dnf">+15 pts</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1289,6 +1322,37 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       align-items: center;
       gap: 0.4rem;
     }
+    .scoring-groups-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.95rem;
+    }
+    .scoring-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .scoring-group-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    .scoring-group-cards {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem 0.75rem;
+    }
+    .scoring-subgroups-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.95rem 1.75rem;
+      align-items: flex-start;
+    }
     .scoring-rules-grid {
       display: flex;
       flex-wrap: wrap;
@@ -2437,6 +2501,18 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       color: var(--text-dim);
     }
     @media (max-width: 768px) {
+      .scoring-groups-list {
+        gap: 1rem;
+      }
+      .scoring-subgroups-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+      .scoring-group-cards {
+        flex-direction: column;
+        gap: 0.45rem;
+      }
       .scoring-rules-grid {
         display: flex;
         flex-direction: column;
