@@ -52,13 +52,9 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
           <a routerLink="/dashboard" [queryParams]="{ tab: 'historial' }" [class.active]="isCurrent('historial')">Historial</a>
         </nav>
 
-        <!-- ACCIONES DE LOGIN / SESIÓN -->
+        <!-- ACCIONES DE SESIÓN / PERFIL -->
         <div class="nav-actions">
-          @if (!auth.isAuthenticated()) {
-            <a routerLink="/login" class="btn-login" (mouseenter)="api.wakeServices()" (focus)="api.wakeServices()">
-              Iniciar Sesión <span class="arrow">↗</span>
-            </a>
-          } @else {
+          @if (auth.isAuthenticated()) {
             <!-- CONTENEDOR RELATIVO PARA EL DROPDOWN -->
             <div class="profile-dropdown-wrapper">
               <!-- BOTÓN ACTIVADOR (PILL EXACTO AL DISEÑO) -->
@@ -258,30 +254,6 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       color: #ffffff;
       font-weight: 700;
       box-shadow: inset 0 -2px 0 var(--red);
-    }
-    .btn-login {
-      background: transparent;
-      border: 1px solid var(--line-strong);
-      color: #ffffff;
-      padding: 0.5rem 1.15rem;
-      border-radius: var(--radius-sm);
-      font-weight: 600;
-      font-size: 0.88rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-    .btn-login:hover {
-      background: var(--surface-hover);
-      border-color: var(--red);
-      color: #ffffff;
-    }
-    .btn-login .arrow {
-      color: var(--red);
-      font-size: 0.95rem;
     }
 
     /* DROPDOWN WRAPPER Y TRIGGER BUTTON */
