@@ -19,7 +19,8 @@ public class WeekendMatchupService {
 
     private static final List<String> DEFAULT_DRIVER_POOL = List.of(
         "verstappen", "norris", "leclerc", "piastri", "hamilton",
-        "russell", "sainz", "alonso", "gasly", "albon", "hulkenberg", "tsunoda"
+        "russell", "sainz", "alonso", "gasly", "albon", "hulkenberg",
+        "tsunoda", "lawson", "colapinto", "bortoleto", "bearman", "ocon", "perez", "bottas", "antonelli"
     );
 
     private final WeekendMatchupRepository matchups;

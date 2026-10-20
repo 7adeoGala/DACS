@@ -33,9 +33,14 @@ export class AuthService {
 
   async initialize(): Promise<void> {
     const sync = () => {
-      this.authenticated.set(!!this.keycloak.authenticated);
-      this.username.set(this.keycloak.tokenParsed?.['preferred_username'] ?? '');
-      this.roles.set(this.keycloak.realmAccess?.roles ?? []);
+      const hasToken = !!(this.keycloak.token || localStorage.getItem('apex_token') || sessionStorage.getItem('apex_token'));
+      const isAuth = !!this.keycloak.authenticated || hasToken;
+      this.authenticated.set(isAuth);
+      const parsed = this.keycloak.tokenParsed || (this.keycloak.token ? this.decodeJwt(this.keycloak.token) : null);
+      if (parsed) {
+        this.username.set(parsed['preferred_username'] || localStorage.getItem('apex_username') || '');
+        this.roles.set(parsed.realm_access?.roles ?? []);
+      }
     };
     this.keycloak.onAuthSuccess = sync;
     this.keycloak.onAuthLogout = sync;

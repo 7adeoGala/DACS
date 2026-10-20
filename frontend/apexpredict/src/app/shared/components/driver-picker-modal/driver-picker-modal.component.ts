@@ -32,16 +32,17 @@ export class DriverPickerModalComponent {
 
   // Catálogo de escuderías para la barra de píldoras
   readonly teamList = [
-    { name: 'Red Bull', color: '#3671c6' },
     { name: 'McLaren', color: '#ff8000' },
+    { name: 'Red Bull', color: '#3671c6' },
     { name: 'Ferrari', color: '#e80020' },
     { name: 'Mercedes', color: '#27f4d2' },
     { name: 'Aston Martin', color: '#229971' },
     { name: 'Williams', color: '#64c4ff' },
     { name: 'Alpine', color: '#0093cc' },
     { name: 'Racing Bulls', color: '#6692ff' },
-    { name: 'Stake Sauber', color: '#52e252' },
-    { name: 'Haas', color: '#b6babd' }
+    { name: 'Audi', color: '#a0a5a8' },
+    { name: 'Haas GR', color: '#ed1a3b' },
+    { name: 'Cadillac', color: '#c5a059' }
   ];
 
   // Atajos globales de teclado

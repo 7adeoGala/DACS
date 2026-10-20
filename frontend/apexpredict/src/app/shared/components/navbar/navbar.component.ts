@@ -82,20 +82,28 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     tag: 'VCARB' 
   },
   { 
-    id: 'sauber', 
-    name: 'Stake F1 Team Kick Sauber', 
-    color: '#52E252', 
-    gradient: 'linear-gradient(135deg, #52E252 0%, #166B16 100%)',
-    textColor: '#000000',
-    tag: 'KICK' 
+    id: 'audi', 
+    name: 'Audi F1 Team', 
+    color: '#A0A5A8', 
+    gradient: 'linear-gradient(135deg, #A0A5A8 0%, #151515 50%, #E0001B 100%)',
+    textColor: '#FFFFFF',
+    tag: 'AUDI' 
   },
   { 
     id: 'haas', 
-    name: 'MoneyGram Haas F1 Team', 
+    name: 'TGR Haas F1 Team', 
     color: '#ED1A3B', 
-    gradient: 'linear-gradient(135deg, #FFFFFF 0%, #BAC1CB 100%)',
-    textColor: '#ED1A3B',
-    tag: 'HAAS' 
+    gradient: 'linear-gradient(135deg, #FFFFFF 0%, #ED1A3B 50%, #111111 100%)',
+    textColor: '#FFFFFF',
+    tag: 'HAAS GR' 
+  },
+  { 
+    id: 'cadillac', 
+    name: 'Cadillac Formula 1 Team', 
+    color: '#C5A059', 
+    gradient: 'linear-gradient(135deg, #D4AF37 0%, #2A2415 60%, #0F0F12 100%)',
+    textColor: '#FFFFFF',
+    tag: 'CADILLAC' 
   }
 ];
 
@@ -804,11 +812,12 @@ export class NavbarComponent implements OnInit {
 
   // Computados para el estado GUARDADO (visible en la píldora superior y badge confirmado)
   readonly savedTeam = computed(() => {
-    return this.teams.find((t) => t.id === this.savedTeamId()) || this.teams[0];
+    const tid = this.savedTeamId() === 'sauber' ? 'audi' : this.savedTeamId();
+    return this.teams.find((t) => t.id === tid) || this.teams[0];
   });
 
   readonly savedDriver = computed(() => {
-    return this.drivers.find((d) => d.id === this.savedDriverId()) || this.drivers[1];
+    return this.drivers.find((d) => d.id === this.savedDriverId()) || this.drivers[0];
   });
 
   readonly savedTeamTag = computed(() => {
@@ -826,7 +835,8 @@ export class NavbarComponent implements OnInit {
 
   // Computado para el estado BORRADOR (se muestra dentro del select mientras se elige)
   readonly formTeam = computed(() => {
-    return this.teams.find((t) => t.id === this.formTeamId()) || this.teams[0];
+    const tid = this.formTeamId() === 'sauber' ? 'audi' : this.formTeamId();
+    return this.teams.find((t) => t.id === tid) || this.teams[0];
   });
 
   // ESTADO ACTIVO PARA ESTÉTICA VISUAL (Colores y badge):
@@ -936,7 +946,11 @@ export class NavbarComponent implements OnInit {
     // Si cambia de escudería en el selector, sugerir el primer piloto de ese equipo
     const teamObj = this.teams.find((t) => t.id === teamId);
     const driverOfTeam = this.drivers.find((d) => {
-      return teamObj && d.team.toLowerCase().includes(teamObj.name.split(' ')[0].toLowerCase());
+      if (!teamObj) return false;
+      const tid = teamObj.id.toLowerCase();
+      const tname = teamObj.name.toLowerCase();
+      const dteam = d.team.toLowerCase();
+      return dteam.includes(tid) || tname.includes(dteam) || dteam.includes(tname);
     });
     if (driverOfTeam) {
       this.formDriverId.set(driverOfTeam.id);
@@ -954,8 +968,9 @@ export class NavbarComponent implements OnInit {
         this.formDisplayName.set(cached.displayName);
       }
       if (cached.favoriteTeamId) {
-        this.savedTeamId.set(cached.favoriteTeamId);
-        this.formTeamId.set(cached.favoriteTeamId);
+        const teamId = cached.favoriteTeamId === 'sauber' ? 'audi' : cached.favoriteTeamId;
+        this.savedTeamId.set(teamId);
+        this.formTeamId.set(teamId);
       }
       if (cached.favoriteDriverId) {
         this.savedDriverId.set(cached.favoriteDriverId);
@@ -981,8 +996,9 @@ export class NavbarComponent implements OnInit {
         this.formDisplayName.set(name);
 
         if (profile.favoriteTeamId) {
-          this.savedTeamId.set(profile.favoriteTeamId);
-          this.formTeamId.set(profile.favoriteTeamId);
+          const teamId = profile.favoriteTeamId === 'sauber' ? 'audi' : profile.favoriteTeamId;
+          this.savedTeamId.set(teamId);
+          this.formTeamId.set(teamId);
         }
         if (profile.favoriteDriverId) {
           this.savedDriverId.set(profile.favoriteDriverId);
