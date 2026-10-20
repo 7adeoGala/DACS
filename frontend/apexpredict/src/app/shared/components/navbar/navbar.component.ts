@@ -39,7 +39,6 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     gradient: 'linear-gradient(135deg, #EF1A2D 0%, #8A000E 100%)',
     textColor: '#FFFFFF',
     btnTextColor: '#FFFFFF',
-    switchKnobColor: '#000000',
     tag: 'SCUDERIA' 
   },
   { 
@@ -60,7 +59,6 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     gradient: 'linear-gradient(135deg, #27F4D2 0%, #007A6C 100%)',
     textColor: '#031E19',
     btnTextColor: '#031E19',
-    switchKnobColor: '#031E19',
     tag: 'PETRONAS' 
   },
   { 
@@ -71,7 +69,6 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     gradient: 'linear-gradient(135deg, #00665E 0%, #002B26 100%)',
     textColor: '#FFFFFF',
     btnTextColor: '#FFFFFF',
-    switchKnobColor: '#002B26',
     tag: 'AMR' 
   },
   { 
@@ -92,7 +89,6 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     gradient: 'linear-gradient(135deg, #00A0DE 0%, #041E42 100%)',
     textColor: '#FFFFFF',
     btnTextColor: '#FFFFFF',
-    switchKnobColor: '#041E42',
     tag: 'WILLIAMS' 
   },
   { 
@@ -113,6 +109,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     gradient: 'linear-gradient(135deg, #E6E8EC 0%, #C0C6CE 50%, #7E8590 100%)',
     textColor: '#E0001B',
     btnTextColor: '#0b0f17',
+    switchKnobColor: '#000000',
     tag: 'AUDI',
     tagColor: '#E0001B' 
   },
@@ -124,6 +121,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     gradient: 'linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 58%, #ED1A3B 82%, #111111 100%)',
     textColor: '#ED1A3B',
     btnTextColor: '#0b0f17',
+    switchKnobColor: '#ED1A3B',
     tag: 'HAAS GR',
     tagColor: '#ED1A3B' 
   },
@@ -955,7 +953,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
     }
     input:checked + .toggle-slider {
-      background-color: var(--team-secondary, var(--red));
+      background-color: var(--team-color, var(--red));
     }
     input:checked + .toggle-slider:before {
       transform: translateX(20px);
