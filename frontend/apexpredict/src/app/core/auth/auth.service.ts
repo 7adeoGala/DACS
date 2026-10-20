@@ -351,7 +351,40 @@ export class AuthService {
   }
 
   async registerUser(userData: { username: string; firstName: string; lastName: string; email: string; password: string }): Promise<void> {
-    return this.register('dashboard');
+    const adminToken = await this.getMasterAdminToken();
+    const adminUsersUrl = `${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users`;
+
+    const createRes = await fetch(adminUsersUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${adminToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: userData.username.trim(),
+        firstName: userData.firstName.trim(),
+        lastName: userData.lastName.trim(),
+        email: userData.email.trim().toLowerCase(),
+        enabled: true,
+        emailVerified: true,
+        credentials: [{
+          type: 'password',
+          value: userData.password,
+          temporary: false,
+        }],
+      }),
+    });
+
+    if (!createRes.ok) {
+      if (createRes.status === 409) {
+        throw new Error('Ya existe una cuenta registrada con ese nombre de usuario o correo electrónico.');
+      }
+      const errText = await createRes.text().catch(() => '');
+      throw new Error(errText || 'No se pudo crear la cuenta en este momento. Intentá nuevamente.');
+    }
+
+    // Iniciar sesión automáticamente tras el registro exitoso
+    await this.loginWithCredentials(userData.username.trim(), userData.password, true);
   }
 
   private async getMasterAdminToken(): Promise<string> {

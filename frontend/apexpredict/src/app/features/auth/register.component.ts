@@ -74,15 +74,23 @@ import { AuthService } from '../../core/auth/auth.service';
             <form (ngSubmit)="handleRegister()" class="auth-form">
               <div class="form-group">
                 <label for="reg-username">USUARIO *</label>
-                <input 
-                  id="reg-username" 
-                  type="text" 
-                  [ngModel]="username()" 
-                  (ngModelChange)="username.set($event)" 
-                  name="username" 
-                  placeholder="Elegí tu nombre de usuario" 
-                  required 
-                  autocomplete="username" />
+                <div class="input-wrap">
+                  <span class="input-icon">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </span>
+                  <input 
+                    id="reg-username" 
+                    type="text" 
+                    [ngModel]="username()" 
+                    (ngModelChange)="username.set($event)" 
+                    name="username" 
+                    placeholder="Elegí tu nombre de usuario" 
+                    required 
+                    autocomplete="username" />
+                </div>
               </div>
 
               <div class="form-row">
@@ -115,43 +123,112 @@ import { AuthService } from '../../core/auth/auth.service';
 
               <div class="form-group">
                 <label for="reg-email">CORREO ELECTRÓNICO *</label>
-                <input 
-                  id="reg-email" 
-                  type="email" 
-                  [ngModel]="email()" 
-                  (ngModelChange)="email.set($event)" 
-                  name="email" 
-                  placeholder="correo@ejemplo.com" 
-                  required 
-                  autocomplete="email" />
+                <div class="input-wrap">
+                  <span class="input-icon">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                      <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                  </span>
+                  <input 
+                    id="reg-email" 
+                    type="email" 
+                    [ngModel]="email()" 
+                    (ngModelChange)="email.set($event)" 
+                    name="email" 
+                    placeholder="correo@ejemplo.com" 
+                    required 
+                    autocomplete="email" />
+                </div>
               </div>
 
               <div class="form-row">
                 <div class="form-group">
                   <label for="reg-pwd">CONTRASEÑA *</label>
-                  <input 
-                    id="reg-pwd" 
-                    type="password" 
-                    [ngModel]="password()" 
-                    (ngModelChange)="password.set($event)" 
-                    name="password" 
-                    placeholder="••••••••" 
-                    required 
-                    autocomplete="new-password" />
+                  <div class="input-wrap">
+                    <span class="input-icon">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                    </span>
+                    <input 
+                      id="reg-pwd" 
+                      [type]="showPassword() ? 'text' : 'password'" 
+                      [ngModel]="password()" 
+                      (ngModelChange)="password.set($event)" 
+                      name="password" 
+                      placeholder="••••••••" 
+                      required 
+                      autocomplete="new-password" />
+                    <button 
+                      type="button" 
+                      class="toggle-pwd-btn" 
+                      (click)="showPassword.set(!showPassword())" 
+                      aria-label="Ver u ocultar contraseña">
+                      @if (showPassword()) {
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      } @else {
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                          <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                      }
+                    </button>
+                  </div>
                 </div>
 
                 <div class="form-group">
                   <label for="reg-pwd-confirm">CONFIRMAR CONTRASEÑA *</label>
-                  <input 
-                    id="reg-pwd-confirm" 
-                    type="password" 
-                    [ngModel]="confirmPassword()" 
-                    (ngModelChange)="confirmPassword.set($event)" 
-                    name="confirmPassword" 
-                    placeholder="••••••••" 
-                    required 
-                    autocomplete="new-password" />
+                  <div class="input-wrap">
+                    <span class="input-icon">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                      </svg>
+                    </span>
+                    <input 
+                      id="reg-pwd-confirm" 
+                      [type]="showConfirmPassword() ? 'text' : 'password'" 
+                      [ngModel]="confirmPassword()" 
+                      (ngModelChange)="confirmPassword.set($event)" 
+                      name="confirmPassword" 
+                      placeholder="••••••••" 
+                      required 
+                      autocomplete="new-password" />
+                    <button 
+                      type="button" 
+                      class="toggle-pwd-btn" 
+                      (click)="showConfirmPassword.set(!showConfirmPassword())" 
+                      aria-label="Ver u ocultar confirmación de contraseña">
+                      @if (showConfirmPassword()) {
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                      } @else {
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                          <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                      }
+                    </button>
+                  </div>
                 </div>
+              </div>
+
+              <!-- OPCIÓN PARA MOSTRAR/OCULTAR AMBAS CONTRASEÑAS -->
+              <div class="form-options" style="margin-top: -0.35rem; margin-bottom: 0.25rem;">
+                <label class="checkbox-label" style="font-size: 0.75rem;">
+                  <input 
+                    type="checkbox" 
+                    [checked]="showPassword() && showConfirmPassword()" 
+                    (change)="toggleAllPasswords($event)" />
+                  <span>Mostrar contraseñas creadas</span>
+                </label>
               </div>
 
               <button type="submit" class="btn-primary" [disabled]="isLoading()">
@@ -203,9 +280,17 @@ export class RegisterComponent implements OnInit {
   readonly email = signal<string>('');
   readonly password = signal<string>('');
   readonly confirmPassword = signal<string>('');
+  readonly showPassword = signal<boolean>(false);
+  readonly showConfirmPassword = signal<boolean>(false);
   readonly isLoading = signal<boolean>(false);
   readonly errorMessage = signal<string>('');
   readonly successMessage = signal<string>('');
+
+  toggleAllPasswords(event: Event) {
+    const isChecked = (event.target as HTMLInputElement).checked;
+    this.showPassword.set(isChecked);
+    this.showConfirmPassword.set(isChecked);
+  }
 
   async handleRegister() {
     const user = this.username().trim();
@@ -243,10 +328,10 @@ export class RegisterComponent implements OnInit {
         email: em,
         password: pwd
       });
-      this.successMessage.set('¡Cuenta creada con éxito! Redirigiendo...');
+      this.successMessage.set('¡Cuenta creada con éxito! Ingresando...');
       setTimeout(() => {
-        this.router.navigate(['/login']);
-      }, 1500);
+        this.router.navigate(['/dashboard']);
+      }, 1200);
     } catch (err: any) {
       console.error('Error al registrar usuario:', err);
       this.errorMessage.set(err?.message || 'Error al crear la cuenta. Verificá si el usuario o email ya existen.');
