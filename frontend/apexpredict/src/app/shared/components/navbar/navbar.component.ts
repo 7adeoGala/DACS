@@ -131,16 +131,16 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
           @if (auth.isAuthenticated()) {
             <!-- CONTENEDOR RELATIVO PARA EL DROPDOWN -->
             <div class="profile-dropdown-wrapper">
-              <!-- BOTÓN ACTIVADOR (PILL FIJO CON DATOS GUARDADOS) -->
+              <!-- BOTÓN ACTIVADOR (PILL FIJO CON DATOS GUARDADOS Y PREVIEW DE COLOR) -->
               <button 
                 type="button" 
                 class="profile-trigger-btn" 
                 (click)="toggleProfileMenu($event)"
-                [style.--team-color]="savedTeam().color"
+                [style.--team-color]="activeTeam().color"
                 aria-label="Abrir opciones de perfil">
                 <div class="avatar-circle"
-                  [style.background]="savedTeam().gradient || savedTeam().color"
-                  [style.color]="savedTeam().textColor || '#ffffff'">
+                  [style.background]="activeTeam().gradient || activeTeam().color"
+                  [style.color]="activeTeam().textColor || '#ffffff'">
                   {{ savedInitials() }}
                 </div>
                 <div class="user-meta-column">
@@ -154,12 +154,14 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
 
               <!-- MENÚ FLOTANTE DROPDOWN -->
               @if (isProfileOpen()) {
-                <div class="profile-dropdown-menu" (click)="$event.stopPropagation()">
-                  <!-- ENCABEZADO DEL PERFIL (REFLEJA ESTADO GUARDADO CONFIRMADO) -->
+                <div class="profile-dropdown-menu" 
+                  (click)="$event.stopPropagation()"
+                  [style.--team-color]="activeTeam().color">
+                  <!-- ENCABEZADO DEL PERFIL (REFLEJA PREVISUALIZACIÓN DE COLORES DE EQUIPO, PERO NOMBRE GUARDADO) -->
                   <div class="dropdown-header">
                     <div class="avatar-box" 
-                      [style.background]="savedTeam().gradient || savedTeam().color"
-                      [style.color]="savedTeam().textColor || '#ffffff'">
+                      [style.background]="activeTeam().gradient || activeTeam().color"
+                      [style.color]="activeTeam().textColor || '#ffffff'">
                       <span>{{ savedInitials() }}</span>
                       <span class="status-indicator-dot"></span>
                     </div>
@@ -168,8 +170,8 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                         {{ savedDisplayName() }}
                       </h4>
                       <div class="header-badge-row">
-                        <span class="team-tag-badge" [style.--team-color]="savedTeam().color">
-                          {{ savedTeamTag() }}
+                        <span class="team-tag-badge" [style.--team-color]="activeTeam().color">
+                          {{ activeTeamTag() }}
                         </span>
                       </div>
                     </div>
@@ -197,8 +199,8 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                   <!-- CAMPO 2: ESCUDERÍA FAVORITA -->
                   <div class="form-field-group">
                     <label class="field-label" for="favTeamSelect">ESCUDERÍA FAVORITA</label>
-                    <div class="select-wrapper team-highlight" [style.--team-color]="formTeam().color">
-                      <span class="team-color-indicator" [style.background]="formTeam().gradient || formTeam().color"></span>
+                    <div class="select-wrapper team-highlight" [style.--team-color]="activeTeam().color">
+                      <span class="team-color-indicator" [style.background]="activeTeam().gradient || activeTeam().color"></span>
                       <select 
                         id="favTeamSelect"
                         class="field-select with-color" 
@@ -343,17 +345,18 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       align-items: center;
       gap: 0.65rem;
       background: rgba(20, 24, 34, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid color-mix(in srgb, var(--team-color, #ff8000) 35%, rgba(255, 255, 255, 0.12));
       border-radius: 9999px;
       padding: 4px 14px 4px 5px;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       color: #ffffff;
       max-width: 220px;
     }
     .profile-trigger-btn:hover {
       background: rgba(30, 36, 52, 0.95);
-      border-color: rgba(255, 255, 255, 0.25);
+      border-color: var(--team-color, #ff8000);
+      box-shadow: 0 0 16px color-mix(in srgb, var(--team-color, #ff8000) 30%, transparent);
     }
     .avatar-circle {
       width: 32px;
@@ -370,6 +373,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
       border: 1px solid rgba(255, 255, 255, 0.18);
       letter-spacing: -0.02em;
+      transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
     }
     .user-meta-column {
       display: flex;
@@ -410,12 +414,14 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       width: 335px;
       background: #0f131c;
       border: 1px solid rgba(255, 255, 255, 0.12);
+      border-top: 2px solid var(--team-color, #ff8000);
       border-radius: 14px;
       padding: 1.25rem;
-      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.75), 0 0 20px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.75), 0 0 25px color-mix(in srgb, var(--team-color, #ff8000) 25%, transparent);
       z-index: 1000;
       box-sizing: border-box;
       animation: fadeInDropdown 0.15s ease-out;
+      transition: border-top-color 0.25s ease, box-shadow 0.25s ease;
     }
     @keyframes fadeInDropdown {
       from { opacity: 0; transform: translateY(-6px); }
@@ -447,6 +453,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.18);
       letter-spacing: -0.02em;
+      transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
     }
     .status-indicator-dot {
       position: absolute;
@@ -493,6 +500,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       letter-spacing: 0.05em;
       display: inline-flex;
       width: fit-content;
+      transition: color 0.25s ease, background 0.25s ease, border-color 0.25s ease;
     }
 
 
@@ -667,7 +675,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     /* SAVE BUTTON */
     .btn-save-profile {
       width: 100%;
-      background: var(--red);
+      background: var(--team-color, var(--red));
       color: #ffffff;
       font-size: 0.85rem;
       font-weight: 800;
@@ -681,13 +689,13 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       align-items: center;
       justify-content: center;
       gap: 0.45rem;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 14px rgba(225, 6, 0, 0.3);
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 14px color-mix(in srgb, var(--team-color, var(--red)) 35%, transparent);
     }
     .btn-save-profile:hover:not(:disabled) {
-      background: #ff1801;
+      filter: brightness(1.1);
       transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(225, 6, 0, 0.5);
+      box-shadow: 0 6px 20px color-mix(in srgb, var(--team-color, var(--red)) 50%, transparent);
     }
     .btn-save-profile:disabled {
       opacity: 0.7;
@@ -819,6 +827,23 @@ export class NavbarComponent implements OnInit {
     return this.teams.find((t) => t.id === this.formTeamId()) || this.teams[0];
   });
 
+  // ESTADO ACTIVO PARA ESTÉTICA VISUAL (Colores y badge):
+  // Si el menú está abierto, previsualiza inmediatamente el equipo seleccionado en el formulario.
+  // Si el menú se cierra sin guardar, vuelve automáticamente a los colores del equipo guardado.
+  readonly activeTeam = computed(() => {
+    return this.isProfileOpen() ? this.formTeam() : this.savedTeam();
+  });
+
+  readonly activeDriver = computed(() => {
+    if (this.isProfileOpen()) {
+      return this.drivers.find((d) => d.id === this.formDriverId()) || this.savedDriver();
+    }
+    return this.savedDriver();
+  });
+
+  readonly activeTeamTag = computed(() => {
+    return `${this.activeTeam().tag} #${this.activeDriver().number}`;
+  });
 
   readonly changePasswordUrl = computed(() => {
     const base = `${environment.keycloak.url}/realms/${environment.keycloak.realm}/account`;
@@ -845,6 +870,14 @@ export class NavbarComponent implements OnInit {
         this.formDisplayName.set(defaultName);
       }
     });
+
+    // Sincronizar dinámicamente variable CSS global en :root para iluminación ambiental
+    effect(() => {
+      const color = this.activeTeam().color;
+      if (typeof document !== 'undefined' && document.documentElement) {
+        document.documentElement.style.setProperty('--user-team-color', color);
+      }
+    });
   }
 
   ngOnInit() {
@@ -856,21 +889,44 @@ export class NavbarComponent implements OnInit {
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
     if (this.isProfileOpen() && !this.elementRef.nativeElement.contains(event.target)) {
-      this.isProfileOpen.set(false);
+      this.closeProfileMenu();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape() {
+    if (this.isProfileOpen()) {
+      this.closeProfileMenu();
     }
   }
 
   toggleProfileMenu(event: MouseEvent) {
     event.stopPropagation();
-    if (!this.isProfileOpen()) {
-      // Al abrir, sincronizar el borrador con los últimos datos guardados
-      this.formDisplayName.set(this.savedDisplayName());
-      this.formTeamId.set(this.savedTeamId());
-      this.formDriverId.set(this.savedDriverId());
-      this.formNotifications.set(this.savedNotifications());
-      this.saveStatus.set('idle');
+    if (this.isProfileOpen()) {
+      this.closeProfileMenu();
+    } else {
+      this.openProfileMenu();
     }
-    this.isProfileOpen.update((v) => !v);
+  }
+
+  openProfileMenu() {
+    // Al abrir, sincronizar el borrador con los últimos datos guardados
+    this.formDisplayName.set(this.savedDisplayName());
+    this.formTeamId.set(this.savedTeamId());
+    this.formDriverId.set(this.savedDriverId());
+    this.formNotifications.set(this.savedNotifications());
+    this.saveStatus.set('idle');
+    this.isProfileOpen.set(true);
+  }
+
+  closeProfileMenu() {
+    // Si el usuario cierra el menú sin guardar, vuelve a los colores y datos anteriores
+    this.formDisplayName.set(this.savedDisplayName());
+    this.formTeamId.set(this.savedTeamId());
+    this.formDriverId.set(this.savedDriverId());
+    this.formNotifications.set(this.savedNotifications());
+    this.saveStatus.set('idle');
+    this.isProfileOpen.set(false);
   }
 
   onTeamSelected(teamId: string) {
