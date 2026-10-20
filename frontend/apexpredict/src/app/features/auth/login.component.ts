@@ -55,10 +55,6 @@ import { ApiService } from '../../core/services/api.service';
           <div class="auth-card">
             <div class="card-header">
               <h1 class="card-title">Iniciar Sesión</h1>
-              <div class="lang-selector">
-                <span>ES</span>
-                <span class="chevron">▼</span>
-              </div>
             </div>
 
             @if (errorMessage()) {

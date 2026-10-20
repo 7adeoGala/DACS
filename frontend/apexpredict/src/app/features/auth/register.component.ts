@@ -57,10 +57,6 @@ import { AuthService } from '../../core/auth/auth.service';
                 <h1 class="card-title">Registrarse</h1>
                 <p class="card-subtitle">* Campos obligatorios</p>
               </div>
-              <div class="lang-selector">
-                <span>ES</span>
-                <span class="chevron">▼</span>
-              </div>
             </div>
 
             @if (errorMessage()) {
