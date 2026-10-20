@@ -354,13 +354,7 @@ export class AuthService {
     return this.register('dashboard');
   }
 
-  async resetPassword(identifier: string, newPassword: string): Promise<boolean> {
-    const rawId = identifier.trim();
-    if (!rawId || !newPassword) {
-      throw new Error('Identificador o contraseña no válidos.');
-    }
-
-    // 1. Obtener token de administración de Keycloak (realm master)
+  private async getMasterAdminToken(): Promise<string> {
     const tokenUrl = `${environment.keycloak.url}/realms/master/protocol/openid-connect/token`;
     const tokenRes = await fetch(tokenUrl, {
       method: 'POST',
@@ -374,43 +368,38 @@ export class AuthService {
     });
 
     if (!tokenRes.ok) {
-      throw new Error('No se pudo conectar con el servicio de autenticación. Intentá de nuevo en unos segundos.');
+      throw new Error('No se pudo conectar con el servicio de autenticación.');
     }
 
     const { access_token } = await tokenRes.json();
-    const headers = {
-      Authorization: `Bearer ${access_token}`,
-      'Content-Type': 'application/json',
-    };
+    return access_token;
+  }
 
-    // 2. Buscar usuario por username exacto, email exacto o búsqueda general
-    let foundUser: any = null;
+  private async findUserByIdentifier(identifier: string, adminToken: string): Promise<any> {
+    const rawId = identifier.trim();
+    const headers = { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
     const adminUsersUrl = `${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users`;
+
+    let foundUser: any = null;
 
     if (rawId.includes('@')) {
       const emailRes = await fetch(`${adminUsersUrl}?email=${encodeURIComponent(rawId.toLowerCase())}&exact=true`, { headers });
       if (emailRes.ok) {
         const users = await emailRes.json();
-        if (users && users.length > 0) {
-          foundUser = users[0];
-        }
+        if (users && users.length > 0) foundUser = users[0];
       }
     } else {
       const userRes = await fetch(`${adminUsersUrl}?username=${encodeURIComponent(rawId)}&exact=true`, { headers });
       if (userRes.ok) {
         const users = await userRes.json();
-        if (users && users.length > 0) {
-          foundUser = users[0];
-        }
+        if (users && users.length > 0) foundUser = users[0];
       }
 
       if (!foundUser) {
         const gmailRes = await fetch(`${adminUsersUrl}?email=${encodeURIComponent(rawId.toLowerCase() + '@gmail.com')}&exact=true`, { headers });
         if (gmailRes.ok) {
           const users = await gmailRes.json();
-          if (users && users.length > 0) {
-            foundUser = users[0];
-          }
+          if (users && users.length > 0) foundUser = users[0];
         }
       }
     }
@@ -419,17 +408,190 @@ export class AuthService {
       const searchRes = await fetch(`${adminUsersUrl}?search=${encodeURIComponent(rawId)}`, { headers });
       if (searchRes.ok) {
         const users = await searchRes.json();
-        if (users && users.length > 0) {
-          foundUser = users[0];
-        }
+        if (users && users.length > 0) foundUser = users[0];
       }
     }
+
+    return foundUser;
+  }
+
+  async requestPasswordResetCode(identifier: string): Promise<{ success: boolean; email: string; username: string; code: string }> {
+    const rawId = identifier.trim();
+    if (!rawId) {
+      throw new Error('Por favor ingresá tu correo electrónico o usuario.');
+    }
+
+    const adminToken = await this.getMasterAdminToken();
+    const foundUser = await this.findUserByIdentifier(rawId, adminToken);
 
     if (!foundUser || !foundUser.id) {
       throw new Error('No encontramos ninguna cuenta asociada a ese usuario o correo.');
     }
 
-    // 3. Restablecer la contraseña
+    // Generar código de 6 dígitos numéricos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = String(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+    const headers = { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
+    const adminUsersUrl = `${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users`;
+
+    // Guardar código y expiración en atributos de Keycloak
+    const updateRes = await fetch(`${adminUsersUrl}/${foundUser.id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        attributes: {
+          ...(foundUser.attributes || {}),
+          reset_code: [code],
+          reset_code_expires: [expires]
+        }
+      })
+    });
+
+    if (!updateRes.ok) {
+      throw new Error('No se pudo generar el código de verificación. Intentá nuevamente.');
+    }
+
+    const targetEmail = foundUser.email || (rawId.includes('@') ? rawId.toLowerCase() : `${rawId}@apexpredict.local`);
+
+    return {
+      success: true,
+      email: targetEmail,
+      username: foundUser.username || rawId,
+      code
+    };
+  }
+
+  async verifyResetCode(identifier: string, enteredCode: string): Promise<boolean> {
+    const rawId = identifier.trim();
+    const rawCode = enteredCode.trim();
+
+    if (!rawId || !rawCode) {
+      throw new Error('Por favor ingresá el código de 6 dígitos.');
+    }
+
+    const adminToken = await this.getMasterAdminToken();
+    const foundUser = await this.findUserByIdentifier(rawId, adminToken);
+
+    if (!foundUser || !foundUser.id) {
+      throw new Error('Cuenta no encontrada.');
+    }
+
+    const headers = { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
+    const adminUsersUrl = `${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users`;
+
+    // Leer usuario fresco de Keycloak
+    const userRes = await fetch(`${adminUsersUrl}/${foundUser.id}`, { headers });
+    if (!userRes.ok) {
+      throw new Error('Error al verificar código con el servidor de autenticación.');
+    }
+
+    const freshUser = await userRes.json();
+    const savedCode = freshUser.attributes?.reset_code?.[0];
+    const savedExpires = Number(freshUser.attributes?.reset_code_expires?.[0]);
+
+    if (!savedCode) {
+      throw new Error('No hay ningún código activo para esta cuenta. Solicitá uno nuevo.');
+    }
+
+    if (Date.now() > savedExpires) {
+      throw new Error('El código de verificación ha expirado (validez: 15 minutos). Solicitá uno nuevo.');
+    }
+
+    if (savedCode.trim() !== rawCode) {
+      throw new Error('El código ingresado es incorrecto. Revisá el código e intentá de nuevo.');
+    }
+
+    return true;
+  }
+
+  async completePasswordReset(identifier: string, enteredCode: string, newPassword: string): Promise<boolean> {
+    const rawId = identifier.trim();
+    const rawCode = enteredCode.trim();
+    const rawPwd = newPassword.trim();
+
+    if (!rawId || !rawCode || !rawPwd) {
+      throw new Error('Datos incompletos para restablecer la contraseña.');
+    }
+
+    // 1. Validar código
+    await this.verifyResetCode(rawId, rawCode);
+
+    const adminToken = await this.getMasterAdminToken();
+    const foundUser = await this.findUserByIdentifier(rawId, adminToken);
+
+    if (!foundUser || !foundUser.id) {
+      throw new Error('Cuenta no encontrada.');
+    }
+
+    const headers = { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
+    const adminUsersUrl = `${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users`;
+
+    // 2. Restablecer la contraseña
+    const resetUrl = `${adminUsersUrl}/${foundUser.id}/reset-password`;
+    const resetRes = await fetch(resetUrl, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        type: 'password',
+        value: rawPwd,
+        temporary: false,
+      }),
+    });
+
+    if (!resetRes.ok) {
+      throw new Error('No se pudo actualizar la contraseña. Verificá que cumpla las políticas.');
+    }
+
+    // 3. Limpiar código utilizado y asegurar estado del usuario
+    const userUpdates: any = {
+      attributes: {
+        ...(foundUser.attributes || {}),
+        reset_code: [],
+        reset_code_expires: []
+      }
+    };
+
+    if (!foundUser.emailVerified) {
+      userUpdates.emailVerified = true;
+    }
+    if (!foundUser.firstName) {
+      userUpdates.firstName = foundUser.username || 'Piloto';
+    }
+    if (!foundUser.lastName) {
+      userUpdates.lastName = 'F1';
+    }
+    if (foundUser.requiredActions && foundUser.requiredActions.length > 0) {
+      userUpdates.requiredActions = foundUser.requiredActions.filter(
+        (a: string) => a !== 'UPDATE_PASSWORD' && a !== 'VERIFY_EMAIL' && a !== 'UPDATE_PROFILE'
+      );
+    }
+
+    await fetch(`${adminUsersUrl}/${foundUser.id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(userUpdates),
+    }).catch(() => {});
+
+    return true;
+  }
+
+  async resetPassword(identifier: string, newPassword: string): Promise<boolean> {
+    const rawId = identifier.trim();
+    if (!rawId || !newPassword) {
+      throw new Error('Identificador o contraseña no válidos.');
+    }
+
+    const adminToken = await this.getMasterAdminToken();
+    const foundUser = await this.findUserByIdentifier(rawId, adminToken);
+
+    if (!foundUser || !foundUser.id) {
+      throw new Error('No encontramos ninguna cuenta asociada a ese usuario o correo.');
+    }
+
+    const headers = { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
+    const adminUsersUrl = `${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users`;
+
     const resetUrl = `${adminUsersUrl}/${foundUser.id}/reset-password`;
     const resetRes = await fetch(resetUrl, {
       method: 'PUT',
@@ -445,17 +607,10 @@ export class AuthService {
       throw new Error('No se pudo actualizar la contraseña. Por favor, intentá nuevamente.');
     }
 
-    // 4. Asegurar que la cuenta quede habilitada, verificada y sin acciones bloqueantes
     const userUpdates: any = {};
-    if (!foundUser.emailVerified) {
-      userUpdates.emailVerified = true;
-    }
-    if (!foundUser.firstName) {
-      userUpdates.firstName = foundUser.username || 'Piloto';
-    }
-    if (!foundUser.lastName) {
-      userUpdates.lastName = 'F1';
-    }
+    if (!foundUser.emailVerified) userUpdates.emailVerified = true;
+    if (!foundUser.firstName) userUpdates.firstName = foundUser.username || 'Piloto';
+    if (!foundUser.lastName) userUpdates.lastName = 'F1';
     if (foundUser.requiredActions && foundUser.requiredActions.length > 0) {
       userUpdates.requiredActions = foundUser.requiredActions.filter(
         (a: string) => a !== 'UPDATE_PASSWORD' && a !== 'VERIFY_EMAIL' && a !== 'UPDATE_PROFILE'
