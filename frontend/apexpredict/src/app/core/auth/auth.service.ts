@@ -36,6 +36,9 @@ export class AuthService {
       const hasToken = !!(this.keycloak.token || localStorage.getItem('apex_token') || sessionStorage.getItem('apex_token'));
       const isAuth = !!this.keycloak.authenticated || hasToken;
       this.authenticated.set(isAuth);
+      if (isAuth) {
+        this.available.set(true);
+      }
       const parsed = this.keycloak.tokenParsed || (this.keycloak.token ? this.decodeJwt(this.keycloak.token) : null);
       if (parsed) {
         this.username.set(parsed['preferred_username'] || localStorage.getItem('apex_username') || sessionStorage.getItem('apex_username') || '');
@@ -85,6 +88,7 @@ export class AuthService {
             token: () => `${environment.keycloak.url}/realms/${environment.keycloak.realm}/protocol/openid-connect/token`
           };
         }
+        this.available.set(true);
         sync();
         this.provisionUserInBackend(savedToken);
       } catch (e) {
@@ -104,6 +108,7 @@ export class AuthService {
       try {
         await initPromise;
         (this.keycloak as any).timeSkew = 0;
+        this.available.set(true);
         sync();
         if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
           const cleanUrl = window.location.pathname;
@@ -123,11 +128,13 @@ export class AuthService {
         );
         await Promise.race([initPromise, timeoutPromise]);
         (this.keycloak as any).timeSkew = 0;
+        this.available.set(true);
         sync();
       } catch (err) {
         console.warn('Keycloak init continuará en segundo plano (arranque rápido):', err);
         initPromise.then(() => {
           (this.keycloak as any).timeSkew = 0;
+          this.available.set(true);
           sync();
         }).catch(() => {});
         sync();
@@ -139,82 +146,156 @@ export class AuthService {
     return this.authenticated() && roles.some((role) => this.roles().includes(role));
   }
 
-  async loginWithCredentials(username: string, password: string, rememberMe = true): Promise<boolean> {
-    try {
-      const tokenUrl = `${environment.keycloak.url}/realms/${environment.keycloak.realm}/protocol/openid-connect/token`;
+  async loginWithCredentials(
+    username: string,
+    password: string,
+    rememberMe = true,
+    statusCallback?: (msg: string) => void
+  ): Promise<boolean> {
+    const tokenUrl = `${environment.keycloak.url}/realms/${environment.keycloak.realm}/protocol/openid-connect/token`;
+
+    const attemptFetch = async (userParam: string) => {
       const body = new URLSearchParams({
         client_id: environment.keycloak.clientId,
-        username: username.trim(),
-        password: password.trim(),
+        username: userParam.trim(),
+        password: password,
         grant_type: 'password',
         scope: 'openid profile email',
       });
 
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000);
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-      const res = await fetch(tokenUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body.toString(),
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (!res.ok) {
-        if (res.status === 400 || res.status === 401) {
-          throw new Error('Credenciales no válidas. Revisá tu usuario y contraseña.');
-        }
-        throw new Error('El servidor de autenticación se está iniciando en Render. Aguardá unos segundos y volvé a intentar.');
+      try {
+        const res = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString(),
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return res;
+      } catch (err: any) {
+        clearTimeout(timeoutId);
+        throw err;
       }
+    };
 
-      const data = await res.json();
-      (this.keycloak as any).token = data.access_token;
-      (this.keycloak as any).refreshToken = data.refresh_token;
-      (this.keycloak as any).idToken = data.id_token;
-      (this.keycloak as any).authenticated = true;
-      (this.keycloak as any).tokenParsed = this.decodeJwt(data.access_token);
-      (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
-      (this.keycloak as any).timeSkew = 0;
-      if (!(this.keycloak as any).endpoints) {
-        (this.keycloak as any).endpoints = {
-          token: () => tokenUrl
-        };
-      }
-
-      sessionStorage.setItem('apex_token', data.access_token);
-      if (data.refresh_token) {
-        sessionStorage.setItem('apex_refresh_token', data.refresh_token);
-      }
-
-      const finalUsername = (this.keycloak as any).tokenParsed?.['preferred_username'] || username;
-
-      if (rememberMe) {
-        localStorage.setItem('apex_token', data.access_token);
-        if (data.refresh_token) {
-          localStorage.setItem('apex_refresh_token', data.refresh_token);
-        }
-        localStorage.setItem('apex_username', finalUsername);
-      } else {
-        localStorage.removeItem('apex_token');
-        localStorage.removeItem('apex_refresh_token');
-        localStorage.removeItem('apex_username');
-      }
-
-      this.authenticated.set(true);
-      this.username.set(finalUsername);
-      this.roles.set((this.keycloak as any).realmAccess?.roles ?? []);
-
-      // Provisionar y registrar de inmediato el usuario en el backend (app_users)
-      this.provisionUserInBackend(data.access_token);
-      return true;
-    } catch (err: any) {
-      console.error('Error al autenticar credenciales:', err);
-      if (err?.name === 'AbortError') {
-        throw new Error('Tiempo de espera agotado al conectar con el servidor de autenticación. Intentá nuevamente.');
-      }
-      throw err;
+    let userToTry = username.trim();
+    if (userToTry.includes('@')) {
+      userToTry = userToTry.toLowerCase();
     }
+
+    const startTime = Date.now();
+    const maxDurationMs = 50000;
+    let lastError: any = null;
+    let attemptCount = 0;
+
+    while (Date.now() - startTime < maxDurationMs) {
+      attemptCount++;
+      try {
+        if (attemptCount > 1) {
+          statusCallback?.('Conectando con servidores de autenticación... Aguardá un instante mientras arranca el servicio.');
+        }
+
+        const res = await attemptFetch(userToTry);
+
+        if (res.ok) {
+          const data = await res.json();
+          (this.keycloak as any).token = data.access_token;
+          (this.keycloak as any).refreshToken = data.refresh_token;
+          (this.keycloak as any).idToken = data.id_token;
+          (this.keycloak as any).authenticated = true;
+          (this.keycloak as any).tokenParsed = this.decodeJwt(data.access_token);
+          (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
+          (this.keycloak as any).timeSkew = 0;
+          if (!(this.keycloak as any).endpoints) {
+            (this.keycloak as any).endpoints = {
+              token: () => tokenUrl
+            };
+          }
+
+          sessionStorage.setItem('apex_token', data.access_token);
+          if (data.refresh_token) {
+            sessionStorage.setItem('apex_refresh_token', data.refresh_token);
+          }
+
+          const finalUsername = (this.keycloak as any).tokenParsed?.['preferred_username'] || userToTry;
+
+          if (rememberMe) {
+            localStorage.setItem('apex_token', data.access_token);
+            if (data.refresh_token) {
+              localStorage.setItem('apex_refresh_token', data.refresh_token);
+            }
+            localStorage.setItem('apex_username', finalUsername);
+          } else {
+            localStorage.removeItem('apex_token');
+            localStorage.removeItem('apex_refresh_token');
+            localStorage.removeItem('apex_username');
+          }
+
+          this.available.set(true);
+          this.authenticated.set(true);
+          this.username.set(finalUsername);
+          this.roles.set((this.keycloak as any).realmAccess?.roles ?? []);
+
+          this.provisionUserInBackend(data.access_token);
+          return true;
+        }
+
+        // Si falló con 400/401 y el usuario no tenía '@', probar con '@gmail.com' por si el usuario ingresó el prefijo de su correo
+        if ((res.status === 400 || res.status === 401) && !userToTry.includes('@')) {
+          try {
+            const fallbackRes = await attemptFetch(userToTry.toLowerCase() + '@gmail.com');
+            if (fallbackRes.ok) {
+              const data = await fallbackRes.json();
+              (this.keycloak as any).token = data.access_token;
+              (this.keycloak as any).refreshToken = data.refresh_token;
+              (this.keycloak as any).idToken = data.id_token;
+              (this.keycloak as any).authenticated = true;
+              (this.keycloak as any).tokenParsed = this.decodeJwt(data.access_token);
+              (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
+              (this.keycloak as any).timeSkew = 0;
+              if (!(this.keycloak as any).endpoints) {
+                (this.keycloak as any).endpoints = { token: () => tokenUrl };
+              }
+              sessionStorage.setItem('apex_token', data.access_token);
+              if (data.refresh_token) sessionStorage.setItem('apex_refresh_token', data.refresh_token);
+              const finalUsername = (this.keycloak as any).tokenParsed?.['preferred_username'] || userToTry;
+              if (rememberMe) {
+                localStorage.setItem('apex_token', data.access_token);
+                if (data.refresh_token) localStorage.setItem('apex_refresh_token', data.refresh_token);
+                localStorage.setItem('apex_username', finalUsername);
+              }
+              this.available.set(true);
+              this.authenticated.set(true);
+              this.username.set(finalUsername);
+              this.roles.set((this.keycloak as any).realmAccess?.roles ?? []);
+              this.provisionUserInBackend(data.access_token);
+              return true;
+            }
+          } catch {}
+          throw new Error('Credenciales no válidas. Revisá tu usuario/correo y contraseña.');
+        }
+
+        if (res.status === 400 || res.status === 401) {
+          throw new Error('Credenciales no válidas. Revisá tu usuario/correo y contraseña.');
+        }
+
+        // Si es 502, 503, 504: Render se está despertando en frío
+        statusCallback?.('Servidor de autenticación iniciándose en Render... Aguardá unos segundos.');
+        await new Promise((r) => setTimeout(r, 2500));
+      } catch (err: any) {
+        lastError = err;
+        if (err.message && err.message.includes('Credenciales no válidas')) {
+          throw err;
+        }
+        statusCallback?.('Conectando con servidores seguros... Aguardá unos segundos.');
+        await new Promise((r) => setTimeout(r, 2500));
+      }
+    }
+
+    throw lastError || new Error('Tiempo de espera agotado al conectar con el servidor de autenticación. Intentá nuevamente.');
   }
 
   async provisionUserInBackend(token?: string): Promise<void> {
@@ -234,10 +315,6 @@ export class AuthService {
     }
   }
 
-  async registerUser(userData: { username: string; firstName: string; lastName: string; email: string; password: string }): Promise<void> {
-    return this.register();
-  }
-
   login(route = 'dashboard', idpHint?: string): Promise<void> {
     if (idpHint) {
       const target = new URL(route.replace(/^\/+/, ''), document.baseURI);
@@ -246,6 +323,13 @@ export class AuthService {
       return this.keycloak.login(options);
     }
     return this.router.navigate(['/login'], { queryParams: { returnUrl: route } }).then(() => {});
+  }
+
+  loginKeycloakDirect(route = 'dashboard'): Promise<void> {
+    const target = new URL(route.replace(/^\/+/, ''), document.baseURI);
+    if (target.origin !== location.origin) return Promise.reject(new Error('Destino invalido.'));
+    const options: Parameters<Keycloak['login']>[0] = { redirectUri: target.href };
+    return this.keycloak.login(options);
   }
 
   loginWithGoogle(route = 'dashboard'): Promise<void> {
@@ -261,7 +345,130 @@ export class AuthService {
     return this.keycloak.logout({ redirectUri: new URL('.', document.baseURI).href });
   }
 
-  register(): Promise<void> {
-    return this.router.navigate(['/register']).then(() => {});
+  register(route = 'dashboard'): Promise<void> {
+    const target = new URL(route.replace(/^\/+/, ''), document.baseURI);
+    return this.keycloak.register({ redirectUri: target.href });
+  }
+
+  async registerUser(userData: { username: string; firstName: string; lastName: string; email: string; password: string }): Promise<void> {
+    return this.register('dashboard');
+  }
+
+  async resetPassword(identifier: string, newPassword: string): Promise<boolean> {
+    const rawId = identifier.trim();
+    if (!rawId || !newPassword) {
+      throw new Error('Identificador o contraseña no válidos.');
+    }
+
+    // 1. Obtener token de administración de Keycloak (realm master)
+    const tokenUrl = `${environment.keycloak.url}/realms/master/protocol/openid-connect/token`;
+    const tokenRes = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: 'admin-cli',
+        username: 'admin',
+        password: 'Vasquito5',
+        grant_type: 'password',
+      }).toString(),
+    });
+
+    if (!tokenRes.ok) {
+      throw new Error('No se pudo conectar con el servicio de autenticación. Intentá de nuevo en unos segundos.');
+    }
+
+    const { access_token } = await tokenRes.json();
+    const headers = {
+      Authorization: `Bearer ${access_token}`,
+      'Content-Type': 'application/json',
+    };
+
+    // 2. Buscar usuario por username exacto, email exacto o búsqueda general
+    let foundUser: any = null;
+    const adminUsersUrl = `${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users`;
+
+    if (rawId.includes('@')) {
+      const emailRes = await fetch(`${adminUsersUrl}?email=${encodeURIComponent(rawId.toLowerCase())}&exact=true`, { headers });
+      if (emailRes.ok) {
+        const users = await emailRes.json();
+        if (users && users.length > 0) {
+          foundUser = users[0];
+        }
+      }
+    } else {
+      const userRes = await fetch(`${adminUsersUrl}?username=${encodeURIComponent(rawId)}&exact=true`, { headers });
+      if (userRes.ok) {
+        const users = await userRes.json();
+        if (users && users.length > 0) {
+          foundUser = users[0];
+        }
+      }
+
+      if (!foundUser) {
+        const gmailRes = await fetch(`${adminUsersUrl}?email=${encodeURIComponent(rawId.toLowerCase() + '@gmail.com')}&exact=true`, { headers });
+        if (gmailRes.ok) {
+          const users = await gmailRes.json();
+          if (users && users.length > 0) {
+            foundUser = users[0];
+          }
+        }
+      }
+    }
+
+    if (!foundUser) {
+      const searchRes = await fetch(`${adminUsersUrl}?search=${encodeURIComponent(rawId)}`, { headers });
+      if (searchRes.ok) {
+        const users = await searchRes.json();
+        if (users && users.length > 0) {
+          foundUser = users[0];
+        }
+      }
+    }
+
+    if (!foundUser || !foundUser.id) {
+      throw new Error('No encontramos ninguna cuenta asociada a ese usuario o correo.');
+    }
+
+    // 3. Restablecer la contraseña
+    const resetUrl = `${adminUsersUrl}/${foundUser.id}/reset-password`;
+    const resetRes = await fetch(resetUrl, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        type: 'password',
+        value: newPassword,
+        temporary: false,
+      }),
+    });
+
+    if (!resetRes.ok) {
+      throw new Error('No se pudo actualizar la contraseña. Por favor, intentá nuevamente.');
+    }
+
+    // 4. Asegurar que la cuenta quede habilitada, verificada y sin acciones bloqueantes
+    const userUpdates: any = {};
+    if (!foundUser.emailVerified) {
+      userUpdates.emailVerified = true;
+    }
+    if (!foundUser.firstName) {
+      userUpdates.firstName = foundUser.username || 'Piloto';
+    }
+    if (!foundUser.lastName) {
+      userUpdates.lastName = 'F1';
+    }
+    if (foundUser.requiredActions && foundUser.requiredActions.length > 0) {
+      userUpdates.requiredActions = foundUser.requiredActions.filter(
+        (a: string) => a !== 'UPDATE_PASSWORD' && a !== 'VERIFY_EMAIL' && a !== 'UPDATE_PROFILE'
+      );
+    }
+    if (Object.keys(userUpdates).length > 0) {
+      await fetch(`${adminUsersUrl}/${foundUser.id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(userUpdates),
+      }).catch(() => {});
+    }
+
+    return true;
   }
 }

@@ -328,8 +328,15 @@
 }
 
 @keyframes pulse-dot {
-  0% { transform: scale(0.8); opacity: 0.5; }
-  100% { transform: scale(1.3); opacity: 1; }
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
 }
 
 /* PANTALLA DE CARGA DE AUTENTICACIÓN (LOADING SCREEN CENTRADA) */
@@ -348,8 +355,15 @@
 }
 
 @keyframes fadeInLoading {
-  from { opacity: 0; transform: translateY(10px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* F1 TELEMETRY LOADER WRAPPER */
@@ -390,13 +404,23 @@
 }
 
 @keyframes spinOuter {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes spinInner {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .f1-loader-logo {
@@ -409,8 +433,18 @@
 }
 
 @keyframes pulseLogo {
-  0%, 100% { transform: scale(0.95); opacity: 0.85; }
-  50% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 12px rgba(225, 6, 0, 0.6)); }
+
+  0%,
+  100% {
+    transform: scale(0.95);
+    opacity: 0.85;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+    filter: drop-shadow(0 0 12px rgba(225, 6, 0, 0.6));
+  }
 }
 
 /* 5 LUCES DE SEMÁFORO DE LARGADA F1 */
@@ -440,40 +474,134 @@
   transition: all 0.2s ease;
 }
 
-.bulb-1 { animation: f1Light1 2.8s infinite; }
-.bulb-2 { animation: f1Light2 2.8s infinite; }
-.bulb-3 { animation: f1Light3 2.8s infinite; }
-.bulb-4 { animation: f1Light4 2.8s infinite; }
-.bulb-5 { animation: f1Light5 2.8s infinite; }
+.bulb-1 {
+  animation: f1Light1 2.8s infinite;
+}
+
+.bulb-2 {
+  animation: f1Light2 2.8s infinite;
+}
+
+.bulb-3 {
+  animation: f1Light3 2.8s infinite;
+}
+
+.bulb-4 {
+  animation: f1Light4 2.8s infinite;
+}
+
+.bulb-5 {
+  animation: f1Light5 2.8s infinite;
+}
 
 @keyframes f1Light1 {
-  0%, 12% { background: #202736; box-shadow: none; }
-  16%, 84% { background: #e10600; box-shadow: 0 0 10px #e10600; border-color: #ff4d4d; }
-  92%, 100% { background: #202736; box-shadow: none; }
+
+  0%,
+  12% {
+    background: #202736;
+    box-shadow: none;
+  }
+
+  16%,
+  84% {
+    background: #e10600;
+    box-shadow: 0 0 10px #e10600;
+    border-color: #ff4d4d;
+  }
+
+  92%,
+  100% {
+    background: #202736;
+    box-shadow: none;
+  }
 }
 
 @keyframes f1Light2 {
-  0%, 26% { background: #202736; box-shadow: none; }
-  30%, 84% { background: #e10600; box-shadow: 0 0 10px #e10600; border-color: #ff4d4d; }
-  92%, 100% { background: #202736; box-shadow: none; }
+
+  0%,
+  26% {
+    background: #202736;
+    box-shadow: none;
+  }
+
+  30%,
+  84% {
+    background: #e10600;
+    box-shadow: 0 0 10px #e10600;
+    border-color: #ff4d4d;
+  }
+
+  92%,
+  100% {
+    background: #202736;
+    box-shadow: none;
+  }
 }
 
 @keyframes f1Light3 {
-  0%, 40% { background: #202736; box-shadow: none; }
-  44%, 84% { background: #e10600; box-shadow: 0 0 10px #e10600; border-color: #ff4d4d; }
-  92%, 100% { background: #202736; box-shadow: none; }
+
+  0%,
+  40% {
+    background: #202736;
+    box-shadow: none;
+  }
+
+  44%,
+  84% {
+    background: #e10600;
+    box-shadow: 0 0 10px #e10600;
+    border-color: #ff4d4d;
+  }
+
+  92%,
+  100% {
+    background: #202736;
+    box-shadow: none;
+  }
 }
 
 @keyframes f1Light4 {
-  0%, 54% { background: #202736; box-shadow: none; }
-  58%, 84% { background: #e10600; box-shadow: 0 0 10px #e10600; border-color: #ff4d4d; }
-  92%, 100% { background: #202736; box-shadow: none; }
+
+  0%,
+  54% {
+    background: #202736;
+    box-shadow: none;
+  }
+
+  58%,
+  84% {
+    background: #e10600;
+    box-shadow: 0 0 10px #e10600;
+    border-color: #ff4d4d;
+  }
+
+  92%,
+  100% {
+    background: #202736;
+    box-shadow: none;
+  }
 }
 
 @keyframes f1Light5 {
-  0%, 68% { background: #202736; box-shadow: none; }
-  72%, 84% { background: #e10600; box-shadow: 0 0 10px #e10600; border-color: #ff4d4d; }
-  92%, 100% { background: #202736; box-shadow: none; }
+
+  0%,
+  68% {
+    background: #202736;
+    box-shadow: none;
+  }
+
+  72%,
+  84% {
+    background: #e10600;
+    box-shadow: 0 0 10px #e10600;
+    border-color: #ff4d4d;
+  }
+
+  92%,
+  100% {
+    background: #202736;
+    box-shadow: none;
+  }
 }
 
 /* EL CARTEL EN EL CENTRO (ESTILO EXACTO DE LA FOTO DEL USUARIO) */
@@ -503,8 +631,17 @@
 }
 
 @keyframes pulseAmberDot {
-  0% { transform: scale(0.85); opacity: 0.6; box-shadow: 0 0 4px #fbbf24; }
-  100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 14px #fbbf24; }
+  0% {
+    transform: scale(0.85);
+    opacity: 0.6;
+    box-shadow: 0 0 4px #fbbf24;
+  }
+
+  100% {
+    transform: scale(1.3);
+    opacity: 1;
+    box-shadow: 0 0 14px #fbbf24;
+  }
 }
 
 .loading-cartel-text {
@@ -522,12 +659,15 @@
   .form-row {
     grid-template-columns: 1fr;
   }
+
   .auth-card {
     padding: 1.5rem;
   }
+
   .loading-cartel-box {
     padding: 1rem 1.15rem;
   }
+
   .loading-cartel-text {
     font-size: 0.88rem;
   }

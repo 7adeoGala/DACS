@@ -20,7 +20,11 @@ export class App {
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
         const url = event.urlAfterRedirects || event.url;
-        this.isAuthRoute.set(url.startsWith('/login') || url.startsWith('/register'));
+        this.isAuthRoute.set(
+          url.startsWith('/login') ||
+          url.startsWith('/register') ||
+          url.startsWith('/forgot-password')
+        );
       }
     });
 

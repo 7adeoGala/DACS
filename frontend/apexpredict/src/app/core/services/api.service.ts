@@ -122,7 +122,8 @@ export class ApiService {
     this.http.get(`${this.base}/backendping`).pipe(catchError(() => of(null))).subscribe();
     this.http.get(`${this.base}/ping`).pipe(catchError(() => of(null))).subscribe();
 
-    // 2. Despertar Keycloak inmediatamente en segundo plano
+    // 2. Despertar Keycloak inmediatamente en segundo plano con endpoints JSON
+    fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}/.well-known/openid-configuration`).catch(() => {});
     fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}`, { mode: 'no-cors' }).catch(() => {});
 
     // 3. Despertar conector F1 en segundo plano

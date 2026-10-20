@@ -20,6 +20,12 @@ export const routes: Routes = [
       import('./features/auth/register.component').then((m) => m.RegisterComponent),
   },
   {
+    path: 'forgot-password',
+    title: 'Recuperar Contraseña · ApexPredict',
+    loadComponent: () =>
+      import('./features/auth/forgot-password.component').then((m) => m.ForgotPasswordComponent),
+  },
+  {
     path: 'dashboard',
     title: 'Mis ligas · ApexPredict',
     canActivate: [requireRole('player', 'admin')],

@@ -1,7 +1,7 @@
 import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthHeaderComponent } from './auth-header.component';
 import { AuthService } from '../../core/auth/auth.service';
 import { ApiService } from '../../core/services/api.service';
@@ -60,6 +60,12 @@ import { ApiService } from '../../core/services/api.service';
             @if (errorMessage()) {
               <div class="alert-message error">
                 {{ errorMessage() }}
+              </div>
+            }
+
+            @if (successMessage()) {
+              <div class="alert-message success">
+                {{ successMessage() }}
               </div>
             }
 
@@ -134,7 +140,7 @@ import { ApiService } from '../../core/services/api.service';
                     name="rememberMe" />
                   <span>Recordarme en este equipo</span>
                 </label>
-                <a href="https://dacs-3-dswy.onrender.com/auth/realms/apexpredict/login-actions/reset-credentials" target="_blank" rel="noopener" class="link-muted">¿Olvidaste tu contraseña?</a>
+                <a routerLink="/forgot-password" class="link-muted">¿Olvidaste tu contraseña?</a>
               </div>
 
               <!-- BOTÓN PRINCIPAL -->
@@ -175,6 +181,7 @@ import { ApiService } from '../../core/services/api.service';
 export class LoginComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly api = inject(ApiService);
 
   readonly rememberMe = signal<boolean>(
@@ -189,9 +196,14 @@ export class LoginComponent implements OnInit {
   readonly showPassword = signal<boolean>(false);
   readonly isLoading = signal<boolean>(false);
   readonly errorMessage = signal<string>('');
+  readonly successMessage = signal<string>('');
 
   ngOnInit() {
     this.prewarm();
+    const reset = this.route.snapshot.queryParams['reset'];
+    if (reset === 'success') {
+      this.successMessage.set('¡Tu contraseña fue restablecida con éxito! Ya podés iniciar sesión con tu nueva clave.');
+    }
   }
 
   prewarm() {
