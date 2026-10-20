@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, OnDestroy, effect } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
@@ -10,7 +10,8 @@ import {
   LeaderboardEntry,
   CircuitInfo,
   F1_CIRCUITS,
-  DEFAULT_CIRCUIT
+  DEFAULT_CIRCUIT,
+  F1_DRIVERS
 } from '../../core/models/api.models';
 
 export interface SessionSchedule {
@@ -29,6 +30,14 @@ export interface WeatherData {
   rainRisk: string;
   radarStatus: string;
   conditionDesc: string;
+}
+
+export interface PaddockStandingUser {
+  rank: string;
+  username: string;
+  points: number;
+  predictionsCount: number;
+  isCurrentUser: boolean;
 }
 
 @Component({
@@ -121,15 +130,42 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       });
   });
 
-  // Mini Leaderboard de la Liga / Global
-  readonly paddockStandings = signal([
-    { rank: 'P1', username: 'piloto_1', points: 0, predictionsCount: 0, isCurrentUser: false },
-    { rank: 'P2', username: 'piloto_2', points: 0, predictionsCount: 0, isCurrentUser: false },
-    { rank: 'P3', username: 'piloto_3', points: 0, predictionsCount: 0, isCurrentUser: false },
-    { rank: 'P4', username: 'piloto_4', points: 0, predictionsCount: 0, isCurrentUser: false }
-  ]);
+  // Mini Leaderboard de la Liga / Global real (sin mocks)
+  readonly paddockStandings = signal<PaddockStandingUser[]>([]);
+  readonly isLoadingLeaderboard = signal<boolean>(false);
 
   readonly isLocked = computed(() => this.session()?.isLocked ?? false);
+
+  constructor() {
+    // 1. Restaurar de inmediato caché local de clasificación si existe
+    const cachedLb = this.api.getCachedGlobalLeaderboard?.();
+    if (cachedLb && cachedLb.length > 0) {
+      this.populatePaddockStandings(cachedLb);
+    }
+
+    // 2. Reaccionar automáticamente en cuanto el usuario se autentique o sincronice token
+    effect(() => {
+      const isAuth = this.auth.authenticated();
+      const username = this.auth.username();
+
+      if (isAuth) {
+        // Restaurar caché de pronóstico de inmediato (evita estado "Sin definir")
+        const cachedPred = this.api.getCachedPrediction?.(username);
+        if (cachedPred && (cachedPred.predictionId || (cachedPred.podium && cachedPred.podium.length > 0))) {
+          this.currentPrediction.set(cachedPred);
+          if (cachedPred.duelDriverPick) {
+            this.duelPick.set(cachedPred.duelDriverPick as 'norris' | 'verstappen');
+          }
+        }
+
+        // Cargar pronóstico fresco desde el backend
+        this.loadUserPrediction(username);
+
+        // Cargar tabla de líderes con autenticación
+        this.loadLeaderboard();
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.loadData();
@@ -168,38 +204,40 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         this.fetchRealWeather('30.1328', '-97.6411');
       }
     });
+  }
 
-    if (this.auth.authenticated()) {
-      this.api.currentPrediction().subscribe({
-        next: (predData) => {
+  private loadUserPrediction(username?: string): void {
+    this.api.currentPrediction(username).subscribe({
+      next: (predData) => {
+        if (predData) {
           this.currentPrediction.set(predData);
-          if (predData?.duelDriverPick) {
+          if (predData.duelDriverPick) {
             this.duelPick.set(predData.duelDriverPick as 'norris' | 'verstappen');
           }
-        },
-        error: () => {}
-      });
-    }
-
-    // Sincronizar mini leaderboard con usuarios reales (restaurando caché previo inmediatamente)
-    const cachedEntries = this.api.getCachedGlobalLeaderboard();
-    if (cachedEntries && cachedEntries.length > 0) {
-      this.populatePaddockStandings(cachedEntries);
-    }
-
-    this.api.globalLeaderboard().subscribe({
-      next: (entries: LeaderboardEntry[]) => {
-        if (entries && entries.length > 0) {
-          this.populatePaddockStandings(entries);
         }
       },
       error: () => {}
     });
   }
 
+  private loadLeaderboard(): void {
+    this.isLoadingLeaderboard.set(true);
+    this.api.globalLeaderboard().subscribe({
+      next: (entries: LeaderboardEntry[]) => {
+        this.isLoadingLeaderboard.set(false);
+        if (entries && entries.length > 0) {
+          this.populatePaddockStandings(entries);
+        }
+      },
+      error: () => {
+        this.isLoadingLeaderboard.set(false);
+      }
+    });
+  }
+
   private populatePaddockStandings(entries: LeaderboardEntry[]): void {
     const currentUsername = this.auth.username()?.toLowerCase();
-    const mapped = entries.slice(0, 4).map((e) => {
+    const mapped: PaddockStandingUser[] = entries.slice(0, 4).map((e) => {
       const isMe = currentUsername ? e.displayName.toLowerCase().includes(currentUsername) : false;
       return {
         rank: `P${e.rank}`,
@@ -210,6 +248,12 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       };
     });
     this.paddockStandings.set(mapped);
+  }
+
+  formatDriverName(id: string | null | undefined): string {
+    if (!id) return '-';
+    const found = F1_DRIVERS.find(d => d.id.toLowerCase() === id.toLowerCase());
+    return found ? found.name.toUpperCase() : id.toUpperCase();
   }
 
   /**

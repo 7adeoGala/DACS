@@ -181,22 +181,22 @@
           <div class="pred-summary-list">
             @if (hasAnyPodiumPicks()) {
               @if (currentPrediction()?.podium?.[0]) {
-                <div class="summary-item"><span class="lbl">P1 CARRERA:</span><span class="val-code gold">{{ currentPrediction()!.podium[0].toUpperCase() }}</span></div>
+                <div class="summary-item"><span class="lbl">P1 CARRERA:</span><span class="val-code gold">{{ formatDriverName(currentPrediction()!.podium[0]) }}</span></div>
               }
               @if (currentPrediction()?.podium?.[1]) {
-                <div class="summary-item"><span class="lbl">P2 SEGUNDO:</span><span class="val-code silver">{{ currentPrediction()!.podium[1].toUpperCase() }}</span></div>
+                <div class="summary-item"><span class="lbl">P2 SEGUNDO:</span><span class="val-code silver">{{ formatDriverName(currentPrediction()!.podium[1]) }}</span></div>
               }
               @if (currentPrediction()?.podium?.[2]) {
-                <div class="summary-item"><span class="lbl">P3 TERCERO:</span><span class="val-code bronze">{{ currentPrediction()!.podium[2].toUpperCase() }}</span></div>
+                <div class="summary-item"><span class="lbl">P3 TERCERO:</span><span class="val-code bronze">{{ formatDriverName(currentPrediction()!.podium[2]) }}</span></div>
               }
             } @else {
               <div class="summary-item"><span class="lbl">PODIO:</span><span class="val-code cyan">Sin definir</span></div>
             }
             @if (currentPrediction()?.polePositionDriverId) {
-              <div class="summary-item"><span class="lbl">POLE:</span><span class="val-code cyan">{{ currentPrediction()!.polePositionDriverId!.toUpperCase() }}</span></div>
+              <div class="summary-item"><span class="lbl">POLE:</span><span class="val-code cyan">{{ formatDriverName(currentPrediction()!.polePositionDriverId!) }}</span></div>
             }
             @if (currentPrediction()?.duelDriverPick) {
-              <div class="summary-item"><span class="lbl">DUELO:</span><span class="val-code cyan">{{ currentPrediction()!.duelDriverPick!.toUpperCase() }}</span></div>
+              <div class="summary-item"><span class="lbl">DUELO:</span><span class="val-code cyan">{{ formatDriverName(currentPrediction()!.duelDriverPick!) }}</span></div>
             }
           </div>
           <a routerLink="/dashboard" class="btn-user-dashboard">Ir a mi Panel Completo</a>
@@ -204,7 +204,12 @@
 
         <!-- Mini Leaderboard Real de Usuarios -->
         <div class="league-preview-card">
-          <h4>Tabla de jugadores global</h4>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
+            <h4 style="margin: 0;">Tabla de jugadores global</h4>
+            @if (isLoadingLeaderboard()) {
+              <span class="dim" style="font-size: 0.75rem;">Sincronizando...</span>
+            }
+          </div>
           <div class="standings-mini-list">
             @for (u of paddockStandings(); track u.username) {
               <div class="standings-mini-item" [class.highlight-me]="u.isCurrentUser">
@@ -217,9 +222,17 @@
                 </div>
                 <span class="standings-pts">{{ u.points }} pts</span>
               </div>
+            } @empty {
+              <p class="dim" style="padding: 1.5rem 0; text-align: center; font-size: 0.85rem; margin: 0;">
+                @if (isLoadingLeaderboard()) {
+                  Cargando clasificación global…
+                } @else {
+                  Aún no hay puntuaciones en la tabla global.
+                }
+              </p>
             }
           </div>
-          <a routerLink="/dashboard" [queryParams]="{ tab: 'global' }" class="btn-view-table">Ver Campeonato Completo</a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'posiciones' }" class="btn-view-table">Ver Campeonato Completo</a>
         </div>
       </aside>
     } @else {

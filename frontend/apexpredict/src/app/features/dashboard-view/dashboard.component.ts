@@ -3235,6 +3235,8 @@ export class DashboardComponent implements OnInit {
         this.activeTab.set('ligas');
       } else if (tabParam === 'posiciones' || tabParam === 'global') {
         this.activeTab.set('posiciones');
+        this.posicionesSubTab.set('jugadores');
+        this.loadGlobalLeaderboard();
         this.loadF1Standings();
       } else if (tabParam === 'historial') {
         this.activeTab.set('historial');
