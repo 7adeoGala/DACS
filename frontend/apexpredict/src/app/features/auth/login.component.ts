@@ -84,7 +84,7 @@ import { ApiService } from '../../core/services/api.service';
                     (ngModelChange)="username.set($event)" 
                     (focus)="prewarm()"
                     name="username" 
-                    placeholder="tadeogala7" 
+                    placeholder="ej: piloto_f1" 
                     required 
                     autocomplete="username" />
                 </div>
@@ -181,11 +181,13 @@ export class LoginComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
 
-  readonly rememberMe = signal<boolean>(true);
+  readonly rememberMe = signal<boolean>(
+    typeof localStorage !== 'undefined' ? !!localStorage.getItem('apex_remembered_username') : false
+  );
   readonly username = signal<string>(
     typeof localStorage !== 'undefined'
-      ? (localStorage.getItem('apex_remembered_username') || localStorage.getItem('apex_username') || 'tadeogala7')
-      : 'tadeogala7'
+      ? (localStorage.getItem('apex_remembered_username') || '')
+      : ''
   );
   readonly password = signal<string>('');
   readonly showPassword = signal<boolean>(false);
@@ -213,12 +215,13 @@ export class LoginComponent implements OnInit {
     this.errorMessage.set('');
 
     try {
-      const ok = await this.auth.loginWithCredentials(user, pwd);
+      const ok = await this.auth.loginWithCredentials(user, pwd, this.rememberMe());
       if (ok) {
         if (this.rememberMe()) {
           localStorage.setItem('apex_remembered_username', user);
         } else {
           localStorage.removeItem('apex_remembered_username');
+          localStorage.removeItem('apex_username');
         }
         this.router.navigate(['/dashboard']);
       } else {

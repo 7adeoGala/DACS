@@ -46,7 +46,7 @@ async function main() {
     addReadTokenRoleOnCreate: false,
     authenticateByDefault: false,
     linkOnly: false,
-    firstBrokerLoginFlowAlias: 'first broker login',
+    firstBrokerLoginFlowAlias: 'first broker login auto link',
     config: {
       clientId: clientId.trim(),
       clientSecret: clientSecret.trim(),

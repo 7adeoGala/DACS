@@ -172,22 +172,31 @@
             <span class="sync-badge">● Sincronizado</span>
           </div>
           <div class="user-info-row">
-            <div class="user-avatar-initials">{{ (auth.username() || 'TG').slice(0, 2).toUpperCase() }}</div>
+            <div class="user-avatar-initials">{{ (auth.username() || 'AP').slice(0, 2).toUpperCase() }}</div>
             <div>
               <h4>{{ auth.username() }}</h4>
               <span class="user-handle">{{ auth.username() }} · Apex Paddock</span>
             </div>
           </div>
           <div class="pred-summary-list">
-            @if (currentPrediction()?.podium && currentPrediction()!.podium.length >= 3) {
-              <div class="summary-item"><span class="lbl">P1 CARRERA:</span><span class="val-code gold">{{ currentPrediction()!.podium[0].toUpperCase() }}</span></div>
-              <div class="summary-item"><span class="lbl">P2 SEGUNDO:</span><span class="val-code silver">{{ currentPrediction()!.podium[1].toUpperCase() }}</span></div>
-              <div class="summary-item"><span class="lbl">P3 TERCERO:</span><span class="val-code bronze">{{ currentPrediction()!.podium[2].toUpperCase() }}</span></div>
+            @if (hasAnyPodiumPicks()) {
+              @if (currentPrediction()?.podium?.[0]) {
+                <div class="summary-item"><span class="lbl">P1 CARRERA:</span><span class="val-code gold">{{ currentPrediction()!.podium[0].toUpperCase() }}</span></div>
+              }
+              @if (currentPrediction()?.podium?.[1]) {
+                <div class="summary-item"><span class="lbl">P2 SEGUNDO:</span><span class="val-code silver">{{ currentPrediction()!.podium[1].toUpperCase() }}</span></div>
+              }
+              @if (currentPrediction()?.podium?.[2]) {
+                <div class="summary-item"><span class="lbl">P3 TERCERO:</span><span class="val-code bronze">{{ currentPrediction()!.podium[2].toUpperCase() }}</span></div>
+              }
             } @else {
-              <div class="summary-item"><span class="lbl">ESTADO:</span><span class="val-code cyan">Pendiente de completar</span></div>
+              <div class="summary-item"><span class="lbl">PODIO:</span><span class="val-code cyan">Sin definir</span></div>
             }
             @if (currentPrediction()?.polePositionDriverId) {
               <div class="summary-item"><span class="lbl">POLE:</span><span class="val-code cyan">{{ currentPrediction()!.polePositionDriverId!.toUpperCase() }}</span></div>
+            }
+            @if (currentPrediction()?.duelDriverPick) {
+              <div class="summary-item"><span class="lbl">DUELO:</span><span class="val-code cyan">{{ currentPrediction()!.duelDriverPick!.toUpperCase() }}</span></div>
             }
           </div>
           <a routerLink="/dashboard" class="btn-user-dashboard">Ir a mi Panel Completo</a>

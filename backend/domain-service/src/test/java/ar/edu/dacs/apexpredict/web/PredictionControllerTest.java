@@ -85,4 +85,31 @@ class PredictionControllerTest {
         assertEquals(423, ex.getStatusCode().value());
         assertTrue(ex.getReason().contains("Lock Time"));
     }
+
+    @Test
+    @DisplayName("Permite guardar predicción incompleta o con podio vacío")
+    void allowsIncompleteAndEmptyPredictionSubmission() {
+        UUID sessionId = UUID.randomUUID();
+        var request = new PredictionController.SubmitPredictionDto(
+            List.of(),
+            null,
+            null,
+            0,
+            0
+        );
+
+        when(predictionService.saveOrUpdatePrediction(anyString(), anyString(), eq(sessionId), any()))
+            .thenReturn(new PredictionService.PredictionDetailView(
+                UUID.randomUUID(), sessionId, "US GP", "COTA",
+                Instant.now().plusSeconds(3600), false,
+                List.of(), null, null,
+                0, 0, null, Instant.now(),
+                "norris", "russell"
+            ));
+
+        var response = controller.submitPrediction(jwt, sessionId, request);
+        assertNotNull(response);
+        assertEquals(sessionId, response.sessionId());
+        assertTrue(response.podium().isEmpty());
+    }
 }

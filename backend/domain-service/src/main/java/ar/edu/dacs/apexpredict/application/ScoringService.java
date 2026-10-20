@@ -67,7 +67,7 @@ public class ScoringService {
         // 2. Pole position (4 puntos)
         boolean poleHit = false;
         int polePoints = 0;
-        if (prediction.getPolePositionDriverId() != null && result.getPolePositionDriverId() != null) {
+        if (prediction.getPolePositionDriverId() != null && !prediction.getPolePositionDriverId().isBlank() && result.getPolePositionDriverId() != null) {
             if (prediction.getPolePositionDriverId().equalsIgnoreCase(result.getPolePositionDriverId())) {
                 poleHit = true;
                 polePoints = 4;
@@ -78,7 +78,7 @@ public class ScoringService {
         boolean duelHit = false;
         int duelPoints = 0;
         String duelWinner = resolveDuelWinner(result, matchup);
-        if (prediction.getDuelDriverPick() != null && duelWinner != null) {
+        if (prediction.getDuelDriverPick() != null && !prediction.getDuelDriverPick().isBlank() && duelWinner != null) {
             if (prediction.getDuelDriverPick().equalsIgnoreCase(duelWinner)) {
                 duelHit = true;
                 duelPoints = 3;
@@ -160,7 +160,8 @@ public class ScoringService {
         if (predictedPodium == null || actualClassification == null) return 0;
         int hits = 0;
         for (int i = 0; i < 3 && i < predictedPodium.size() && i < actualClassification.size(); i++) {
-            if (predictedPodium.get(i).equalsIgnoreCase(actualClassification.get(i))) {
+            String pick = predictedPodium.get(i);
+            if (pick != null && !pick.isBlank() && pick.equalsIgnoreCase(actualClassification.get(i))) {
                 hits++;
             }
         }

@@ -48,6 +48,10 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   // Estado reactivo con Signals
   readonly session = signal<NextSession | null>(null);
   readonly currentPrediction = signal<PredictionDetail | null>(null);
+  readonly hasAnyPodiumPicks = computed(() => {
+    const p = this.currentPrediction()?.podium;
+    return !!(p && p.some(d => !!d && d.trim().length > 0));
+  });
   readonly isLoading = signal<boolean>(true);
 
   // Meteorología Real (Open-Meteo)
@@ -119,10 +123,10 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
 
   // Mini Leaderboard de la Liga / Global
   readonly paddockStandings = signal([
-    { rank: 'P1', username: 'demo-player', points: 0, predictionsCount: 0, isCurrentUser: false },
-    { rank: 'P2', username: 'tadeogala7', points: 0, predictionsCount: 0, isCurrentUser: true },
-    { rank: 'P3', username: 'martin', points: 0, predictionsCount: 0, isCurrentUser: false },
-    { rank: 'P4', username: 'geroalu', points: 0, predictionsCount: 0, isCurrentUser: false }
+    { rank: 'P1', username: 'piloto_1', points: 0, predictionsCount: 0, isCurrentUser: false },
+    { rank: 'P2', username: 'piloto_2', points: 0, predictionsCount: 0, isCurrentUser: false },
+    { rank: 'P3', username: 'piloto_3', points: 0, predictionsCount: 0, isCurrentUser: false },
+    { rank: 'P4', username: 'piloto_4', points: 0, predictionsCount: 0, isCurrentUser: false }
   ]);
 
   readonly isLocked = computed(() => this.session()?.isLocked ?? false);

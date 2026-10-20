@@ -77,5 +77,51 @@ describe('Formulario de ligas', () => {
     comp.createLeague();
     expect(api.createLeague).not.toHaveBeenCalled();
   });
+
+  it('permite guardar predicciones incompletas o con posiciones vacias', () => {
+    const { fixture, api } = setup();
+    const comp = fixture.componentInstance;
+    comp.activeTab.set('pronostico');
+
+    // Inicialmente vacio: canSavePrediction es true (permite guardar predicciones vacias)
+    expect(comp.canSavePrediction()).toBe(true);
+
+    // Selecciona solo P1
+    comp.p1DriverId.set('norris');
+    expect(comp.canSavePrediction()).toBe(true);
+    comp.savePrediction();
+
+    expect(api.submitPrediction).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        podium: ['norris', '', ''],
+        polePositionDriverId: null,
+        duelDriverPick: null
+      }),
+      'player'
+    );
+  });
+
+  it('permite guardar predicciones completamente vacias', () => {
+    const { fixture, api } = setup();
+    const comp = fixture.componentInstance;
+    comp.activeTab.set('pronostico');
+    comp.p1DriverId.set('');
+    comp.p2DriverId.set('');
+    comp.p3DriverId.set('');
+
+    expect(comp.canSavePrediction()).toBe(true);
+    comp.savePrediction();
+
+    expect(api.submitPrediction).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        podium: [],
+        polePositionDriverId: null,
+        duelDriverPick: null
+      }),
+      'player'
+    );
+  });
 });
 

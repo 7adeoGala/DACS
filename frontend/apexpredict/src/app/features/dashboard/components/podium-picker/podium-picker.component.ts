@@ -27,9 +27,9 @@ export class PodiumPickerComponent {
   readonly drivers = F1_DRIVERS;
 
   // Estado del podio (Signals / Models para permitir binding bidireccional)
-  readonly p1DriverId = model<string>('verstappen');
-  readonly p2DriverId = model<string>('norris');
-  readonly p3DriverId = model<string>('leclerc');
+  readonly p1DriverId = model<string>('');
+  readonly p2DriverId = model<string>('');
+  readonly p3DriverId = model<string>('');
 
   // Estado del modal de selección
   readonly isModalOpen = signal<boolean>(false);
@@ -64,6 +64,7 @@ export class PodiumPickerComponent {
   });
 
   getDriver(id: string): F1Driver | undefined {
+    if (!id) return undefined;
     return this.drivers.find(d => d.id === id);
   }
 
@@ -77,6 +78,12 @@ export class PodiumPickerComponent {
     this.isModalOpen.set(false);
   }
 
+  clearSlot(slot: 'p1' | 'p2' | 'p3') {
+    if (slot === 'p1') this.p1DriverId.set('');
+    else if (slot === 'p2') this.p2DriverId.set('');
+    else if (slot === 'p3') this.p3DriverId.set('');
+  }
+
   /**
    * Lógica de Auto-intercambio (auto-swap):
    * Si seleccionas a un piloto que ya estaba en otro puesto del podio,
@@ -84,6 +91,12 @@ export class PodiumPickerComponent {
    */
   selectDriver(driverId: string) {
     const slot = this.activeSlot();
+    if (!driverId) {
+      this.clearSlot(slot);
+      this.closeModal();
+      return;
+    }
+
     const currentP1 = this.p1DriverId();
     const currentP2 = this.p2DriverId();
     const currentP3 = this.p3DriverId();
@@ -106,13 +119,19 @@ export class PodiumPickerComponent {
   }
 
   resetPodium() {
-    this.p1DriverId.set('verstappen');
-    this.p2DriverId.set('norris');
-    this.p3DriverId.set('leclerc');
+    this.p1DriverId.set('');
+    this.p2DriverId.set('');
+    this.p3DriverId.set('');
   }
 
   handleModalDriverSelected(event: { slot: PodiumSlot; driverId: string }) {
-    this.selectDriver(event.driverId);
+    if (!event.driverId) {
+      if (event.slot === 'p1' || event.slot === 'p2' || event.slot === 'p3') {
+        this.clearSlot(event.slot);
+      }
+    } else {
+      this.selectDriver(event.driverId);
+    }
   }
 
   save() {

@@ -143,7 +143,25 @@ export class DriverPickerModalComponent {
     return null;
   }
 
+  isCurrentSlotFilled(): boolean {
+    const slot = this.currentSlot();
+    if (slot === 'p1') return !!this.p1DriverId();
+    if (slot === 'p2') return !!this.p2DriverId();
+    if (slot === 'p3') return !!this.p3DriverId();
+    if (slot === 'pole') return !!this.poleDriverId();
+    return false;
+  }
+
+  clearCurrentSlot() {
+    this.onDriverSelected.emit({ slot: this.currentSlot(), driverId: '' });
+    this.close();
+  }
+
   selectDriver(driverId: string) {
+    if (this.isCurrentInSlot(driverId)) {
+      this.clearCurrentSlot();
+      return;
+    }
     this.onDriverSelected.emit({ slot: this.currentSlot(), driverId });
     this.close();
   }

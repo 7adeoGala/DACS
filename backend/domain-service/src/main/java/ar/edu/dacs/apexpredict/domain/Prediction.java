@@ -26,7 +26,7 @@ public class Prediction extends BaseEntity {
         joinColumns = @JoinColumn(name = "prediction_id")
     )
     @OrderColumn(name = "position")
-    @Column(name = "driver_id", nullable = false, length = 64)
+    @Column(name = "driver_id", length = 64)
     private List<String> podium = new ArrayList<>();
 
     @Column(name = "pole_position_driver_id", length = 64)
@@ -64,7 +64,7 @@ public class Prediction extends BaseEntity {
         this.member = Objects.requireNonNull(member);
         this.user = member.getUser();
         this.session = Objects.requireNonNull(session);
-        this.podium = new ArrayList<>(podium);
+        this.podium = normalizePodium(podium);
         this.submittedAt = Objects.requireNonNull(now);
     }
 
@@ -85,9 +85,9 @@ public class Prediction extends BaseEntity {
         validatePodium(podium);
         this.user = Objects.requireNonNull(user, "El usuario es obligatorio.");
         this.session = Objects.requireNonNull(session, "La sesión es obligatoria.");
-        this.podium = new ArrayList<>(podium);
-        this.polePositionDriverId = polePositionDriverId;
-        this.duelDriverPick = duelDriverPick;
+        this.podium = normalizePodium(podium);
+        this.polePositionDriverId = polePositionDriverId != null && !polePositionDriverId.isBlank() ? polePositionDriverId.trim() : null;
+        this.duelDriverPick = duelDriverPick != null && !duelDriverPick.isBlank() ? duelDriverPick.trim() : null;
         this.safetyCarCount = safetyCarCount;
         this.dnfCount = dnfCount;
         this.submittedAt = Objects.requireNonNull(now);
@@ -107,9 +107,9 @@ public class Prediction extends BaseEntity {
         validateLockTime(this.session, now);
         validatePodium(podium);
         this.podium.clear();
-        this.podium.addAll(podium);
-        this.polePositionDriverId = polePositionDriverId;
-        this.duelDriverPick = duelDriverPick;
+        this.podium.addAll(normalizePodium(podium));
+        this.polePositionDriverId = polePositionDriverId != null && !polePositionDriverId.isBlank() ? polePositionDriverId.trim() : null;
+        this.duelDriverPick = duelDriverPick != null && !duelDriverPick.isBlank() ? duelDriverPick.trim() : null;
         this.safetyCarCount = safetyCarCount;
         this.dnfCount = dnfCount;
         this.submittedAt = now;
@@ -127,10 +127,28 @@ public class Prediction extends BaseEntity {
     }
 
     private static void validatePodium(List<String> podium) {
-        if (podium == null || podium.size() != 3 || new HashSet<>(podium).size() != 3 ||
-            podium.stream().anyMatch(id -> id == null || id.isBlank() || id.length() > 64)) {
-            throw new IllegalArgumentException("El podio requiere tres pilotos distintos.");
+        if (podium == null) return;
+        if (podium.size() > 3) {
+            throw new IllegalArgumentException("El podio no puede tener más de tres posiciones.");
         }
+        List<String> nonBlankDrivers = podium.stream()
+            .filter(id -> id != null && !id.isBlank())
+            .toList();
+        if (new HashSet<>(nonBlankDrivers).size() != nonBlankDrivers.size()) {
+            throw new IllegalArgumentException("El podio requiere pilotos distintos.");
+        }
+        for (String id : nonBlankDrivers) {
+            if (id.length() > 64) {
+                throw new IllegalArgumentException("El identificador del piloto es demasiado largo.");
+            }
+        }
+    }
+
+    private static List<String> normalizePodium(List<String> podium) {
+        if (podium == null || podium.stream().allMatch(s -> s == null || s.isBlank())) {
+            return new ArrayList<>();
+        }
+        return new ArrayList<>(podium.stream().map(s -> s == null ? "" : s.trim()).toList());
     }
 
     public User getUser() { return user; }

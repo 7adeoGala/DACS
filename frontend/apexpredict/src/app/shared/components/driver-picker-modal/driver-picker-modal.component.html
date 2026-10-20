@@ -8,9 +8,14 @@
         <div class="header-titles">
           <div class="slot-badge-row">
             <h3 class="picker-title">{{ getSlotTitle() }}</h3>
+            @if (isCurrentSlotFilled()) {
+              <button type="button" class="btn-clear-slot" (click)="clearCurrentSlot()" title="Dejar este puesto vacío">
+                ✕ Vaciar puesto
+              </button>
+            }
           </div>
           <p class="picker-subtitle">
-            {{ currentSlot() === 'pole' ? 'Elegí el piloto para la Pole Position.' : 'Elegí el piloto. Si ya fue asignado a otro puesto del podio, se intercambiarán automáticamente.' }}
+            {{ currentSlot() === 'pole' ? 'Elegí el piloto para la Pole Position (o hacé clic en el seleccionado para desmarcarlo).' : 'Elegí el piloto. Si ya fue asignado se intercambiará, o hacé clic en el elegido para dejar el puesto vacío.' }}
           </p>
         </div>
         <button type="button" class="picker-close-btn" (click)="close()" aria-label="Cerrar modal">✕</button>
@@ -85,7 +90,7 @@
                 <!-- INDICADORES DINÁMICOS DE ACCIÓN / AUTO-SWAP -->
                 <div class="dtc-action">
                   @if (isCurrentInSlot(d.id)) {
-                    <span class="status-chip current">Seleccionado en {{ getSlotShortName() }}</span>
+                    <span class="status-chip current">Seleccionado (Clic para quitar)</span>
                   } @else if (isDriverInAnotherSlot(d.id)) {
                     <span class="status-chip swap">En {{ getDriverSlotName(d.id) }} (Intercambiar)</span>
                   } @else {

@@ -54,6 +54,29 @@
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.btn-clear-slot {
+  background: rgba(225, 6, 0, 0.15);
+  border: 1px solid rgba(225, 6, 0, 0.4);
+  color: #ff6b6b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-clear-slot:hover {
+  background: rgba(225, 6, 0, 0.3);
+  border-color: rgba(225, 6, 0, 0.7);
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .slot-medal-badge {

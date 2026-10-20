@@ -209,7 +209,7 @@ public class PredictionService {
         WeekendMatchup matchup = matchupService.getOrGenerateMatchup(session);
 
         // Validación de pick de duelo
-        if (request.duelDriverPick() != null && !matchup.involvesDriver(request.duelDriverPick())) {
+        if (request.duelDriverPick() != null && !request.duelDriverPick().isBlank() && !matchup.involvesDriver(request.duelDriverPick().trim())) {
             throw new IllegalArgumentException(String.format(
                 "El piloto de duelo '%s' no coincide con los asignados (%s vs %s).",
                 request.duelDriverPick(), matchup.getDriver1Id(), matchup.getDriver2Id()

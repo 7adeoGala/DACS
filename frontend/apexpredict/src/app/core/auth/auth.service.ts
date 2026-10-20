@@ -38,8 +38,21 @@ export class AuthService {
       this.authenticated.set(isAuth);
       const parsed = this.keycloak.tokenParsed || (this.keycloak.token ? this.decodeJwt(this.keycloak.token) : null);
       if (parsed) {
-        this.username.set(parsed['preferred_username'] || localStorage.getItem('apex_username') || '');
+        this.username.set(parsed['preferred_username'] || localStorage.getItem('apex_username') || sessionStorage.getItem('apex_username') || '');
         this.roles.set(parsed.realm_access?.roles ?? []);
+      }
+      if (this.keycloak.authenticated && this.keycloak.token) {
+        sessionStorage.setItem('apex_token', this.keycloak.token);
+        localStorage.setItem('apex_token', this.keycloak.token);
+        if (this.keycloak.refreshToken) {
+          sessionStorage.setItem('apex_refresh_token', this.keycloak.refreshToken);
+          localStorage.setItem('apex_refresh_token', this.keycloak.refreshToken);
+        }
+        const u = parsed?.['preferred_username'];
+        if (u) {
+          localStorage.setItem('apex_username', u);
+        }
+        this.provisionUserInBackend(this.keycloak.token);
       }
     };
     this.keycloak.onAuthSuccess = sync;
@@ -49,8 +62,10 @@ export class AuthService {
       this.keycloak.clearToken();
       sessionStorage.removeItem('apex_token');
       sessionStorage.removeItem('apex_refresh_token');
+      sessionStorage.removeItem('apex_username');
       localStorage.removeItem('apex_token');
       localStorage.removeItem('apex_refresh_token');
+      localStorage.removeItem('apex_username');
       sync();
     };
 
@@ -90,6 +105,10 @@ export class AuthService {
         await initPromise;
         (this.keycloak as any).timeSkew = 0;
         sync();
+        if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
+          const cleanUrl = window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
       } catch (err) {
         console.warn('Keycloak no disponible para SSO silencioso:', err);
         if (!this.authenticated()) {
@@ -120,7 +139,7 @@ export class AuthService {
     return this.authenticated() && roles.some((role) => this.roles().includes(role));
   }
 
-  async loginWithCredentials(username: string, password: string): Promise<boolean> {
+  async loginWithCredentials(username: string, password: string, rememberMe = true): Promise<boolean> {
     try {
       const tokenUrl = `${environment.keycloak.url}/realms/${environment.keycloak.realm}/protocol/openid-connect/token`;
       const body = new URLSearchParams({
@@ -161,16 +180,26 @@ export class AuthService {
       }
 
       sessionStorage.setItem('apex_token', data.access_token);
-      localStorage.setItem('apex_token', data.access_token);
       if (data.refresh_token) {
         sessionStorage.setItem('apex_refresh_token', data.refresh_token);
-        localStorage.setItem('apex_refresh_token', data.refresh_token);
+      }
+
+      const finalUsername = (this.keycloak as any).tokenParsed?.['preferred_username'] || username;
+
+      if (rememberMe) {
+        localStorage.setItem('apex_token', data.access_token);
+        if (data.refresh_token) {
+          localStorage.setItem('apex_refresh_token', data.refresh_token);
+        }
+        localStorage.setItem('apex_username', finalUsername);
+      } else {
+        localStorage.removeItem('apex_token');
+        localStorage.removeItem('apex_refresh_token');
+        localStorage.removeItem('apex_username');
       }
 
       this.authenticated.set(true);
-      const finalUsername = (this.keycloak as any).tokenParsed?.['preferred_username'] || username;
       this.username.set(finalUsername);
-      localStorage.setItem('apex_username', finalUsername);
       this.roles.set((this.keycloak as any).realmAccess?.roles ?? []);
 
       // Provisionar y registrar de inmediato el usuario en el backend (app_users)

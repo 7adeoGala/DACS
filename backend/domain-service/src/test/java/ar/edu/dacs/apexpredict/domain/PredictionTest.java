@@ -19,6 +19,14 @@ class PredictionTest {
     @Test void rejectsDuplicateDrivers() {
         assertThrows(IllegalArgumentException.class, () -> new Prediction(member(), session(start), List.of("norris", "norris", "leclerc"), start.minusSeconds(1)));
     }
+    @Test void allowsIncompletePodium() {
+        var pred = new Prediction(member(), session(start), List.of("norris", "", ""), start.minusSeconds(1));
+        assertEquals(List.of("norris", "", ""), pred.getPodium());
+    }
+    @Test void allowsEmptyPodium() {
+        var pred = new Prediction(member(), session(start), List.of(), start.minusSeconds(1));
+        assertTrue(pred.getPodium().isEmpty());
+    }
     @Test void rejectsAtStartAndWithUnknownStart() {
         assertThrows(IllegalStateException.class, () -> new Prediction(member(), session(start), List.of("a", "b", "c"), start));
         assertThrows(IllegalStateException.class, () -> new Prediction(member(), session(null), List.of("a", "b", "c"), start.minusSeconds(1)));

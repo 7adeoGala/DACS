@@ -9,6 +9,11 @@
         Tocá o hacé clic en cualquier posición para seleccionar al piloto desde la grilla interactiva.
       </p>
     </div>
+    @if (p1DriverId() || p2DriverId() || p3DriverId()) {
+      <button type="button" class="btn-clear-all-podium" (click)="resetPodium()" title="Vaciar todas las posiciones del podio">
+        Vaciar Podio
+      </button>
+    }
   </div>
 
   <!-- GRILLA PRINCIPAL DE 3 COLUMNAS EN FORMA DE PODIO F1 (P2 - P1 - P3) -->
@@ -42,6 +47,17 @@
           <div class="dtc-action">
             <span>Cambiar Piloto</span>
             <span class="action-icon">⇄</span>
+            <button type="button" class="btn-slot-remove" title="Quitar selección" (click)="$event.stopPropagation(); clearSlot('p2')">
+              ✕
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="driver-template-card empty-slot silver-slot" (click)="openDriverPicker('p2')">
+          <div class="dtc-empty-state">
+            <span class="empty-icon">+</span>
+            <span class="empty-text">Elegir 2° Puesto</span>
+            <span class="empty-hint">Click para seleccionar</span>
           </div>
         </div>
       }
@@ -88,6 +104,17 @@
           <div class="dtc-action">
             <span>Cambiar Piloto</span>
             <span class="action-icon">⇄</span>
+            <button type="button" class="btn-slot-remove" title="Quitar selección" (click)="$event.stopPropagation(); clearSlot('p1')">
+              ✕
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="driver-template-card empty-slot gold-slot" (click)="openDriverPicker('p1')">
+          <div class="dtc-empty-state">
+            <span class="empty-icon">+</span>
+            <span class="empty-text">Elegir Ganador</span>
+            <span class="empty-hint">Click para seleccionar</span>
           </div>
         </div>
       }
@@ -125,6 +152,17 @@
           <div class="dtc-action">
             <span>Cambiar Piloto</span>
             <span class="action-icon">⇄</span>
+            <button type="button" class="btn-slot-remove" title="Quitar selección" (click)="$event.stopPropagation(); clearSlot('p3')">
+              ✕
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="driver-template-card empty-slot bronze-slot" (click)="openDriverPicker('p3')">
+          <div class="dtc-empty-state">
+            <span class="empty-icon">+</span>
+            <span class="empty-text">Elegir 3° Puesto</span>
+            <span class="empty-hint">Click para seleccionar</span>
           </div>
         </div>
       }

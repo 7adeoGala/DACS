@@ -1110,7 +1110,7 @@ export class NavbarComponent implements OnInit {
   });
 
   readonly savedInitials = computed(() => {
-    const name = this.savedDisplayName() || this.auth.username() || 'TG';
+    const name = this.savedDisplayName() || this.auth.username() || 'AP';
     const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();

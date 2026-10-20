@@ -237,6 +237,19 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   <div class="dtc-action">
                     <span>Cambiar Piloto</span>
                     <span class="action-icon">⇄</span>
+                    <button type="button" class="btn-slot-remove" title="Quitar selección" (click)="$event.stopPropagation(); poleDriverId.set('')">
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              } @else {
+                <div class="driver-template-card empty-slot pole-slot" 
+                     (click)="openDriverPicker('pole')"
+                     [class.disabled-card]="isLocked()">
+                  <div class="dtc-empty-state">
+                    <span class="empty-icon">+</span>
+                    <span class="empty-text">Elegir Poleman</span>
+                    <span class="empty-hint">Click para seleccionar</span>
                   </div>
                 </div>
               }
@@ -361,7 +374,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   [class.unselected]="duelWinnerId() && duelWinnerId() !== d1.id"
                   [style.--driver-team-color]="d1.teamColor"
                   [disabled]="isLocked()"
-                  (click)="duelWinnerId.set(d1.id)"
+                  (click)="toggleDuelWinner(d1.id)"
                   aria-label="Seleccionar a {{ d1.name }} como ganador del duelo">
                   <div class="ddc-top">
                     <span class="ddc-team-pill" [style.color]="d1.teamColor" [style.background]="d1.teamColor + '18'">
@@ -390,7 +403,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   [class.selected]="duelWinnerId() === matchupDriver1()"
                   [class.unselected]="duelWinnerId() && duelWinnerId() !== matchupDriver1()"
                   [disabled]="isLocked()"
-                  (click)="duelWinnerId.set(matchupDriver1())">
+                  (click)="toggleDuelWinner(matchupDriver1())">
                   <div class="ddc-name">{{ getDriverName(matchupDriver1()) }}</div>
                 </button>
               }
@@ -409,7 +422,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   [class.unselected]="duelWinnerId() && duelWinnerId() !== d2.id"
                   [style.--driver-team-color]="d2.teamColor"
                   [disabled]="isLocked()"
-                  (click)="duelWinnerId.set(d2.id)"
+                  (click)="toggleDuelWinner(d2.id)"
                   aria-label="Seleccionar a {{ d2.name }} como ganador del duelo">
                   <div class="ddc-top">
                     <span class="ddc-team-pill" [style.color]="d2.teamColor" [style.background]="d2.teamColor + '18'">
@@ -438,7 +451,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   [class.selected]="duelWinnerId() === matchupDriver2()"
                   [class.unselected]="duelWinnerId() && duelWinnerId() !== matchupDriver2()"
                   [disabled]="isLocked()"
-                  (click)="duelWinnerId.set(matchupDriver2())">
+                  (click)="toggleDuelWinner(matchupDriver2())">
                   <div class="ddc-name">{{ getDriverName(matchupDriver2()) }}</div>
                 </button>
               }
@@ -484,12 +497,16 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
             <button 
               class="button" 
               type="button" 
-              [disabled]="isPodiumDuplicate() || isSaving() || isLocked()" 
+              [disabled]="!canSavePrediction()" 
               (click)="savePrediction()">
               @if (isSaving()) {
                 <span>Sincronizando con base de datos…</span>
               } @else if (saveSuccess()) {
                 <span>¡Pronóstico Guardado en Servidor!</span>
+              } @else if (isLocked()) {
+                <span>Pronósticos Cerrados</span>
+              } @else if (isPodiumDuplicate()) {
+                <span>No podés repetir pilotos en el podio</span>
               } @else if (hasExistingPrediction()) {
                 <span>Actualizar Mi Pronóstico Oficial</span>
               } @else {
@@ -1090,7 +1107,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     </div>
 
                     <!-- DETALLE DE PICKS GUARDADOS -->
-                    @if (h.podium && h.podium.length >= 3) {
+                    @if (h.podium && h.podium.length > 0) {
                       <div style="margin: 1rem 0 0.5rem; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--line);">
                         <div style="font-size: 0.82rem; margin-bottom: 4px;">
                           <strong>Podio Elegido:</strong> P1: {{ getDriverName(h.podium[0]) }} • P2: {{ getDriverName(h.podium[1]) }} • P3: {{ getDriverName(h.podium[2]) }}
@@ -1808,6 +1825,50 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
     }
     .driver-template-card.pole-slot:hover {
       box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 16px -2px rgba(6, 182, 212, 0.4);
+    }
+    .driver-template-card.empty-slot {
+      --driver-color: rgba(255, 255, 255, 0.25);
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      border-left: 4px dashed rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.02);
+      min-height: 110px;
+      justify-content: center;
+      align-items: center;
+    }
+    .driver-template-card.empty-slot:hover:not(.disabled-card) {
+      border-color: rgba(255, 255, 255, 0.45);
+      border-left-color: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.05);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+    }
+    .driver-template-card.empty-slot.pole-slot:hover:not(.disabled-card) {
+      border-color: #38bdf8;
+      border-left-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.06);
+    }
+    .dtc-empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+      text-align: center;
+    }
+    .dtc-empty-state .empty-icon {
+      font-size: 1.6rem;
+      font-weight: 300;
+      line-height: 1;
+      color: var(--text-dim, rgba(255, 255, 255, 0.6));
+    }
+    .dtc-empty-state .empty-text {
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.8);
+    }
+    .dtc-empty-state .empty-hint {
+      font-size: 0.7rem;
+      color: rgba(255, 255, 255, 0.4);
     }
     .dtc-header {
       display: flex;
@@ -3031,13 +3092,13 @@ export class DashboardComponent implements OnInit {
   readonly matchupDriver2 = computed(() => this.session()?.matchupDriver2 || 'verstappen');
 
   // Estado reactivo del pronóstico con Signals
-  readonly p1DriverId = signal<string>('verstappen');
-  readonly p2DriverId = signal<string>('norris');
-  readonly p3DriverId = signal<string>('leclerc');
-  readonly poleDriverId = signal<string>('norris');
-  readonly duelWinnerId = signal<string>('norris');
-  readonly safetyCars = signal<number>(1);
-  readonly dnfs = signal<number>(2);
+  readonly p1DriverId = signal<string>('');
+  readonly p2DriverId = signal<string>('');
+  readonly p3DriverId = signal<string>('');
+  readonly poleDriverId = signal<string>('');
+  readonly duelWinnerId = signal<string>('');
+  readonly safetyCars = signal<number>(0);
+  readonly dnfs = signal<number>(0);
 
   // Selector interactivo de pilotos
   readonly isPickerOpen = signal<boolean>(false);
@@ -3058,12 +3119,18 @@ export class DashboardComponent implements OnInit {
   readonly hasExistingPrediction = signal<boolean>(false);
   readonly predictionSubmittedAt = signal<string | null>(null);
 
-  // Validación de podio duplicado reactiva
+  readonly isPodiumComplete = computed(() => {
+    return !!(this.p1DriverId() && this.p2DriverId() && this.p3DriverId());
+  });
+
+  // Validación de podio duplicado reactiva (solo entre posiciones con piloto asignado)
   readonly isPodiumDuplicate = computed(() => {
-    const p1 = this.p1DriverId();
-    const p2 = this.p2DriverId();
-    const p3 = this.p3DriverId();
-    return p1 === p2 || p1 === p3 || p2 === p3;
+    const picks = [this.p1DriverId(), this.p2DriverId(), this.p3DriverId()].filter(id => !!id && id.trim().length > 0);
+    return new Set(picks).size !== picks.length;
+  });
+
+  readonly canSavePrediction = computed(() => {
+    return !this.isPodiumDuplicate() && !this.isSaving() && !this.isLocked();
   });
 
   // Ligas privadas
@@ -3145,19 +3212,27 @@ export class DashboardComponent implements OnInit {
     this.api.nextSession().subscribe({
       next: (sess) => {
         this.session.set(sess);
-        // Si no se asignó duelo, usa el por defecto de la sesión
-        if (!this.duelWinnerId() && sess.matchupDriver1) {
-          this.duelWinnerId.set(sess.matchupDriver1);
-        }
       },
       error: () => {}
     });
   }
 
+  clearPredictionState() {
+    this.p1DriverId.set('');
+    this.p2DriverId.set('');
+    this.p3DriverId.set('');
+    this.poleDriverId.set('');
+    this.duelWinnerId.set('');
+    this.safetyCars.set(0);
+    this.dnfs.set(0);
+    this.hasExistingPrediction.set(false);
+    this.predictionSubmittedAt.set(null);
+  }
+
   private restoreLocalCache() {
     const user = this.auth.username();
     const cachedPred = this.api.getCachedPrediction?.(user);
-    if (cachedPred) {
+    if (cachedPred && (cachedPred.predictionId || (cachedPred.podium && cachedPred.podium.length > 0))) {
       this.applyPredictionToState(cachedPred);
     }
     const cachedLeagues = this.api.getCachedLeagues?.(user);
@@ -3181,36 +3256,43 @@ export class DashboardComponent implements OnInit {
 
   private applyPredictionToState(pred: PredictionDetail) {
     if (pred.podium && pred.podium.length >= 3) {
-      this.p1DriverId.set(pred.podium[0]);
-      this.p2DriverId.set(pred.podium[1]);
-      this.p3DriverId.set(pred.podium[2]);
+      this.p1DriverId.set(pred.podium[0] || '');
+      this.p2DriverId.set(pred.podium[1] || '');
+      this.p3DriverId.set(pred.podium[2] || '');
+    } else {
+      this.p1DriverId.set('');
+      this.p2DriverId.set('');
+      this.p3DriverId.set('');
     }
-    if (pred.polePositionDriverId) {
-      this.poleDriverId.set(pred.polePositionDriverId);
-    }
-    if (pred.duelDriverPick) {
-      this.duelWinnerId.set(pred.duelDriverPick);
-    }
-    if (pred.safetyCarCount != null) {
-      this.safetyCars.set(pred.safetyCarCount);
-    }
-    if (pred.dnfCount != null) {
-      this.dnfs.set(pred.dnfCount);
-    }
+
+    this.poleDriverId.set(pred.polePositionDriverId || '');
+    this.duelWinnerId.set(pred.duelDriverPick || '');
+    this.safetyCars.set(pred.safetyCarCount != null ? pred.safetyCarCount : 0);
+    this.dnfs.set(pred.dnfCount != null ? pred.dnfCount : 0);
+
     if (pred.predictionId || pred.submittedAt || (pred.podium && pred.podium.length > 0)) {
       this.hasExistingPrediction.set(true);
       this.predictionSubmittedAt.set(pred.submittedAt || null);
+    } else {
+      this.hasExistingPrediction.set(false);
+      this.predictionSubmittedAt.set(null);
     }
   }
 
   private loadCurrentPrediction() {
     this.api.currentPrediction(this.auth.username()).subscribe({
       next: (pred) => {
-        if (pred) {
+        if (pred && (pred.predictionId || (pred.podium && pred.podium.length > 0))) {
           this.applyPredictionToState(pred);
+        } else {
+          this.clearPredictionState();
         }
       },
-      error: () => {}
+      error: () => {
+        if (!this.hasExistingPrediction()) {
+          this.clearPredictionState();
+        }
+      }
     });
   }
 
@@ -3355,8 +3437,26 @@ export class DashboardComponent implements OnInit {
     return false;
   }
 
+  toggleDuelWinner(driverId: string) {
+    if (this.isLocked()) return;
+    if (this.duelWinnerId() === driverId) {
+      this.duelWinnerId.set('');
+    } else {
+      this.duelWinnerId.set(driverId);
+    }
+  }
+
   selectDriver(slot: 'p1' | 'p2' | 'p3' | 'pole', driverId: string) {
     if (this.isLocked()) return;
+
+    if (!driverId) {
+      if (slot === 'pole') this.poleDriverId.set('');
+      else if (slot === 'p1') this.p1DriverId.set('');
+      else if (slot === 'p2') this.p2DriverId.set('');
+      else if (slot === 'p3') this.p3DriverId.set('');
+      this.closeDriverPicker();
+      return;
+    }
 
     if (slot === 'pole') {
       this.poleDriverId.set(driverId);
@@ -3396,7 +3496,7 @@ export class DashboardComponent implements OnInit {
   }
 
   getDriverName(id?: string | null): string {
-    if (!id) return 'Piloto';
+    if (!id || !id.trim()) return 'Sin selección';
     const found = this.drivers.find(d => d.id === id);
     return found ? `${found.name} (${found.team})` : id;
   }
@@ -3413,7 +3513,11 @@ export class DashboardComponent implements OnInit {
   }
 
   savePrediction() {
-    if (this.isPodiumDuplicate() || this.isSaving() || this.isLocked()) return;
+    if (this.isPodiumDuplicate()) {
+      this.saveError.set('No podés repetir pilotos en el podio.');
+      return;
+    }
+    if (this.isSaving() || this.isLocked()) return;
     
     const sess = this.session();
     const sessionId = sess?.id || 'f0c23d70-f7ca-411d-b827-7a9d45037100';
@@ -3422,10 +3526,13 @@ export class DashboardComponent implements OnInit {
     this.saveError.set('');
     this.saveSuccess.set(false);
 
+    const hasAnyPodium = !!(this.p1DriverId() || this.p2DriverId() || this.p3DriverId());
     const payload = {
-      podium: [this.p1DriverId(), this.p2DriverId(), this.p3DriverId()],
-      polePositionDriverId: this.poleDriverId(),
-      duelDriverPick: this.duelWinnerId(),
+      podium: hasAnyPodium
+        ? [this.p1DriverId() || '', this.p2DriverId() || '', this.p3DriverId() || '']
+        : [],
+      polePositionDriverId: this.poleDriverId() || null,
+      duelDriverPick: this.duelWinnerId() || null,
       safetyCarCount: this.safetyCars(),
       dnfCount: this.dnfs()
     };
