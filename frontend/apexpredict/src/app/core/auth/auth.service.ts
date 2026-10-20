@@ -389,23 +389,36 @@ export class AuthService {
 
   private async getMasterAdminToken(): Promise<string> {
     const tokenUrl = `${environment.keycloak.url}/realms/master/protocol/openid-connect/token`;
-    const tokenRes = await fetch(tokenUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: 'admin-cli',
-        username: 'admin',
-        password: 'Vasquito5',
-        grant_type: 'password',
-      }).toString(),
-    });
+    let lastError: any = null;
 
-    if (!tokenRes.ok) {
-      throw new Error('No se pudo conectar con el servicio de autenticación.');
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const tokenRes = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: 'admin-cli',
+            username: 'admin',
+            password: 'Vasquito5',
+            grant_type: 'password',
+          }).toString(),
+        });
+
+        if (tokenRes.ok) {
+          const { access_token } = await tokenRes.json();
+          return access_token;
+        }
+
+        if (tokenRes.status === 400 || tokenRes.status === 401) {
+          throw new Error('Credenciales maestras de Keycloak rechazadas.');
+        }
+      } catch (err: any) {
+        lastError = err;
+        await new Promise((r) => setTimeout(r, 1200));
+      }
     }
 
-    const { access_token } = await tokenRes.json();
-    return access_token;
+    throw lastError || new Error('No se pudo conectar con el servidor de autenticación. Intentá de nuevo en unos segundos.');
   }
 
   private async findUserByIdentifier(identifier: string, adminToken: string): Promise<any> {
