@@ -204,41 +204,107 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                     </div>
                   </div>
 
-                  <!-- CAMPO 2: ESCUDERÍA FAVORITA -->
+                  <!-- CAMPO 2: ESCUDERÍA FAVORITA (CUSTOM DROPDOWN CON ESTILOS DE PICKER F1) -->
                   <div class="form-field-group">
-                    <label class="field-label" for="favTeamSelect">ESCUDERÍA FAVORITA</label>
-                    <div class="select-wrapper team-highlight" [style.--team-color]="activeTeam().color">
-                      <span class="team-color-indicator" [style.background]="activeTeam().gradient || activeTeam().color"></span>
-                      <select 
-                        id="favTeamSelect"
-                        class="field-select with-color" 
-                        [ngModel]="formTeamId()"
-                        (ngModelChange)="onTeamSelected($event)">
-                        @for (team of teams; track team.id) {
-                          <option [value]="team.id">{{ team.name }}</option>
-                        }
-                      </select>
-                      <span class="select-chevron">⇅</span>
+                    <label class="field-label" id="favTeamLabel">ESCUDERÍA FAVORITA</label>
+                    <div class="custom-select-container" [class.is-active]="isTeamSelectOpen()">
+                      <button 
+                        type="button" 
+                        class="custom-select-trigger" 
+                        [class.is-open]="isTeamSelectOpen()"
+                        (click)="toggleTeamSelect($event)"
+                        [style.--team-color]="formTeam().color"
+                        aria-labelledby="favTeamLabel"
+                        aria-haspopup="listbox"
+                        [attr.aria-expanded]="isTeamSelectOpen()">
+                        <span class="trigger-main">
+                          <span class="team-dot" [style.background]="formTeam().gradient || formTeam().color"></span>
+                          <span class="trigger-label">{{ formTeam().name }}</span>
+                        </span>
+                        <div class="trigger-right">
+                          <span class="team-tag-pill" [style.--team-color]="formTeam().color">{{ formTeam().tag }}</span>
+                          <span class="chevron-arrow" [class.rotated]="isTeamSelectOpen()">▾</span>
+                        </div>
+                      </button>
+
+                      @if (isTeamSelectOpen()) {
+                        <div class="custom-select-dropdown" role="listbox" (click)="$event.stopPropagation()">
+                          @for (team of teams; track team.id) {
+                            <button 
+                              type="button" 
+                              class="custom-select-option" 
+                              role="option"
+                              [attr.aria-selected]="formTeamId() === team.id"
+                              [class.is-selected]="formTeamId() === team.id"
+                              [style.--opt-color]="team.color"
+                              (click)="selectTeam(team.id, $event)">
+                              <span class="opt-left">
+                                <span class="team-dot" [style.background]="team.gradient || team.color"></span>
+                                <span class="opt-name">{{ team.name }}</span>
+                              </span>
+                              <span class="opt-right">
+                                <span class="team-tag-pill" [style.--team-color]="team.color">{{ team.tag }}</span>
+                                @if (formTeamId() === team.id) {
+                                  <span class="opt-check">✓</span>
+                                }
+                              </span>
+                            </button>
+                          }
+                        </div>
+                      }
                     </div>
                   </div>
 
-                  <!-- CAMPO 3: PILOTO FAVORITO -->
+                  <!-- CAMPO 3: PILOTO FAVORITO (CUSTOM DROPDOWN CON ESTILOS DE PICKER F1) -->
                   <div class="form-field-group">
-                    <label class="field-label" for="favDriverSelect">PILOTO FAVORITO</label>
-                    <div class="select-wrapper">
-                      <span class="driver-icon-badge">🏎</span>
-                      <select 
-                        id="favDriverSelect"
-                        class="field-select with-icon" 
-                        [ngModel]="formDriverId()"
-                        (ngModelChange)="formDriverId.set($event)">
-                        @for (driver of drivers; track driver.id) {
-                          <option [value]="driver.id">
-                            {{ driver.name }} #{{ driver.number }} ({{ driver.code }})
-                          </option>
-                        }
-                      </select>
-                      <span class="select-chevron">⇅</span>
+                    <label class="field-label" id="favDriverLabel">PILOTO FAVORITO</label>
+                    <div class="custom-select-container" [class.is-active]="isDriverSelectOpen()">
+                      <button 
+                        type="button" 
+                        class="custom-select-trigger" 
+                        [class.is-open]="isDriverSelectOpen()"
+                        (click)="toggleDriverSelect($event)"
+                        [style.--team-color]="activeDriver().teamColor"
+                        aria-labelledby="favDriverLabel"
+                        aria-haspopup="listbox"
+                        [attr.aria-expanded]="isDriverSelectOpen()">
+                        <span class="trigger-main">
+                          <span class="team-dot" [style.background]="activeDriver().teamColor"></span>
+                          <span class="trigger-label">{{ activeDriver().name }}</span>
+                        </span>
+                        <div class="trigger-right">
+                          <span class="dtc-code">{{ activeDriver().code }}</span>
+                          <span class="dtc-num">#{{ activeDriver().number }}</span>
+                          <span class="chevron-arrow" [class.rotated]="isDriverSelectOpen()">▾</span>
+                        </div>
+                      </button>
+
+                      @if (isDriverSelectOpen()) {
+                        <div class="custom-select-dropdown" role="listbox" (click)="$event.stopPropagation()">
+                          @for (driver of drivers; track driver.id) {
+                            <button 
+                              type="button" 
+                              class="custom-select-option" 
+                              role="option"
+                              [attr.aria-selected]="formDriverId() === driver.id"
+                              [class.is-selected]="formDriverId() === driver.id"
+                              [style.--opt-color]="driver.teamColor"
+                              (click)="selectDriver(driver.id, $event)">
+                              <span class="opt-left">
+                                <span class="team-dot" [style.background]="driver.teamColor"></span>
+                                <span class="opt-name">{{ driver.name }}</span>
+                              </span>
+                              <span class="opt-right">
+                                <span class="dtc-code">{{ driver.code }}</span>
+                                <span class="dtc-num">#{{ driver.number }}</span>
+                                @if (formDriverId() === driver.id) {
+                                  <span class="opt-check">✓</span>
+                                }
+                              </span>
+                            </button>
+                          }
+                        </div>
+                      }
                     </div>
                   </div>
 
@@ -566,58 +632,233 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       border-color: rgba(255, 255, 255, 0.35);
     }
 
-    /* SELECT WRAPPER */
-    .select-wrapper {
+    /* CUSTOM SELECT SYSTEM (COPIADO Y ALINEADO CON DRIVER-PICKER-MODAL) */
+    .custom-select-container {
       position: relative;
-      display: flex;
-      align-items: center;
+      width: 100%;
+    }
+    .custom-select-container.is-active {
+      z-index: 100;
+    }
+
+    .custom-select-trigger {
+      width: 100%;
       background: #090c13;
       border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 7px;
-      transition: border-color 0.2s;
-    }
-    .select-wrapper.team-highlight {
-      border: 1px solid var(--team-color, #ff8000);
-    }
-    .team-color-indicator {
-      position: absolute;
-      left: 11px;
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      pointer-events: none;
-      box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
-    }
-    .driver-icon-badge {
-      position: absolute;
-      left: 10px;
-      font-size: 0.85rem;
-      pointer-events: none;
-    }
-    .field-select {
-      width: 100%;
-      background: transparent;
-      border: none;
+      border-left: 3px solid var(--team-color, #ff8000);
+      border-radius: 8px;
       color: #ffffff;
-      font-size: 0.86rem;
-      font-weight: 600;
-      font-family: inherit;
-      padding: 0.55rem 1.8rem 0.55rem 1.95rem;
+      padding: 0.55rem 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      cursor: pointer;
       box-sizing: border-box;
       outline: none;
-      cursor: pointer;
-      appearance: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      font-family: inherit;
     }
-    .field-select option {
-      background: #141822;
+
+    .custom-select-trigger:hover,
+    .custom-select-trigger.is-open {
+      background: #11151f;
+      border-color: rgba(255, 255, 255, 0.25);
+      border-left-color: var(--team-color, #ff8000);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 0 10px -2px color-mix(in srgb, var(--team-color, #ff8000) 30%, transparent);
+    }
+
+    .trigger-main {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+
+    .trigger-label {
+      font-size: 0.86rem;
+      font-weight: 700;
+      color: #ffffff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      letter-spacing: -0.01em;
+    }
+
+    .trigger-right {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      flex-shrink: 0;
+    }
+
+    .chevron-arrow {
+      font-size: 0.7rem;
+      color: #94a3b8;
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s;
+      display: inline-block;
+      margin-left: 2px;
+    }
+
+    .chevron-arrow.rotated {
+      transform: rotate(180deg);
       color: #ffffff;
     }
-    .select-chevron {
+
+    /* DROPDOWN LIST OVERLAY */
+    .custom-select-dropdown {
       position: absolute;
-      right: 10px;
-      font-size: 0.75rem;
+      top: calc(100% + 5px);
+      left: 0;
+      right: 0;
+      z-index: 250;
+      background: #0d1118;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.95), 0 0 1px 1px rgba(255, 255, 255, 0.08);
+      max-height: 230px;
+      overflow-y: auto;
+      padding: 4px;
+      box-sizing: border-box;
+      animation: selectDropdownFade 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+    }
+
+    @keyframes selectDropdownFade {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .custom-select-dropdown::-webkit-scrollbar {
+      width: 5px;
+    }
+    .custom-select-dropdown::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-select-dropdown::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 9999px;
+    }
+    .custom-select-dropdown::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.38);
+    }
+
+    /* DROPDOWN OPTION BUTTON */
+    .custom-select-option {
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      border-left: 3px solid transparent;
+      border-radius: 6px;
+      color: #e2e8f0;
+      padding: 0.5rem 0.65rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      cursor: pointer;
+      box-sizing: border-box;
+      text-align: left;
+      font-family: inherit;
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .custom-select-option:hover {
+      background: #151a24;
+      border-color: rgba(255, 255, 255, 0.12);
+      border-left-color: var(--opt-color, #ff8000);
+      color: #ffffff;
+      transform: translateX(2px);
+    }
+
+    .custom-select-option.is-selected {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.15);
+      border-left: 3px solid var(--opt-color, #ff8000);
+      color: #ffffff;
+      font-weight: 700;
+    }
+
+    .opt-left {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .opt-name {
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: inherit;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .opt-right {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      flex-shrink: 0;
+    }
+
+    .opt-check {
+      color: #10b981;
+      font-weight: 900;
+      font-size: 0.82rem;
+      margin-left: 2px;
+    }
+
+    /* TEAM DOT TOKEN */
+    .team-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
+    }
+
+    /* TEAM TAG PILL (MONO) */
+    .team-tag-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 5px;
+      border-radius: 4px;
+      color: var(--team-color, #ff8000);
+      background: color-mix(in srgb, var(--team-color, #ff8000) 16%, transparent);
+      border: 1px solid color-mix(in srgb, var(--team-color, #ff8000) 35%, transparent);
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    /* DRIVER CODE AND NUMBER BADGES */
+    .dtc-code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
       color: #94a3b8;
-      pointer-events: none;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 1px 4px;
+      border-radius: 3px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .dtc-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 900;
+      color: #ffffff;
+      white-space: nowrap;
     }
 
     /* SWITCH ROW */
@@ -793,10 +1034,14 @@ export class NavbarComponent implements OnInit {
   readonly teams = F1_TEAMS_OPTIONS;
   readonly drivers: F1Driver[] = F1_DRIVERS;
 
-  // Estado del dropdown
+  // Estado del dropdown del perfil
   readonly isProfileOpen = signal<boolean>(false);
   readonly isSaving = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'success' | 'error'>('idle');
+
+  // Estado de los dropdowns personalizados dentro del menú
+  readonly isTeamSelectOpen = signal<boolean>(false);
+  readonly isDriverSelectOpen = signal<boolean>(false);
 
   // ESTADO GUARDADO (Confirma los valores visibles en navbar y encabezado)
   readonly savedDisplayName = signal<string>(this.auth.username() || 'Piloto');
@@ -900,13 +1145,25 @@ export class NavbarComponent implements OnInit {
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
-    if (this.isProfileOpen() && !this.elementRef.nativeElement.contains(event.target)) {
+    const target = event.target as HTMLElement | null;
+    if (this.isProfileOpen() && !this.elementRef.nativeElement.contains(target)) {
       this.closeProfileMenu();
+      return;
+    }
+    // Si hace click fuera de un custom select abierto, cerrarlo
+    if (!target?.closest('.custom-select-container')) {
+      this.isTeamSelectOpen.set(false);
+      this.isDriverSelectOpen.set(false);
     }
   }
 
   @HostListener('document:keydown.escape')
   onEscape() {
+    if (this.isTeamSelectOpen() || this.isDriverSelectOpen()) {
+      this.isTeamSelectOpen.set(false);
+      this.isDriverSelectOpen.set(false);
+      return;
+    }
     if (this.isProfileOpen()) {
       this.closeProfileMenu();
     }
@@ -923,6 +1180,8 @@ export class NavbarComponent implements OnInit {
 
   openProfileMenu() {
     // Al abrir, sincronizar el borrador con los últimos datos guardados
+    this.isTeamSelectOpen.set(false);
+    this.isDriverSelectOpen.set(false);
     this.formDisplayName.set(this.savedDisplayName());
     this.formTeamId.set(this.savedTeamId());
     this.formDriverId.set(this.savedDriverId());
@@ -933,12 +1192,44 @@ export class NavbarComponent implements OnInit {
 
   closeProfileMenu() {
     // Si el usuario cierra el menú sin guardar, vuelve a los colores y datos anteriores
+    this.isTeamSelectOpen.set(false);
+    this.isDriverSelectOpen.set(false);
     this.formDisplayName.set(this.savedDisplayName());
     this.formTeamId.set(this.savedTeamId());
     this.formDriverId.set(this.savedDriverId());
     this.formNotifications.set(this.savedNotifications());
     this.saveStatus.set('idle');
     this.isProfileOpen.set(false);
+  }
+
+  toggleTeamSelect(event: MouseEvent) {
+    event.stopPropagation();
+    const next = !this.isTeamSelectOpen();
+    this.isTeamSelectOpen.set(next);
+    if (next) {
+      this.isDriverSelectOpen.set(false);
+    }
+  }
+
+  toggleDriverSelect(event: MouseEvent) {
+    event.stopPropagation();
+    const next = !this.isDriverSelectOpen();
+    this.isDriverSelectOpen.set(next);
+    if (next) {
+      this.isTeamSelectOpen.set(false);
+    }
+  }
+
+  selectTeam(teamId: string, event: MouseEvent) {
+    event.stopPropagation();
+    this.onTeamSelected(teamId);
+    this.isTeamSelectOpen.set(false);
+  }
+
+  selectDriver(driverId: string, event: MouseEvent) {
+    event.stopPropagation();
+    this.formDriverId.set(driverId);
+    this.isDriverSelectOpen.set(false);
   }
 
   onTeamSelected(teamId: string) {
