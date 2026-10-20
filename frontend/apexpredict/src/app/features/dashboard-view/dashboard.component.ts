@@ -2159,14 +2159,13 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       border-color: rgba(255, 255, 255, 0.35);
       box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 14px -2px var(--driver-team-color, rgba(255,255,255,0.2));
     }
-    /* PILOTO ELEGIDO: MÁXIMA VISIBILIDAD Y CONTRASTE */
+    /* PILOTO ELEGIDO: MÁXIMA VISIBILIDAD Y DESTACAMIENTO UNIFORME EN ROJO F1 */
     .duel-driver-card.selected {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(225, 6, 0, 0.2) 60%, #1a1016 100%), #111622;
-      border: 2px solid #ff3b30;
-      border-left: 6px solid var(--driver-team-color, #ff3b30);
-      box-shadow: 0 0 0 1px rgba(255, 59, 48, 0.45) inset,
-                  0 0 28px rgba(225, 6, 0, 0.45),
-                  0 0 16px -2px var(--driver-team-color, rgba(255, 59, 48, 0.5)),
+      background: linear-gradient(135deg, rgba(225, 6, 0, 0.16) 0%, rgba(225, 6, 0, 0.04) 60%, transparent 100%), #111622;
+      border: 2px solid var(--f1-red, #e10600);
+      border-left: 6px solid var(--f1-red, #e10600);
+      box-shadow: 0 0 0 1px rgba(225, 6, 0, 0.45) inset,
+                  0 0 24px rgba(225, 6, 0, 0.4),
                   0 12px 28px rgba(0, 0, 0, 0.65);
       transform: translateY(-2px) scale(1.025);
       z-index: 2;
@@ -2241,19 +2240,19 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: #10b981;
-      color: #022c22;
+      background: var(--f1-red, #e10600);
+      color: #ffffff;
       font-weight: 900;
       font-size: 0.72rem;
       letter-spacing: 0.06em;
       padding: 4px 10px;
       border-radius: 9999px;
-      box-shadow: 0 0 14px rgba(16, 185, 129, 0.55);
+      box-shadow: 0 0 14px rgba(225, 6, 0, 0.55);
       animation: pulse-picked 2.5s infinite ease-in-out;
     }
     @keyframes pulse-picked {
-      0%, 100% { box-shadow: 0 0 14px rgba(16, 185, 129, 0.55); }
-      50% { box-shadow: 0 0 22px rgba(16, 185, 129, 0.9); }
+      0%, 100% { box-shadow: 0 0 14px rgba(225, 6, 0, 0.55); }
+      50% { box-shadow: 0 0 22px rgba(225, 6, 0, 0.85); }
     }
     .check-icon-svg {
       display: block;
