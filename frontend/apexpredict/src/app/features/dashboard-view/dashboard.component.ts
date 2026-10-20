@@ -203,13 +203,19 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
             (onSavePodium)="handleSavePodium($event)" />
 
 
-          <!-- 2. POLE POSITION Y DUELO DIRECTO -->
-          <div class="grid-two-cols">
-            <div class="spotlight-card">
+          <!-- 2. POLEMAN, SAFETY CARS Y ABANDONOS (MISMA LÍNEA) -->
+          <div class="grid-three-cols">
+            <!-- TARJETA 1: POLE POSITION -->
+            <div class="spotlight-card telemetry-card pole-card">
               <div class="card-title-row">
-                <h4>Pole Position (Sábado)</h4>
+                <div class="card-title-group">
+                  <span class="telemetry-icon-badge pole">P</span>
+                  <div>
+                    <h4>Pole Position (Sábado)</h4>
+                    <span class="dim" style="font-size: 0.82rem;">Piloto más veloz en Q3</span>
+                  </div>
+                </div>
               </div>
-              <div class="podium-slot-label" style="margin-bottom: 0.75rem;">Piloto más veloz en Q3</div>
               
               @if (getDriver(poleDriverId()); as d) {
                 <div class="driver-template-card pole-slot" 
@@ -236,165 +242,14 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               }
             </div>
 
-            <div class="spotlight-card duel-spotlight-card">
-              <div class="card-title-row">
-                <div class="duel-title-wrap">
-                  <div class="duel-badge-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <path d="M14.5 17.5L3 6V3h3l11.5 11.5"/>
-                      <path d="m13 19 6 2 2-6-2-2-6 6Z"/>
-                      <path d="M9.5 6.5 21 18v3h-3L6.5 9.5"/>
-                      <path d="m11 5-6-2-2 6 2 2 6-6Z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <h4>Duelo Directo de la Fecha</h4>
-                    <span class="dim" style="font-size: 0.82rem;">Elegí qué piloto superará a su rival directo en el fin de semana</span>
-                  </div>
-                </div>
-                <span class="duel-pts-tag">+10 PTS</span>
-              </div>
-
-              <!-- SELECTOR DE PILOTOS EN FORMATO ARENA F1 -->
-              <div class="duel-arena-grid">
-                <!-- PILOTO 1 -->
-                @if (getDriver(matchupDriver1()); as d1) {
-                  <button 
-                    type="button"
-                    class="duel-driver-card"
-                    [class.selected]="duelWinnerId() === d1.id"
-                    [class.unselected]="duelWinnerId() && duelWinnerId() !== d1.id"
-                    [style.--driver-team-color]="d1.teamColor"
-                    [disabled]="isLocked()"
-                    (click)="duelWinnerId.set(d1.id)"
-                    aria-label="Seleccionar a {{ d1.name }} como ganador del duelo">
-                    <div class="ddc-top">
-                      <span class="ddc-team-pill" [style.color]="d1.teamColor" [style.background]="d1.teamColor + '18'">
-                        {{ d1.team }}
-                      </span>
-                      <span class="ddc-number">#{{ d1.number }}</span>
-                    </div>
-                    <div class="ddc-name">{{ d1.name }}</div>
-                    <div class="ddc-selection-status">
-                      @if (duelWinnerId() === d1.id) {
-                        <span class="status-picked">
-                          <svg class="check-icon-svg" viewBox="0 0 20 20" width="13" height="13" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                          </svg>
-                          GANADOR ELEGIDO
-                        </span>
-                      } @else {
-                        <span class="status-choose">Elegir Piloto</span>
-                      }
-                    </div>
-                  </button>
-                } @else {
-                  <button 
-                    type="button"
-                    class="duel-driver-card"
-                    [class.selected]="duelWinnerId() === matchupDriver1()"
-                    [class.unselected]="duelWinnerId() && duelWinnerId() !== matchupDriver1()"
-                    [disabled]="isLocked()"
-                    (click)="duelWinnerId.set(matchupDriver1())">
-                    <div class="ddc-name">{{ getDriverName(matchupDriver1()) }}</div>
-                  </button>
-                }
-
-                <!-- VS BADGE -->
-                <div class="duel-vs-separator" aria-hidden="true">
-                  <span class="vs-text">VS</span>
-                </div>
-
-                <!-- PILOTO 2 -->
-                @if (getDriver(matchupDriver2()); as d2) {
-                  <button 
-                    type="button"
-                    class="duel-driver-card"
-                    [class.selected]="duelWinnerId() === d2.id"
-                    [class.unselected]="duelWinnerId() && duelWinnerId() !== d2.id"
-                    [style.--driver-team-color]="d2.teamColor"
-                    [disabled]="isLocked()"
-                    (click)="duelWinnerId.set(d2.id)"
-                    aria-label="Seleccionar a {{ d2.name }} como ganador del duelo">
-                    <div class="ddc-top">
-                      <span class="ddc-team-pill" [style.color]="d2.teamColor" [style.background]="d2.teamColor + '18'">
-                        {{ d2.team }}
-                      </span>
-                      <span class="ddc-number">#{{ d2.number }}</span>
-                    </div>
-                    <div class="ddc-name">{{ d2.name }}</div>
-                    <div class="ddc-selection-status">
-                      @if (duelWinnerId() === d2.id) {
-                        <span class="status-picked">
-                          <svg class="check-icon-svg" viewBox="0 0 20 20" width="13" height="13" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                          </svg>
-                          GANADOR ELEGIDO
-                        </span>
-                      } @else {
-                        <span class="status-choose">Elegir Piloto</span>
-                      }
-                    </div>
-                  </button>
-                } @else {
-                  <button 
-                    type="button"
-                    class="duel-driver-card"
-                    [class.selected]="duelWinnerId() === matchupDriver2()"
-                    [class.unselected]="duelWinnerId() && duelWinnerId() !== matchupDriver2()"
-                    [disabled]="isLocked()"
-                    (click)="duelWinnerId.set(matchupDriver2())">
-                    <div class="ddc-name">{{ getDriverName(matchupDriver2()) }}</div>
-                  </button>
-                }
-              </div>
-
-              <!-- BLOQUE EXPLICATIVO DE CRITERIOS DE VICTORIA Y DESEMPATE -->
-              <div class="duel-criteria-panel">
-                <div class="criteria-header-row">
-                  <svg class="criteria-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
-                    <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
-                    <path d="M7 21h10"/>
-                    <path d="M12 3v18"/>
-                    <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>
-                  </svg>
-                  <span class="criteria-label">Criterio de definición del duelo:</span>
-                </div>
-                <div class="criteria-items-list">
-                  <div class="criteria-item">
-                    <span class="criteria-badge-num">1</span>
-                    <div class="criteria-desc">
-                      <strong>Puntos del fin de semana:</strong> Gana quien sume la mayor cantidad de puntos oficiales en la fecha.
-                    </div>
-                  </div>
-                  <div class="criteria-item">
-                    <span class="criteria-badge-num">2</span>
-                    <div class="criteria-desc">
-                      <strong>En formato Sprint:</strong> Se calcula la combinatoria de puntos obtenidos en ambas carreras (Sprint + GP Domingo).
-                    </div>
-                  </div>
-                  <div class="criteria-item">
-                    <span class="criteria-badge-num">3</span>
-                    <div class="criteria-desc">
-                      <strong>Criterio de desempate:</strong> A igualdad de puntos (o sin unidades), se define por la <strong>mejor posición final en carrera</strong>.
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 3. TELEMETRÍA DE CARRERA (DESAGRUPADA Y PULIDA) -->
-          <div class="grid-two-cols">
-            <!-- TARJETA 1: SAFETY CAR -->
+            <!-- TARJETA 2: SAFETY CAR -->
             <div class="spotlight-card telemetry-card sc-card">
               <div class="card-title-row">
                 <div class="card-title-group">
                   <span class="telemetry-icon-badge sc">SC</span>
                   <div>
                     <h4>Auto de Seguridad (Safety Car)</h4>
-                    <span class="dim" style="font-size: 0.82rem;">Apariciones físicas de SC o Virtual SC (VSC)</span>
+                    <span class="dim" style="font-size: 0.82rem;">Apariciones físicas de SC o Virtual SC</span>
                   </div>
                 </div>
               </div>
@@ -425,20 +280,20 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 <div class="telemetry-range-hint">
                   <span>Rango: 0 a 10</span>
                   <span class="telemetry-status-pill">
-                    {{ safetyCars() === 0 ? 'Carrera Limpia (Sin SC)' : (safetyCars() <= 2 ? 'Frecuencia Normal' : 'Carrera Accidentada') }}
+                    {{ safetyCars() === 0 ? 'Carrera Limpia' : (safetyCars() <= 2 ? 'Normal' : 'Accidentada') }}
                   </span>
                 </div>
               </div>
             </div>
 
-            <!-- TARJETA 2: ABANDONOS DNFs -->
+            <!-- TARJETA 3: ABANDONOS DNFs -->
             <div class="spotlight-card telemetry-card dnf-card">
               <div class="card-title-row">
                 <div class="card-title-group">
                   <span class="telemetry-icon-badge dnf">DNF</span>
                   <div>
                     <h4>Abandonos de Carrera (DNFs)</h4>
-                    <span class="dim" style="font-size: 0.82rem;">Monoplazas fuera de carrera (DNF / DNS)</span>
+                    <span class="dim" style="font-size: 0.82rem;">Monoplazas fuera de carrera</span>
                   </div>
                 </div>
               </div>
@@ -469,8 +324,157 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 <div class="telemetry-range-hint">
                   <span>Rango: 0 a 20</span>
                   <span class="telemetry-status-pill">
-                    {{ dnfs() === 0 ? 'Sin Abandonos' : (dnfs() <= 3 ? 'Desgaste Moderado' : 'Alto Caos en Pista') }}
+                    {{ dnfs() === 0 ? 'Sin Abandonos' : (dnfs() <= 3 ? 'Desgaste Normal' : 'Alto Caos') }}
                   </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. DUELO DE PILOTOS DEBAJO A ANCHO COMPLETO -->
+          <div class="spotlight-card duel-spotlight-card">
+            <div class="card-title-row">
+              <div class="duel-title-wrap">
+                <div class="duel-badge-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.5 17.5L3 6V3h3l11.5 11.5"/>
+                    <path d="m13 19 6 2 2-6-2-2-6 6Z"/>
+                    <path d="M9.5 6.5 21 18v3h-3L6.5 9.5"/>
+                    <path d="m11 5-6-2-2 6 2 2 6-6Z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4>Duelo Directo de la Fecha</h4>
+                  <span class="dim" style="font-size: 0.82rem;">Elegí qué piloto superará a su rival directo en el fin de semana</span>
+                </div>
+              </div>
+              <span class="duel-pts-tag">+10 PTS</span>
+            </div>
+
+            <!-- SELECTOR DE PILOTOS EN FORMATO ARENA F1 -->
+            <div class="duel-arena-grid">
+              <!-- PILOTO 1 -->
+              @if (getDriver(matchupDriver1()); as d1) {
+                <button 
+                  type="button"
+                  class="duel-driver-card"
+                  [class.selected]="duelWinnerId() === d1.id"
+                  [class.unselected]="duelWinnerId() && duelWinnerId() !== d1.id"
+                  [style.--driver-team-color]="d1.teamColor"
+                  [disabled]="isLocked()"
+                  (click)="duelWinnerId.set(d1.id)"
+                  aria-label="Seleccionar a {{ d1.name }} como ganador del duelo">
+                  <div class="ddc-top">
+                    <span class="ddc-team-pill" [style.color]="d1.teamColor" [style.background]="d1.teamColor + '18'">
+                      {{ d1.team }}
+                    </span>
+                    <span class="ddc-number">#{{ d1.number }}</span>
+                  </div>
+                  <div class="ddc-name">{{ d1.name }}</div>
+                  <div class="ddc-selection-status">
+                    @if (duelWinnerId() === d1.id) {
+                      <span class="status-picked">
+                        <svg class="check-icon-svg" viewBox="0 0 20 20" width="13" height="13" fill="currentColor" aria-hidden="true">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        GANADOR ELEGIDO
+                      </span>
+                    } @else {
+                      <span class="status-choose">Elegir Piloto</span>
+                    }
+                  </div>
+                </button>
+              } @else {
+                <button 
+                  type="button"
+                  class="duel-driver-card"
+                  [class.selected]="duelWinnerId() === matchupDriver1()"
+                  [class.unselected]="duelWinnerId() && duelWinnerId() !== matchupDriver1()"
+                  [disabled]="isLocked()"
+                  (click)="duelWinnerId.set(matchupDriver1())">
+                  <div class="ddc-name">{{ getDriverName(matchupDriver1()) }}</div>
+                </button>
+              }
+
+              <!-- VS BADGE -->
+              <div class="duel-vs-separator" aria-hidden="true">
+                <span class="vs-text">VS</span>
+              </div>
+
+              <!-- PILOTO 2 -->
+              @if (getDriver(matchupDriver2()); as d2) {
+                <button 
+                  type="button"
+                  class="duel-driver-card"
+                  [class.selected]="duelWinnerId() === d2.id"
+                  [class.unselected]="duelWinnerId() && duelWinnerId() !== d2.id"
+                  [style.--driver-team-color]="d2.teamColor"
+                  [disabled]="isLocked()"
+                  (click)="duelWinnerId.set(d2.id)"
+                  aria-label="Seleccionar a {{ d2.name }} como ganador del duelo">
+                  <div class="ddc-top">
+                    <span class="ddc-team-pill" [style.color]="d2.teamColor" [style.background]="d2.teamColor + '18'">
+                      {{ d2.team }}
+                    </span>
+                    <span class="ddc-number">#{{ d2.number }}</span>
+                  </div>
+                  <div class="ddc-name">{{ d2.name }}</div>
+                  <div class="ddc-selection-status">
+                    @if (duelWinnerId() === d2.id) {
+                      <span class="status-picked">
+                        <svg class="check-icon-svg" viewBox="0 0 20 20" width="13" height="13" fill="currentColor" aria-hidden="true">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        GANADOR ELEGIDO
+                      </span>
+                    } @else {
+                      <span class="status-choose">Elegir Piloto</span>
+                    }
+                  </div>
+                </button>
+              } @else {
+                <button 
+                  type="button"
+                  class="duel-driver-card"
+                  [class.selected]="duelWinnerId() === matchupDriver2()"
+                  [class.unselected]="duelWinnerId() && duelWinnerId() !== matchupDriver2()"
+                  [disabled]="isLocked()"
+                  (click)="duelWinnerId.set(matchupDriver2())">
+                  <div class="ddc-name">{{ getDriverName(matchupDriver2()) }}</div>
+                </button>
+              }
+            </div>
+
+            <!-- BLOQUE EXPLICATIVO DE CRITERIOS DE VICTORIA Y DESEMPATE -->
+            <div class="duel-criteria-panel">
+              <div class="criteria-header-row">
+                <svg class="criteria-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                  <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                  <path d="M7 21h10"/>
+                  <path d="M12 3v18"/>
+                  <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>
+                </svg>
+                <span class="criteria-label">Criterio de definición del duelo:</span>
+              </div>
+              <div class="criteria-items-list">
+                <div class="criteria-item">
+                  <span class="criteria-badge-num">1</span>
+                  <div class="criteria-desc">
+                    <strong>Puntos del fin de semana:</strong> Gana quien sume la mayor cantidad de puntos oficiales en la fecha.
+                  </div>
+                </div>
+                <div class="criteria-item">
+                  <span class="criteria-badge-num">2</span>
+                  <div class="criteria-desc">
+                    <strong>En formato Sprint:</strong> Se calcula la combinatoria de puntos obtenidos en ambas carreras (Sprint + GP Domingo).
+                  </div>
+                </div>
+                <div class="criteria-item">
+                  <span class="criteria-badge-num">3</span>
+                  <div class="criteria-desc">
+                    <strong>Criterio de desempate:</strong> A igualdad de puntos (o sin unidades), se define por la <strong>mejor posición final en carrera</strong>.
+                  </div>
                 </div>
               </div>
             </div>
@@ -2066,11 +2070,39 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       grid-template-columns: 1fr 1fr;
       gap: 1.5rem;
     }
+    .grid-three-cols {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      align-items: stretch;
+      margin-bottom: 1.5rem;
+    }
+    @media (max-width: 992px) {
+      .grid-three-cols {
+        grid-template-columns: 1fr;
+      }
+    }
+    .spotlight-card.pole-card {
+      border-top: 4px solid #a855f7;
+      background: linear-gradient(180deg, rgba(168, 85, 247, 0.06) 0%, rgba(18, 22, 31, 0.95) 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.15rem;
+    }
+    .telemetry-icon-badge.pole {
+      background: rgba(168, 85, 247, 0.15);
+      border: 1px solid rgba(168, 85, 247, 0.35);
+      color: #c084fc;
+      font-weight: 900;
+      font-family: var(--font-mono);
+    }
     /* DUEL SPOTLIGHT CARD & SELECTOR */
     .duel-spotlight-card {
       display: flex;
       flex-direction: column;
       gap: 1.15rem;
+      margin-bottom: 1.5rem;
     }
     .duel-title-wrap {
       display: flex;
@@ -2106,7 +2138,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       display: grid;
       grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      gap: 0.85rem;
+      gap: 1.5rem;
     }
     .duel-driver-card {
       background: #0d121c;
@@ -2290,9 +2322,15 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       letter-spacing: 0.06em;
     }
     .criteria-items-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+    @media (max-width: 850px) {
+      .criteria-items-list {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+      }
     }
     .criteria-item {
       display: flex;
@@ -2400,24 +2438,24 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       background: #0d1118;
       border: 1px solid var(--line-strong);
       border-radius: var(--radius-sm);
-      padding: 1.25rem 1.5rem;
+      padding: 1rem 1.15rem;
       display: flex;
       flex-direction: column;
-      gap: 1.15rem;
+      gap: 0.85rem;
     }
     .stepper-hero {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1.25rem;
+      gap: 0.75rem;
     }
     .step-hero-btn {
-      width: 50px;
-      height: 50px;
+      width: 44px;
+      height: 44px;
       background: #141923;
       border: 1px solid var(--line-strong);
       color: #fff;
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       font-weight: 700;
       border-radius: var(--radius-sm);
       cursor: pointer;
@@ -2426,6 +2464,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       justify-content: center;
       transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       user-select: none;
+      flex-shrink: 0;
     }
     .step-hero-btn:hover:not(:disabled) {
       background: var(--surface-hover);
@@ -2447,7 +2486,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       gap: 3px;
     }
     .step-hero-val {
-      font-size: 2.5rem;
+      font-size: 2.2rem;
       font-weight: 800;
       font-family: var(--font-mono);
       color: #ffffff;
@@ -2455,29 +2494,33 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       letter-spacing: -0.02em;
     }
     .step-hero-unit {
-      font-size: 0.78rem;
+      font-size: 0.74rem;
       color: var(--text-dim);
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.05em;
       font-weight: 600;
+      white-space: nowrap;
     }
     .telemetry-range-hint {
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-top: 1px solid var(--line);
-      padding-top: 0.85rem;
-      font-size: 0.8rem;
+      padding-top: 0.75rem;
+      font-size: 0.76rem;
       color: var(--text-dim);
+      gap: 0.5rem;
+      flex-wrap: wrap;
     }
     .telemetry-status-pill {
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
-      padding: 3px 10px;
+      padding: 2px 8px;
       border-radius: 4px;
       background: rgba(255, 255, 255, 0.06);
       color: var(--text-muted);
       border: 1px solid var(--line);
+      white-space: nowrap;
     }
     .submit-bar {
       display: flex;
