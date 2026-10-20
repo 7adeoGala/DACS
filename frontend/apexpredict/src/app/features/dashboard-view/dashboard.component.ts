@@ -2148,15 +2148,15 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       border-color: rgba(255, 255, 255, 0.35);
       box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 14px -2px var(--driver-team-color, rgba(255,255,255,0.2));
     }
-    /* PILOTO ELEGIDO: MÁXIMA VISIBILIDAD Y DESTACAMIENTO UNIFORME EN ROJO F1 */
+    /* PILOTO ELEGIDO: DESTACAMIENTO EN LA PALETA OFICIAL DE LA PÁGINA (ROJO F1) */
     .duel-driver-card.selected {
-      background: linear-gradient(135deg, rgba(225, 6, 0, 0.16) 0%, rgba(225, 6, 0, 0.04) 60%, transparent 100%), #111622;
-      border: 2px solid var(--f1-red, #e10600);
-      border-left: 6px solid var(--f1-red, #e10600);
-      box-shadow: 0 0 0 1px rgba(225, 6, 0, 0.45) inset,
-                  0 0 24px rgba(225, 6, 0, 0.4),
+      background: linear-gradient(135deg, rgba(225, 6, 0, 0.14) 0%, rgba(225, 6, 0, 0.03) 60%, transparent 100%), #111622;
+      border: 2px solid var(--red, #e10600);
+      border-left: 6px solid var(--red, #e10600);
+      box-shadow: 0 0 0 1px rgba(225, 6, 0, 0.4) inset,
+                  0 0 20px var(--red-glow, rgba(225, 6, 0, 0.35)),
                   0 12px 28px rgba(0, 0, 0, 0.65);
-      transform: translateY(-2px) scale(1.025);
+      transform: translateY(-2px) scale(1.02);
       z-index: 2;
     }
     /* PILOTO NO ELEGIDO: ATENUADO PARA DAR PROTAGONISMO AL ELEGIDO */
@@ -2229,19 +2229,20 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: var(--f1-red, #e10600);
+      background: linear-gradient(135deg, var(--red, #e10600) 0%, #b30000 100%);
       color: #ffffff;
       font-weight: 900;
       font-size: 0.72rem;
       letter-spacing: 0.06em;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      box-shadow: 0 0 14px rgba(225, 6, 0, 0.55);
+      padding: 5px 12px;
+      border-radius: var(--radius-full, 9999px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 0 14px var(--red-glow, rgba(225, 6, 0, 0.45));
       animation: pulse-picked 2.5s infinite ease-in-out;
     }
     @keyframes pulse-picked {
-      0%, 100% { box-shadow: 0 0 14px rgba(225, 6, 0, 0.55); }
-      50% { box-shadow: 0 0 22px rgba(225, 6, 0, 0.85); }
+      0%, 100% { box-shadow: 0 0 14px var(--red-glow, rgba(225, 6, 0, 0.45)); }
+      50% { box-shadow: 0 0 22px var(--red-glow, rgba(225, 6, 0, 0.75)); }
     }
     .check-icon-svg {
       display: block;
