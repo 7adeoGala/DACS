@@ -16,7 +16,7 @@ COPY theme/ /opt/keycloak/themes/
 # Limitar estrictamente el uso de memoria para el límite de 512MB de Render
 # - KC_CACHE=local / --cache=local: Desactiva JGroups/Infinispan distribuido (evita puertos 7800/57800 y errores de cookie HEAD)
 # - Xss256k: Reduce el stack por thread de 1MB a 256KB (ahorra ~35-40MB en ~50 threads)
-# - Xmx224m + MaxMetaspaceSize=128m: Máximo total JVM controlado en ~390-410MB (dentro del límite de 512MB)
+# - Xmx176m + MaxMetaspaceSize=220m: Asegura Metaspace suficiente para Keycloak 26 (Quarkus, OIDC, Google Broker, Master) evitando Metaspace OOM, manteniendo el total JVM en ~430MB (< 512MB límite Render)
 # IMPORTANTE: NO añadir banderas de GC explícitas (ej: -XX:+UseSerialGC) para evitar colisión con el GC configurado por kc.sh
 ENV KC_DB=postgres \
     KC_HTTP_ENABLED=true \
@@ -26,7 +26,7 @@ ENV KC_DB=postgres \
     KC_PROXY_HEADERS=xforwarded \
     KC_CACHE=local \
     KC_HEALTH_ENABLED=true \
-    JAVA_OPTS_APPEND="-Xms96m -Xmx224m -XX:MetaspaceSize=80m -XX:MaxMetaspaceSize=128m -Xss256k"
+    JAVA_OPTS_APPEND="-Xms64m -Xmx176m -XX:MetaspaceSize=96m -XX:MaxMetaspaceSize=220m -Xss256k"
 
 EXPOSE 8080
 

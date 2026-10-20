@@ -35,7 +35,7 @@
       "publicClient": true,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
+      "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": false,
       "redirectUris": ["https://dacs-nine.vercel.app/*", "https://dacs2026.local/apexpredict/*", "http://localhost:4200/*", "https://localhost:4200/*"],
       "webOrigins": ["https://dacs-nine.vercel.app", "https://dacs2026.local", "http://localhost:4200", "https://localhost:4200"],

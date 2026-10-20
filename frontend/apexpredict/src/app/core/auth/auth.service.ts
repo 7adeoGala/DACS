@@ -162,7 +162,10 @@ export class AuthService {
       clearTimeout(timeoutId);
 
       if (!res.ok) {
-        return false;
+        if (res.status === 400 || res.status === 401) {
+          throw new Error('Credenciales no válidas. Revisá tu usuario y contraseña.');
+        }
+        throw new Error('El servidor de autenticación se está iniciando en Render. Aguardá unos segundos y volvé a intentar.');
       }
 
       const data = await res.json();
@@ -205,9 +208,12 @@ export class AuthService {
       // Provisionar y registrar de inmediato el usuario en el backend (app_users)
       this.provisionUserInBackend(data.access_token);
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al autenticar credenciales:', err);
-      return false;
+      if (err?.name === 'AbortError') {
+        throw new Error('Tiempo de espera agotado al conectar con el servidor de autenticación. Intentá nuevamente.');
+      }
+      throw err;
     }
   }
 
