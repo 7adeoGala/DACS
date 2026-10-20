@@ -140,13 +140,24 @@
 }
 
 .telemetry-main-grid.guest-mode {
-  grid-template-columns: 280px 1fr 1.35fr;
+  grid-template-columns: 290px 1fr 1.35fr;
+  align-items: stretch;
 }
 
 @media (max-width: 1100px) {
   .telemetry-main-grid,
   .telemetry-main-grid.guest-mode {
     grid-template-columns: 1fr;
+  }
+  .sidebar-schedule,
+  .center-stage.guest-center,
+  .sidebar-right-circuit {
+    height: auto !important;
+  }
+  .meteo-widget,
+  .scoring-preview-card,
+  .guest-countdown-banner {
+    margin-top: 0 !important;
   }
 }
 
@@ -155,6 +166,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  height: 100%;
 }
 
 .schedule-card-header {
@@ -276,6 +288,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   padding: 14px;
+  margin-top: auto;
 }
 
 .meteo-header {
@@ -1090,22 +1103,30 @@
   100% { transform: scale(0.95); opacity: 0.7; }
 }
 
+/* Center Stage en Modo Invitado */
+.center-stage.guest-center {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
 /* Landing Page Card (Unauthenticated - Explainer) */
 .landing-welcome-card {
   background: var(--surface-card);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-md);
-  padding: 22px;
+  padding: 18px 20px;
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .welcome-header {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .welcome-tag-badge {
@@ -1133,7 +1154,7 @@
 }
 
 .welcome-title {
-  font-size: 1.28rem;
+  font-size: 1.2rem;
   font-weight: 800;
   color: #ffffff;
   margin: 0;
@@ -1141,8 +1162,8 @@
 }
 
 .welcome-lead {
-  font-size: 0.88rem;
-  line-height: 1.55;
+  font-size: 0.84rem;
+  line-height: 1.5;
   color: var(--text-muted);
   margin: 0;
 }
@@ -1150,16 +1171,16 @@
 .how-it-works-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .how-step-card {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   background: var(--surface);
   border: 1px solid var(--line);
-  padding: 12px 14px;
+  padding: 9px 12px;
   border-radius: var(--radius-sm);
   transition: border-color 0.2s, background 0.2s;
 }
@@ -1185,19 +1206,19 @@
 .step-content {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .step-content h5 {
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #ffffff;
   margin: 0;
 }
 
 .step-content p {
-  font-size: 0.78rem;
-  line-height: 1.45;
+  font-size: 0.76rem;
+  line-height: 1.4;
   color: var(--text-muted);
   margin: 0;
 }
@@ -1207,7 +1228,10 @@
   background: var(--surface-card);
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  padding: 16px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
 }
 
 .scoring-preview-card .card-head {
@@ -1226,15 +1250,15 @@
 }
 
 .scoring-preview-card h4 {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 800;
-  margin: 0 0 12px 0;
+  margin: 0 0 10px 0;
 }
 
 .scoring-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px 10px;
 }
 
 .scoring-item {
@@ -1245,12 +1269,77 @@
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
-  font-size: 0.75rem;
+  font-size: 0.73rem;
+}
+
+.scoring-item:last-child {
+  grid-column: span 2;
 }
 
 .scoring-item strong {
   font-family: var(--font-mono);
   color: var(--cyan);
+}
+
+/* Columna Derecha en Modo Invitado */
+.sidebar-right-circuit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+}
+
+.sidebar-right-circuit .circuit-display-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 16px 20px;
+}
+
+.sidebar-right-circuit .circuit-svg-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 180px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.sidebar-right-circuit .track-svg {
+  width: 100%;
+  height: 100%;
+  max-height: 220px;
+}
+
+.guest-countdown-banner {
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-top: auto;
+}
+
+.guest-countdown-banner .countdown-full {
+  width: 100%;
+}
+
+.guest-countdown-banner .timer-title {
+  margin-bottom: 8px;
+}
+
+.guest-countdown-banner .countdown-boxes {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.guest-countdown-banner .time-box {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 6px;
+}
+
+.guest-countdown-banner .time-box .num {
+  font-size: 1.4rem;
 }
 
 .btn-user-dashboard {
