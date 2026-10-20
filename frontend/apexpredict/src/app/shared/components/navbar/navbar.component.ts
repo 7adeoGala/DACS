@@ -11,10 +11,13 @@ export interface F1TeamOption {
   id: string;
   name: string;
   color: string;
+  secondaryColor: string;
   gradient: string;
   textColor: string;
+  btnTextColor?: string;
   tag: string;
   tagColor?: string;
+  switchKnobColor?: string;
 }
 
 export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
@@ -22,72 +25,94 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     id: 'mclaren', 
     name: 'McLaren F1 Team', 
     color: '#FF8000', 
+    secondaryColor: '#00A3E0',
     gradient: 'linear-gradient(135deg, #FF8000 0%, #D85600 100%)',
     textColor: '#000000',
+    btnTextColor: '#000000',
     tag: 'PAPAYA' 
   },
   { 
     id: 'ferrari', 
     name: 'Scuderia Ferrari', 
     color: '#E8002D', 
+    secondaryColor: '#FFE500',
     gradient: 'linear-gradient(135deg, #EF1A2D 0%, #8A000E 100%)',
     textColor: '#FFFFFF',
+    btnTextColor: '#FFFFFF',
+    switchKnobColor: '#000000',
     tag: 'SCUDERIA' 
   },
   { 
     id: 'redbull', 
     name: 'Red Bull Racing', 
     color: '#1E41FF', 
+    secondaryColor: '#EA1D2D',
     gradient: 'linear-gradient(135deg, #1E3D7B 0%, #061026 100%)',
     textColor: '#FFFFFF',
+    btnTextColor: '#FFFFFF',
     tag: 'RED BULL' 
   },
   { 
     id: 'mercedes', 
     name: 'Mercedes-AMG PETRONAS', 
     color: '#00A19C', 
+    secondaryColor: '#27F4D2',
     gradient: 'linear-gradient(135deg, #27F4D2 0%, #007A6C 100%)',
     textColor: '#031E19',
+    btnTextColor: '#031E19',
+    switchKnobColor: '#031E19',
     tag: 'PETRONAS' 
   },
   { 
     id: 'astonmartin', 
     name: 'Aston Martin Aramco', 
     color: '#00594F', 
+    secondaryColor: '#CEDC00',
     gradient: 'linear-gradient(135deg, #00665E 0%, #002B26 100%)',
     textColor: '#FFFFFF',
+    btnTextColor: '#FFFFFF',
+    switchKnobColor: '#002B26',
     tag: 'AMR' 
   },
   { 
     id: 'alpine', 
     name: 'BWT Alpine F1 Team', 
-    color: '#FD4BC7', 
+    color: '#0093CC', 
+    secondaryColor: '#FD4BC7',
     gradient: 'linear-gradient(135deg, #0093CC 0%, #FD4BC7 100%)',
     textColor: '#FFFFFF',
+    btnTextColor: '#FFFFFF',
     tag: 'ALPINE' 
   },
   { 
     id: 'williams', 
     name: 'Williams Racing', 
     color: '#00A0DE', 
+    secondaryColor: '#00F2FE',
     gradient: 'linear-gradient(135deg, #00A0DE 0%, #041E42 100%)',
     textColor: '#FFFFFF',
+    btnTextColor: '#FFFFFF',
+    switchKnobColor: '#041E42',
     tag: 'WILLIAMS' 
   },
   { 
     id: 'rb', 
     name: 'Visa Cash App RB', 
     color: '#3858EC', 
+    secondaryColor: '#FF3B30',
     gradient: 'linear-gradient(135deg, #4E71FF 0%, #10217D 100%)',
     textColor: '#FFFFFF',
+    btnTextColor: '#FFFFFF',
     tag: 'VCARB' 
   },
   { 
     id: 'audi', 
     name: 'Audi F1 Team', 
     color: '#C0C6CE', 
+    secondaryColor: '#E0001B',
     gradient: 'linear-gradient(135deg, #E6E8EC 0%, #C0C6CE 50%, #7E8590 100%)',
     textColor: '#E0001B',
+    btnTextColor: '#0b0f17',
     tag: 'AUDI',
     tagColor: '#E0001B' 
   },
@@ -95,8 +120,10 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     id: 'haas', 
     name: 'TGR Haas F1 Team', 
     color: '#FFFFFF', 
+    secondaryColor: '#ED1A3B',
     gradient: 'linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 58%, #ED1A3B 82%, #111111 100%)',
     textColor: '#ED1A3B',
+    btnTextColor: '#0b0f17',
     tag: 'HAAS GR',
     tagColor: '#ED1A3B' 
   },
@@ -104,8 +131,11 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     id: 'cadillac', 
     name: 'Cadillac Formula 1 Team', 
     color: '#FFFFFF', 
+    secondaryColor: '#FFFFFF',
     gradient: 'linear-gradient(135deg, #FFFFFF 0%, #3F3F46 50%, #09090B 100%)',
     textColor: '#000000',
+    btnTextColor: '#000000',
+    switchKnobColor: '#000000',
     tag: 'CADILLAC',
     tagColor: '#FFFFFF' 
   }
@@ -168,7 +198,10 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
               @if (isProfileOpen()) {
                 <div class="profile-dropdown-menu" 
                   (click)="$event.stopPropagation()"
-                  [style.--team-color]="activeTeam().color">
+                  [style.--team-color]="activeTeam().color"
+                  [style.--team-secondary]="activeTeam().secondaryColor"
+                  [style.--team-btn-text]="activeTeam().btnTextColor || activeTeam().textColor || '#ffffff'"
+                  [style.--team-switch-knob]="activeTeam().switchKnobColor || '#ffffff'">
                   <!-- ENCABEZADO DEL PERFIL (REFLEJA PREVISUALIZACIÓN DE COLORES DE EQUIPO, PERO NOMBRE GUARDADO) -->
                   <div class="dropdown-header">
                     <div class="avatar-box" 
@@ -916,27 +949,29 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       width: 18px;
       left: 3px;
       bottom: 3px;
-      background-color: white;
+      background-color: #ffffff;
       transition: 0.25s;
       border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
     }
     input:checked + .toggle-slider {
-      background-color: var(--red);
+      background-color: var(--team-secondary, var(--red));
     }
     input:checked + .toggle-slider:before {
       transform: translateX(20px);
+      background-color: var(--team-switch-knob, #ffffff);
     }
 
     /* SAVE BUTTON */
     .btn-save-profile {
       width: 100%;
       background: var(--team-color, var(--red));
-      color: #ffffff;
+      color: var(--team-btn-text, #ffffff);
       font-size: 0.85rem;
       font-weight: 800;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      border: none;
+      border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 7px;
       padding: 0.65rem 1rem;
       cursor: pointer;
@@ -946,6 +981,9 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       gap: 0.45rem;
       transition: all 0.25s ease;
       box-shadow: 0 4px 14px color-mix(in srgb, var(--team-color, var(--red)) 35%, transparent);
+    }
+    .btn-save-profile span {
+      color: inherit;
     }
     .btn-save-profile:hover:not(:disabled) {
       filter: brightness(1.1);
@@ -960,8 +998,8 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       display: inline-block;
       width: 14px;
       height: 14px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-top-color: #ffffff;
+      border: 2px solid color-mix(in srgb, var(--team-btn-text, #ffffff) 30%, transparent);
+      border-top-color: var(--team-btn-text, #ffffff);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
