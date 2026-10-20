@@ -92,7 +92,7 @@ export class ApiService {
   }
 
   updateProfile(payload: UpdateProfileRequest): Observable<Profile> {
-    return this.http.patch<Profile>(`${this.base}/me/profile`, payload).pipe(
+    return this.http.put<Profile>(`${this.base}/me/profile`, payload).pipe(
       this.retryOnColdStart<Profile>()
     );
   }

@@ -23,7 +23,7 @@ public interface DomainClient {
     @GetMapping("/me")
     Profile getProfile();
 
-    @PatchMapping("/me/profile")
+    @PutMapping("/me/profile")
     Profile updateProfile(@RequestBody UpdateProfileRequest request);
 
 

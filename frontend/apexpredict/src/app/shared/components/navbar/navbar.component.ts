@@ -259,6 +259,8 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                       <span class="spinner-mini"></span> Guardando...
                     } @else if (saveStatus() === 'success') {
                       <span>✓ Perfil Guardado</span>
+                    } @else if (saveStatus() === 'error') {
+                      <span>⚠ Guardado sólo local</span>
                     } @else {
                       <span>💾 GUARDAR PERFIL</span>
                     }
@@ -1068,11 +1070,10 @@ export class NavbarComponent implements OnInit {
         setTimeout(() => this.saveStatus.set('idle'), 2500);
       },
       error: (err) => {
-        console.warn('Backend update deferred, profile saved in local storage:', err);
+        console.warn('Backend update failed, profile saved in local storage only:', err);
         this.isSaving.set(false);
-        // Indicamos éxito confirmado porque los datos ya quedaron salvados de forma segura
-        this.saveStatus.set('success');
-        setTimeout(() => this.saveStatus.set('idle'), 2500);
+        this.saveStatus.set('error');
+        setTimeout(() => this.saveStatus.set('idle'), 3500);
       }
     });
   }
