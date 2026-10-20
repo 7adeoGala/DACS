@@ -14,6 +14,7 @@ export interface F1TeamOption {
   gradient: string;
   textColor: string;
   tag: string;
+  tagColor?: string;
 }
 
 export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
@@ -84,26 +85,29 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
   { 
     id: 'audi', 
     name: 'Audi F1 Team', 
-    color: '#A0A5A8', 
-    gradient: 'linear-gradient(135deg, #A0A5A8 0%, #151515 50%, #E0001B 100%)',
-    textColor: '#FFFFFF',
-    tag: 'AUDI' 
+    color: '#C0C6CE', 
+    gradient: 'linear-gradient(135deg, #E6E8EC 0%, #C0C6CE 50%, #7E8590 100%)',
+    textColor: '#E0001B',
+    tag: 'AUDI',
+    tagColor: '#E0001B' 
   },
   { 
     id: 'haas', 
     name: 'TGR Haas F1 Team', 
-    color: '#ED1A3B', 
-    gradient: 'linear-gradient(135deg, #FFFFFF 0%, #ED1A3B 50%, #111111 100%)',
-    textColor: '#FFFFFF',
-    tag: 'HAAS GR' 
+    color: '#FFFFFF', 
+    gradient: 'linear-gradient(135deg, #FFFFFF 0%, #FFFFFF 58%, #ED1A3B 82%, #111111 100%)',
+    textColor: '#ED1A3B',
+    tag: 'HAAS GR',
+    tagColor: '#ED1A3B' 
   },
   { 
     id: 'cadillac', 
     name: 'Cadillac Formula 1 Team', 
-    color: '#C5A059', 
-    gradient: 'linear-gradient(135deg, #D4AF37 0%, #2A2415 60%, #0F0F12 100%)',
-    textColor: '#FFFFFF',
-    tag: 'CADILLAC' 
+    color: '#FFFFFF', 
+    gradient: 'linear-gradient(135deg, #FFFFFF 0%, #3F3F46 50%, #09090B 100%)',
+    textColor: '#000000',
+    tag: 'CADILLAC',
+    tagColor: '#FFFFFF' 
   }
 ];
 
@@ -178,7 +182,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                         {{ savedDisplayName() }}
                       </h4>
                       <div class="header-badge-row">
-                        <span class="team-tag-badge" [style.--team-color]="activeTeam().color">
+                        <span class="team-tag-badge" [style.--team-color]="activeTeam().tagColor || activeTeam().color">
                           {{ activeTeamTag() }}
                         </span>
                       </div>
@@ -222,7 +226,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                           <span class="trigger-label">{{ formTeam().name }}</span>
                         </span>
                         <div class="trigger-right">
-                          <span class="team-tag-pill" [style.--team-color]="formTeam().color">{{ formTeam().tag }}</span>
+                          <span class="team-tag-pill" [style.--team-color]="formTeam().tagColor || formTeam().color">{{ formTeam().tag }}</span>
                           <span class="chevron-arrow" [class.rotated]="isTeamSelectOpen()">▾</span>
                         </div>
                       </button>
@@ -236,14 +240,14 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                               role="option"
                               [attr.aria-selected]="formTeamId() === team.id"
                               [class.is-selected]="formTeamId() === team.id"
-                              [style.--opt-color]="team.color"
+                              [style.--opt-color]="team.tagColor || team.color"
                               (click)="selectTeam(team.id, $event)">
                               <span class="opt-left">
                                 <span class="team-dot" [style.background]="team.gradient || team.color"></span>
                                 <span class="opt-name">{{ team.name }}</span>
                               </span>
                               <span class="opt-right">
-                                <span class="team-tag-pill" [style.--team-color]="team.color">{{ team.tag }}</span>
+                                <span class="team-tag-pill" [style.--team-color]="team.tagColor || team.color">{{ team.tag }}</span>
                                 @if (formTeamId() === team.id) {
                                   <span class="opt-check">✓</span>
                                 }

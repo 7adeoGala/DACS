@@ -31,7 +31,7 @@ export class DriverPickerModalComponent {
   readonly selectedTeam = signal<string>('ALL');
 
   // Catálogo de escuderías para la barra de píldoras
-  readonly teamList = [
+  readonly teamList: Array<{ name: string; color: string; gradient?: string }> = [
     { name: 'McLaren', color: '#ff8000' },
     { name: 'Red Bull', color: '#3671c6' },
     { name: 'Ferrari', color: '#e80020' },
@@ -40,9 +40,9 @@ export class DriverPickerModalComponent {
     { name: 'Williams', color: '#64c4ff' },
     { name: 'Alpine', color: '#0093cc' },
     { name: 'Racing Bulls', color: '#6692ff' },
-    { name: 'Audi', color: '#a0a5a8' },
-    { name: 'Haas GR', color: '#ed1a3b' },
-    { name: 'Cadillac', color: '#c5a059' }
+    { name: 'Audi', color: '#c0c6ce' },
+    { name: 'Haas GR', color: '#ffffff', gradient: 'linear-gradient(135deg, #ffffff 50%, #ed1a3b 100%)' },
+    { name: 'Cadillac', color: '#ffffff', gradient: 'linear-gradient(135deg, #ffffff 50%, #111111 100%)' }
   ];
 
   // Atajos globales de teclado

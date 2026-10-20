@@ -51,7 +51,7 @@
             class="team-filter-pill"
             [class.active]="selectedTeam() === team.name"
             (click)="selectedTeam.set(team.name)">
-            <span class="team-dot" [style.background]="team.color"></span>
+            <span class="team-dot" [style.background]="team.gradient || team.color"></span>
             {{ team.name }}
           </button>
         }

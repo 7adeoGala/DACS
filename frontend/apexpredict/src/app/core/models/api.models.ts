@@ -227,12 +227,12 @@ export const F1_DRIVERS: DriverOption[] = [
   { id: 'doohan', name: 'Jack Doohan', code: 'DOO', number: 7, team: 'Alpine', teamColor: '#0093CC' },
   { id: 'tsunoda', name: 'Yuki Tsunoda', code: 'TSU', number: 22, team: 'Racing Bulls', teamColor: '#6692FF' },
   { id: 'hadjar', name: 'Isack Hadjar', code: 'HAD', number: 6, team: 'Racing Bulls', teamColor: '#6692FF' },
-  { id: 'hulkenberg', name: 'Nico Hülkenberg', code: 'HUL', number: 27, team: 'Audi', teamColor: '#A0A5A8' },
-  { id: 'bortoleto', name: 'Gabriel Bortoleto', code: 'BOR', number: 5, team: 'Audi', teamColor: '#A0A5A8' },
-  { id: 'bearman', name: 'Oliver Bearman', code: 'BEA', number: 87, team: 'Haas GR', teamColor: '#ED1A3B' },
-  { id: 'ocon', name: 'Esteban Ocon', code: 'OCO', number: 31, team: 'Haas GR', teamColor: '#ED1A3B' },
-  { id: 'perez', name: 'Sergio Pérez', code: 'PER', number: 11, team: 'Cadillac', teamColor: '#C5A059' },
-  { id: 'bottas', name: 'Valtteri Bottas', code: 'BOT', number: 77, team: 'Cadillac', teamColor: '#C5A059' },
+  { id: 'hulkenberg', name: 'Nico Hülkenberg', code: 'HUL', number: 27, team: 'Audi', teamColor: '#C0C6CE' },
+  { id: 'bortoleto', name: 'Gabriel Bortoleto', code: 'BOR', number: 5, team: 'Audi', teamColor: '#C0C6CE' },
+  { id: 'bearman', name: 'Oliver Bearman', code: 'BEA', number: 87, team: 'Haas GR', teamColor: '#FFFFFF' },
+  { id: 'ocon', name: 'Esteban Ocon', code: 'OCO', number: 31, team: 'Haas GR', teamColor: '#FFFFFF' },
+  { id: 'perez', name: 'Sergio Pérez', code: 'PER', number: 11, team: 'Cadillac', teamColor: '#FFFFFF' },
+  { id: 'bottas', name: 'Valtteri Bottas', code: 'BOT', number: 77, team: 'Cadillac', teamColor: '#FFFFFF' },
 ];
 
 export interface CircuitInfo {

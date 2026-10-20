@@ -245,12 +245,12 @@ Cada piloto cuenta con `id`, `name`, `code`, `number`, `team`, y `teamColor`:
 * `gasly`: Pierre Gasly (#10, Alpine, `#0093CC`)
 * `tsunoda`: Yuki Tsunoda (#22, Racing Bulls, `#6692FF`)
 * `hadjar`: Isack Hadjar (#6, Racing Bulls, `#6692FF`)
-* `hulkenberg`: Nico Hülkenberg (#27, Audi, `#A0A5A8`)
-* `bortoleto`: Gabriel Bortoleto (#5, Audi, `#A0A5A8`)
-* `bearman`: Oliver Bearman (#87, Haas GR, `#ED1A3B`)
-* `ocon`: Esteban Ocon (#31, Haas GR, `#ED1A3B`)
-* `perez`: Sergio Pérez (#11, Cadillac, `#C5A059`)
-* `bottas`: Valtteri Bottas (#77, Cadillac, `#C5A059`)
+* `hulkenberg`: Nico Hülkenberg (#27, Audi, `#C0C6CE`)
+* `bortoleto`: Gabriel Bortoleto (#5, Audi, `#C0C6CE`)
+* `bearman`: Oliver Bearman (#87, Haas GR, `#FFFFFF`)
+* `ocon`: Esteban Ocon (#31, Haas GR, `#ED1A3B` / `#FFFFFF`)
+* `perez`: Sergio Pérez (#11, Cadillac, `#FFFFFF`)
+* `bottas`: Valtteri Bottas (#77, Cadillac, `#FFFFFF`)
 
 ---
 
