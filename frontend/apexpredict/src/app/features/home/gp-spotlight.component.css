@@ -721,20 +721,17 @@
   display: block;
 }
 
-.city-name {
-  font-size: 0.65rem;
+.predictions-count {
+  font-size: 0.68rem;
   color: var(--text-muted);
+  display: block;
 }
 
-.trend-badge {
+.standings-pts {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--red-bright);
-}
-
-.trend-badge.up {
-  color: var(--green);
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--gold, #f5b000);
 }
 
 .btn-view-table {

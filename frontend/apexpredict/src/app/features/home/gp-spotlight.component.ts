@@ -119,10 +119,10 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
 
   // Mini Leaderboard de la Liga / Global
   readonly paddockStandings = signal([
-    { rank: 'P1', username: 'demo-player', points: 0, trend: '0 pts', trendUp: true, isCurrentUser: false },
-    { rank: 'P2', username: 'tadeogala7', points: 0, trend: '0 pts', trendUp: true, isCurrentUser: true },
-    { rank: 'P3', username: 'martin', points: 0, trend: '0 pts', trendUp: true, isCurrentUser: false },
-    { rank: 'P4', username: 'geroalu', points: 0, trend: '0 pts', trendUp: true, isCurrentUser: false }
+    { rank: 'P1', username: 'demo-player', points: 0, predictionsCount: 0, isCurrentUser: false },
+    { rank: 'P2', username: 'tadeogala7', points: 0, predictionsCount: 0, isCurrentUser: true },
+    { rank: 'P3', username: 'martin', points: 0, predictionsCount: 0, isCurrentUser: false },
+    { rank: 'P4', username: 'geroalu', points: 0, predictionsCount: 0, isCurrentUser: false }
   ]);
 
   readonly isLocked = computed(() => this.session()?.isLocked ?? false);
@@ -188,8 +188,7 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
               rank: `P${e.rank}`,
               username: `@${e.displayName}${isMe ? ' (Tú)' : ''}`,
               points: Number(e.totalScore),
-              trend: `+${e.predictionsCount * 10} pts`,
-              trendUp: true,
+              predictionsCount: Number(e.predictionsCount || 0),
               isCurrentUser: isMe
             };
           });

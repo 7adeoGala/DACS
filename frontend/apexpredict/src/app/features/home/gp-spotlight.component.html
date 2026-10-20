@@ -202,9 +202,11 @@
                 <span class="rank-pos">{{ u.rank }}</span>
                 <div class="driver-col">
                   <span class="user-name">{{ u.username }}</span>
-                  <span class="city-name">{{ u.points }} pts</span>
+                  <span class="predictions-count">
+                    {{ u.predictionsCount }} {{ u.predictionsCount === 1 ? 'carrera enviada' : 'carreras enviadas' }}
+                  </span>
                 </div>
-                <span class="trend-badge" [class.up]="u.trendUp">{{ u.trend }}</span>
+                <span class="standings-pts">{{ u.points }} pts</span>
               </div>
             }
           </div>
