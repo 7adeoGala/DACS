@@ -892,7 +892,14 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   <h3>Clasificación Global de la Comunidad</h3>
                   <p class="dim" style="margin-top: 4px;">Puntos y pronósticos registrados en tiempo real por todos los corredores de ApexPredict.</p>
                 </div>
-                <span class="mono-pts">{{ globalLeaderboard().length }} Pilotos Registrados</span>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  @if (isLoadingGlobalLeaderboard()) {
+                    <span class="dim" style="font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                      <span class="spinner-inline"></span> Sincronizando...
+                    </span>
+                  }
+                  <span class="mono-pts">{{ globalLeaderboard().length }} Pilotos Registrados</span>
+                </div>
               </div>
 
               @if (globalLeaderboard().length >= 3) {
@@ -967,8 +974,24 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     }
                   </tbody>
                 </table>
+              } @else if (isLoadingGlobalLeaderboard()) {
+                <div style="padding: 3rem 0; text-align: center;">
+                  <div class="spinner-block"></div>
+                  <p class="dim" style="margin: 0;">Conectando con el servidor y cargando clasificación global…</p>
+                </div>
+              } @else if (globalLeaderboardError()) {
+                <div class="alert-box error" style="margin-top: 1.5rem; text-align: center; padding: 1.25rem;">
+                  <p style="margin: 0 0 0.75rem 0; font-size: 0.9rem;">{{ globalLeaderboardError() }}</p>
+                  <button type="button" class="btn-primary" (click)="loadGlobalLeaderboard()" style="display: inline-flex; align-items: center; gap: 0.5rem; margin: 0 auto; padding: 0.45rem 1.1rem; font-size: 0.85rem; cursor: pointer;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    Reintentar conexión
+                  </button>
+                </div>
               } @else {
-                <p class="dim" style="padding: 2rem 0; text-align: center;">Cargando clasificación global…</p>
+                <p class="dim" style="padding: 2.5rem 0; text-align: center;">Aún no hay puntuaciones registradas en el campeonato global.</p>
               }
             </div>
           }
@@ -2125,6 +2148,28 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       border: 1px solid var(--green);
       color: #a7f3d0;
     }
+    .spinner-inline {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: var(--cyan);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+    }
+    .spinner-block {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-top-color: var(--red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 1rem;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .grid-two-cols {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -3140,6 +3185,8 @@ export class DashboardComponent implements OnInit {
 
   // Clasificación Global e Historial
   readonly globalLeaderboard = signal<LeaderboardEntry[]>([]);
+  readonly isLoadingGlobalLeaderboard = signal<boolean>(false);
+  readonly globalLeaderboardError = signal<string | null>(null);
   readonly historyItems = signal<PredictionHistoryItem[]>([]);
 
   // Estados de feedback de la UI
@@ -3231,6 +3278,10 @@ export class DashboardComponent implements OnInit {
 
   private restoreLocalCache() {
     const user = this.auth.username();
+    const cachedLb = this.api.getCachedGlobalLeaderboard?.();
+    if (cachedLb && cachedLb.length > 0) {
+      this.globalLeaderboard.set(cachedLb);
+    }
     const cachedPred = this.api.getCachedPrediction?.(user);
     if (cachedPred && (cachedPred.predictionId || (cachedPred.podium && cachedPred.podium.length > 0))) {
       this.applyPredictionToState(cachedPred);
@@ -3337,21 +3388,29 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  private loadGlobalLeaderboard() {
+  loadGlobalLeaderboard() {
+    this.isLoadingGlobalLeaderboard.set(true);
+    this.globalLeaderboardError.set(null);
     this.api.globalLeaderboard().subscribe({
       next: (lb) => {
-        this.globalLeaderboard.set(lb);
+        this.globalLeaderboard.set(lb || []);
+        this.isLoadingGlobalLeaderboard.set(false);
         // Sincronizar puntos de usuario actual en navbar si coincide
         const myName = this.auth.username()?.toLowerCase();
         if (myName) {
-          const me = lb.find(u => u.displayName.toLowerCase().includes(myName));
+          const me = (lb || []).find(u => u.displayName.toLowerCase().includes(myName));
           if (me) {
             this.auth.userPoints.set(me.totalScore);
           }
         }
       },
       error: () => {
-        this.globalLeaderboard.set([]);
+        this.isLoadingGlobalLeaderboard.set(false);
+        if (this.globalLeaderboard().length === 0) {
+          this.globalLeaderboardError.set(
+            'El servidor backend se encuentra reiniciándose o conectando tras la última actualización.'
+          );
+        }
       }
     });
   }

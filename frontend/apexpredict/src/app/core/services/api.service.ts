@@ -215,7 +215,31 @@ export class ApiService {
   }
 
   globalLeaderboard() {
-    return this.http.get<LeaderboardEntry[]>(`${this.base}/leaderboard/global`).pipe(this.retryOnColdStart());
+    return this.http.get<LeaderboardEntry[]>(`${this.base}/leaderboard/global`).pipe(
+      tap((entries) => {
+        if (entries && entries.length > 0) {
+          this.setCachedGlobalLeaderboard(entries);
+        }
+      }),
+      this.retryOnColdStart()
+    );
+  }
+
+  getCachedGlobalLeaderboard(): LeaderboardEntry[] | null {
+    try {
+      const raw = localStorage.getItem('apex_global_leaderboard');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  setCachedGlobalLeaderboard(entries: LeaderboardEntry[]): void {
+    try {
+      if (entries && entries.length > 0) {
+        localStorage.setItem('apex_global_leaderboard', JSON.stringify(entries));
+      }
+    } catch {}
   }
 
   leagueLeaderboard(leagueId: string) {

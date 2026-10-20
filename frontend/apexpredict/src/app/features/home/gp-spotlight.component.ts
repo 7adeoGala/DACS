@@ -181,26 +181,35 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       });
     }
 
-    // Sincronizar mini leaderboard con usuarios reales
+    // Sincronizar mini leaderboard con usuarios reales (restaurando caché previo inmediatamente)
+    const cachedEntries = this.api.getCachedGlobalLeaderboard();
+    if (cachedEntries && cachedEntries.length > 0) {
+      this.populatePaddockStandings(cachedEntries);
+    }
+
     this.api.globalLeaderboard().subscribe({
       next: (entries: LeaderboardEntry[]) => {
         if (entries && entries.length > 0) {
-          const currentUsername = this.auth.username()?.toLowerCase();
-          const mapped = entries.slice(0, 4).map((e) => {
-            const isMe = currentUsername ? e.displayName.toLowerCase().includes(currentUsername) : false;
-            return {
-              rank: `P${e.rank}`,
-              username: `@${e.displayName}${isMe ? ' (Tú)' : ''}`,
-              points: Number(e.totalScore),
-              predictionsCount: Number(e.predictionsCount || 0),
-              isCurrentUser: isMe
-            };
-          });
-          this.paddockStandings.set(mapped);
+          this.populatePaddockStandings(entries);
         }
       },
       error: () => {}
     });
+  }
+
+  private populatePaddockStandings(entries: LeaderboardEntry[]): void {
+    const currentUsername = this.auth.username()?.toLowerCase();
+    const mapped = entries.slice(0, 4).map((e) => {
+      const isMe = currentUsername ? e.displayName.toLowerCase().includes(currentUsername) : false;
+      return {
+        rank: `P${e.rank}`,
+        username: `@${e.displayName}${isMe ? ' (Tú)' : ''}`,
+        points: Number(e.totalScore),
+        predictionsCount: Number(e.predictionsCount || 0),
+        isCurrentUser: isMe
+      };
+    });
+    this.paddockStandings.set(mapped);
   }
 
   /**
