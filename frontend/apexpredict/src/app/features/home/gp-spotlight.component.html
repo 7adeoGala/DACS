@@ -290,8 +290,8 @@
         </div>
 
         <!-- Countdown Banner -->
-        <div class="countdown-banner">
-          <div class="countdown-left">
+        <div class="countdown-banner guest-countdown-banner">
+          <div class="countdown-full">
             <div class="timer-title">
               <span>TIEMPO RESTANTE PARA LA CARRERA</span>
             </div>
@@ -301,15 +301,6 @@
               <div class="time-box"><span class="num">{{ minutes() }}</span><span class="label">MINUTOS</span></div>
               <div class="time-box highlight"><span class="num">{{ seconds() }}</span><span class="label">SEGUNDOS</span></div>
             </div>
-            <div class="sync-hint">
-              <span class="check-icon">●</span> Iniciá sesión para guardar y competir en ligas
-            </div>
-          </div>
-
-          <div class="countdown-right">
-            <a routerLink="/login" class="btn-cta-predict">
-              INICIAR SESIÓN Y PREDECIR
-            </a>
           </div>
         </div>
       </aside>
