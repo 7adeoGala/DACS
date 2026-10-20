@@ -387,6 +387,16 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                 </div>
               }
             </div>
+          } @else {
+            <!-- ACCIONES DE SESIÓN PARA VISITANTES (ARRIBA A LA DERECHA) -->
+            <div class="nav-auth-buttons">
+              <a routerLink="/login" class="nav-btn-login" id="navLoginBtn">
+                Iniciar Sesión
+              </a>
+              <a routerLink="/register" class="nav-btn-register" id="navRegisterBtn">
+                Registrarse
+              </a>
+            </div>
           }
         </div>
       </div>
@@ -445,6 +455,58 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       color: #ffffff;
       font-weight: 700;
       box-shadow: inset 0 -2px 0 var(--red);
+    }
+
+    /* ACCIONES DE SESIÓN EN NAVBAR (ARRIBA A LA DERECHA) */
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .nav-auth-buttons {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+    .nav-btn-login {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main, #f8fafc);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      padding: 0.45rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-btn-login:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.35);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+    .nav-btn-register {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--red);
+      color: #ffffff;
+      border: 1px solid var(--red-bright);
+      padding: 0.45rem 1.15rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-weight: 700;
+      text-decoration: none;
+      box-shadow: 0 0 14px var(--red-glow);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .nav-btn-register:hover {
+      background: var(--red-bright);
+      box-shadow: 0 0 20px rgba(225, 6, 0, 0.6);
+      transform: translateY(-1px);
     }
 
     /* DROPDOWN WRAPPER Y TRIGGER BUTTON */
@@ -1058,6 +1120,13 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
         right: -10px;
         width: calc(100vw - 2rem);
         max-width: 335px;
+      }
+      .nav-auth-buttons {
+        gap: 0.4rem;
+      }
+      .nav-btn-login, .nav-btn-register {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
       }
     }
   `]

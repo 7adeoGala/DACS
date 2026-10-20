@@ -1090,114 +1090,116 @@
   100% { transform: scale(0.95); opacity: 0.7; }
 }
 
-/* Landing Page Card (Unauthenticated) */
+/* Landing Page Card (Unauthenticated - Explainer) */
 .landing-welcome-card {
   background: var(--surface-card);
   border: 1px solid var(--line-strong);
   border-radius: var(--radius-md);
-  padding: 20px;
+  padding: 22px;
   box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .welcome-header {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.welcome-icon {
-  font-size: 2rem;
-}
-
-.welcome-tag {
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
-  color: var(--cyan);
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  display: block;
-}
-
-.welcome-header h4 {
-  font-size: 1.15rem;
-  font-weight: 800;
-  margin: 0;
-}
-
-.welcome-text {
-  font-size: 0.85rem;
-  line-height: 1.5;
-  color: var(--text-muted);
-  margin-bottom: 16px;
-}
-
-.welcome-features {
-  display: flex;
   flex-direction: column;
-  gap: 10px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  padding: 12px;
-  border-radius: var(--radius-sm);
-  margin-bottom: 16px;
-}
-
-.feat-item {
-  font-size: 0.75rem;
-  color: var(--text-main);
-  display: flex;
-  align-items: center;
   gap: 8px;
 }
 
-.welcome-actions {
+.welcome-tag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--cyan);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: rgba(0, 242, 254, 0.08);
+  border: 1px solid rgba(0, 242, 254, 0.25);
+  border-radius: 9999px;
+  padding: 3px 10px;
+  width: fit-content;
+}
+
+.live-dot-cyan {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+}
+
+.welcome-title {
+  font-size: 1.28rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.welcome-lead {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.how-it-works-grid {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.btn-welcome-login {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  text-align: center;
-  text-decoration: none;
-  padding: 12px;
-  background: var(--red);
-  color: #fff;
-  border-radius: var(--radius-sm);
-  font-weight: 800;
-  font-size: 0.9rem;
-  cursor: pointer;
-  border: none;
-  transition: background 0.2s;
-}
-
-.btn-welcome-login:hover {
-  background: var(--red-bright);
-}
-
-.btn-welcome-register {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  text-align: center;
-  text-decoration: none;
-  padding: 10px;
-  background: var(--surface-elevated);
-  color: var(--text-main);
+.how-step-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--surface);
   border: 1px solid var(--line);
+  padding: 12px 14px;
   border-radius: var(--radius-sm);
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
+  transition: border-color 0.2s, background 0.2s;
 }
 
-.btn-welcome-register:hover {
-  border-color: var(--line-strong);
+.how-step-card:hover {
+  border-color: rgba(255, 255, 255, 0.16);
   background: var(--surface-hover);
+}
+
+.step-num-badge {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--gold);
+  background: rgba(255, 209, 102, 0.1);
+  border: 1px solid rgba(255, 209, 102, 0.25);
+  padding: 2px 7px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.step-content h5 {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.step-content p {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin: 0;
 }
 
 /* Scoring preview card */

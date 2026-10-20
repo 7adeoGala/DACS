@@ -226,23 +226,60 @@
       <!-- ================= MODO INVITADO (RECIÉN INGRESA) ================= -->
       <!-- Columna Central: Información de las predicciones (Foto 2 + Sistema de puntos) -->
       <main class="center-stage guest-center">
-        <!-- Landing Page Genérica cuando el usuario NO ha iniciado sesión (Foto 2) -->
+        <!-- Landing Informativa: Funcionamiento y Detalle de la Plataforma (Modo Invitado) -->
         <div class="landing-welcome-card">
-          <p class="welcome-text">
-            El prode oficial de Fórmula 1 en tiempo real. Predecí podios, poles y duelos mano a mano en cada Gran Premio y competí con tus amigos en ligas privadas.
-          </p>
-          <div class="welcome-features">
-            <div class="feat-item"><span class="feat-bullet">●</span> Pronósticos oficiales de cada GP</div>
-            <div class="feat-item"><span class="feat-bullet">●</span> Ligas privadas con clave y link de invitación</div>
-            <div class="feat-item"><span class="feat-bullet">●</span> Podio y tabla global en vivo</div>
+          <div class="welcome-header">
+            <div class="welcome-tag-badge">
+              <span class="live-dot-cyan"></span>
+              <span>TELEMETRÍA & PRONÓSTICOS F1</span>
+            </div>
+            <h3 class="welcome-title">¿Cómo funciona ApexPredict?</h3>
           </div>
-          <div class="welcome-actions">
-            <a routerLink="/login" class="btn-welcome-login">
-              Iniciar Sesión
-            </a>
-            <a routerLink="/register" class="btn-welcome-register">
-              Crear Cuenta Gratis
-            </a>
+
+          <p class="welcome-lead">
+            El prode oficial de Fórmula 1 en tiempo real. Predecí los eventos clave de cada Gran Premio, desafiá a tus amigos en ligas privadas y competí en la clasificación global de la temporada.
+          </p>
+
+          <div class="how-it-works-grid">
+            <div class="how-step-card">
+              <div class="step-num-badge">01</div>
+              <div class="step-content">
+                <h5>Pronósticos Completos de cada GP</h5>
+                <p>Elegí tu podio oficial (P1, P2 y P3), la Pole Position, el ganador del duelo mano a mano y pronosticá autos de seguridad (SC/VSC) y abandonos (DNFs).</p>
+              </div>
+            </div>
+
+            <div class="how-step-card">
+              <div class="step-num-badge">02</div>
+              <div class="step-content">
+                <h5>Cierre Automático (Lock Time)</h5>
+                <p>Para asegurar juego limpio y transparencia, los pronósticos se bloquean puntualmente al inicio de la sesión oficial. Podés seguir el conteo regresivo en vivo.</p>
+              </div>
+            </div>
+
+            <div class="how-step-card">
+              <div class="step-num-badge">03</div>
+              <div class="step-content">
+                <h5>Puntuación en Vivo con Datos FIA</h5>
+                <p>Al caer la bandera a cuadros, el sistema valida tus picks contra los datos y tiempos oficiales de carrera, sumando puntos a tu cuenta automáticamente.</p>
+              </div>
+            </div>
+
+            <div class="how-step-card">
+              <div class="step-num-badge">04</div>
+              <div class="step-content">
+                <h5>Ligas Privadas y Torneos</h5>
+                <p>Creá ligas personalizadas con clave y link de invitación para competir con tus amigos, o medite en el ranking general con pilotos de toda la comunidad.</p>
+              </div>
+            </div>
+
+            <div class="how-step-card">
+              <div class="step-num-badge">05</div>
+              <div class="step-content">
+                <h5>Identidad y Paddock Personalizado</h5>
+                <p>Configurá tu escudería y piloto favorito en tu perfil para personalizar tus colores oficiales en la tabla de posiciones y clasificaciones.</p>
+              </div>
+            </div>
           </div>
         </div>
 

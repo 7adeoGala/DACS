@@ -7,8 +7,4 @@ export const environment = {
     realm: 'apexpredict',
     clientId: 'apexpredict-web',
   },
-  supabase: {
-    url: 'https://xffnnfwivgeemzsqgtgn.supabase.co',
-    publishableKey: 'sb_publishable_5GsmuCXkFK4Qo_OJ7fwUdA_UlFzDhJ6',
-  },
 };
