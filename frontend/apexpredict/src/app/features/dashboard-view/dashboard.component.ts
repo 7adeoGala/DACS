@@ -348,7 +348,6 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   <span class="dim" style="font-size: 0.82rem;">Elegí qué piloto superará a su rival directo en el fin de semana</span>
                 </div>
               </div>
-              <span class="duel-pts-tag">+10 PTS</span>
             </div>
 
             <!-- SELECTOR DE PILOTOS EN FORMATO ARENA F1 -->
@@ -2123,16 +2122,6 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
     }
     .duel-badge-icon svg {
       display: block;
-    }
-    .duel-pts-tag {
-      font-family: var(--font-mono);
-      font-weight: 800;
-      font-size: 0.78rem;
-      background: rgba(245, 176, 0, 0.14);
-      color: var(--gold);
-      border: 1px solid rgba(245, 176, 0, 0.35);
-      padding: 3px 8px;
-      border-radius: 4px;
     }
     .duel-arena-grid {
       display: grid;
