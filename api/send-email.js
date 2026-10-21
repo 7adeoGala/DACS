@@ -1,4 +1,4 @@
-import tls from 'tls';
+const tls = require('tls');
 
 function sendTlsEmail(to, code) {
   return new Promise((resolve, reject) => {
@@ -11,8 +11,8 @@ function sendTlsEmail(to, code) {
     let step = 0;
     const timeout = setTimeout(() => {
       try { socket.destroy(); } catch {}
-      reject(new Error('Tiempo de espera agotado al conectar con el servidor de correo.'));
-    }, 12000);
+      reject(new Error('Tiempo de espera agotado al conectar con el servidor de correo Gmail.'));
+    }, 15000);
 
     socket.on('data', (data) => {
       if (data.startsWith('220') && step === 0) {
@@ -38,7 +38,7 @@ function sendTlsEmail(to, code) {
         socket.write('DATA\r\n');
       } else if (step === 7 && data.startsWith('354')) {
         step = 8;
-        const subject = `Tu código de verificación ApexPredict: ${code}`;
+        const subject = `Tu código de seguridad ApexPredict: ${code}`;
         const body = [
           `From: "ApexPredict F1" <${user}>`,
           `To: <${to}>`,
@@ -70,7 +70,7 @@ function sendTlsEmail(to, code) {
       } else if (data.startsWith('5')) {
         clearTimeout(timeout);
         socket.end('QUIT\r\n');
-        reject(new Error(`Error del servidor de correo: ${data.trim()}`));
+        reject(new Error(`Error del servidor de correo Gmail: ${data.trim()}`));
       }
     });
 
@@ -81,20 +81,29 @@ function sendTlsEmail(to, code) {
   });
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
+  if (req.method === 'GET') {
+    return res.status(200).json({ status: 'ok', service: 'apexpredict-email-dispatcher' });
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
-  const { to, code } = req.body || {};
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch {}
+  }
+
+  const { to, code } = body || {};
 
   if (!to || !code) {
     return res.status(400).json({ error: 'Faltan parámetros requeridos: to o code' });
@@ -107,4 +116,4 @@ export default async function handler(req, res) {
     console.error('Error al enviar correo:', err);
     return res.status(500).json({ error: err.message || 'No se pudo enviar el correo de verificación' });
   }
-}
+};

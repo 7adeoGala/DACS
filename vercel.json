@@ -5,7 +5,11 @@
   "outputDirectory": "frontend/apexpredict/dist/apexpredict/browser",
   "rewrites": [
     {
-      "source": "/((?!api/).*)",
+      "source": "/api/:match*",
+      "destination": "/api/:match*"
+    },
+    {
+      "source": "/((?!api).*)",
       "destination": "/index.html"
     }
   ]
