@@ -281,6 +281,7 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
   readonly step = signal<1 | 2 | 3>(1);
   readonly identifier = signal<string>('');
   readonly resolvedEmail = signal<string>('');
+  readonly resolvedUsername = signal<string>('');
   readonly enteredCode = signal<string>('');
   readonly newPassword = signal<string>('');
   readonly confirmPassword = signal<string>('');
@@ -335,6 +336,7 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
     try {
       const res = await this.auth.requestPasswordResetCode(rawId);
       this.resolvedEmail.set(res.email);
+      this.resolvedUsername.set(res.username);
       this.enteredCode.set('');
       this.step.set(2);
       this.startCooldown(30);
@@ -369,7 +371,8 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
     this.errorMessage.set('');
 
     try {
-      await this.auth.verifyResetCode(this.identifier(), rawCode);
+      const targetId = this.resolvedUsername() || this.identifier() || this.resolvedEmail();
+      await this.auth.verifyResetCode(targetId, rawCode);
       this.step.set(3);
     } catch (err: any) {
       console.error('Error al verificar código:', err);
@@ -403,7 +406,8 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
     this.errorMessage.set('');
 
     try {
-      await this.auth.completePasswordReset(this.identifier(), this.enteredCode(), pwd);
+      const targetId = this.resolvedUsername() || this.identifier() || this.resolvedEmail();
+      await this.auth.completePasswordReset(targetId, this.enteredCode(), pwd);
       this.successMessage.set('¡Contraseña restablecida con éxito! Redirigiendo al inicio de sesión...');
       setTimeout(() => {
         this.router.navigate(['/login'], { queryParams: { reset: 'success' } });

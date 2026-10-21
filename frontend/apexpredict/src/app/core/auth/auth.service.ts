@@ -494,36 +494,36 @@ export class AuthService {
     const headers = { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
     const adminUsersUrl = `${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users`;
 
-    // Guardar código y expiración en atributos de Keycloak
+    const targetEmail = foundUser.email || (rawId.includes('@') ? rawId.toLowerCase() : null);
+
+    if (!targetEmail) {
+      throw new Error('Esta cuenta no tiene un correo electrónico válido registrado para recibir el código.');
+    }
+
+    // Guardar código y expiración en atributos de Keycloak preservando todos los campos
+    const updatePayload = {
+      id: foundUser.id,
+      username: foundUser.username,
+      email: targetEmail,
+      firstName: foundUser.firstName || 'Piloto',
+      lastName: foundUser.lastName || 'F1',
+      emailVerified: true,
+      enabled: true,
+      attributes: {
+        ...(foundUser.attributes || {}),
+        reset_code: [code],
+        reset_code_expires: [expires]
+      }
+    };
+
     const updateRes = await fetch(`${adminUsersUrl}/${foundUser.id}`, {
       method: 'PUT',
       headers,
-      body: JSON.stringify({
-        attributes: {
-          ...(foundUser.attributes || {}),
-          reset_code: [code],
-          reset_code_expires: [expires]
-        }
-      })
+      body: JSON.stringify(updatePayload)
     });
 
     if (!updateRes.ok) {
       throw new Error('No se pudo generar el código de verificación. Intentá nuevamente.');
-    }
-
-    const targetEmail = foundUser.email || (rawId.includes('@') ? rawId.toLowerCase() : null);
-
-    if (!foundUser.email && targetEmail && foundUser.id) {
-      await fetch(`${adminUsersUrl}/${foundUser.id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({ email: targetEmail, emailVerified: true })
-      }).catch(() => {});
-      foundUser.email = targetEmail;
-    }
-
-    if (!targetEmail) {
-      throw new Error('Esta cuenta no tiene un correo electrónico válido registrado para recibir el código.');
     }
 
     // Despacho de correo real mediante el endpoint seguro de correo
@@ -639,8 +639,15 @@ export class AuthService {
       throw new Error('No se pudo actualizar la contraseña. Verificá que cumpla las políticas.');
     }
 
-    // 3. Limpiar código utilizado y asegurar estado del usuario
+    // 3. Limpiar código utilizado y asegurar estado del usuario preservando todos los campos
     const userUpdates: any = {
+      id: foundUser.id,
+      username: foundUser.username,
+      email: foundUser.email,
+      firstName: foundUser.firstName || 'Piloto',
+      lastName: foundUser.lastName || 'F1',
+      emailVerified: true,
+      enabled: true,
       attributes: {
         ...(foundUser.attributes || {}),
         reset_code: [],
@@ -648,15 +655,6 @@ export class AuthService {
       }
     };
 
-    if (!foundUser.emailVerified) {
-      userUpdates.emailVerified = true;
-    }
-    if (!foundUser.firstName) {
-      userUpdates.firstName = foundUser.username || 'Piloto';
-    }
-    if (!foundUser.lastName) {
-      userUpdates.lastName = 'F1';
-    }
     if (foundUser.requiredActions && foundUser.requiredActions.length > 0) {
       userUpdates.requiredActions = foundUser.requiredActions.filter(
         (a: string) => a !== 'UPDATE_PASSWORD' && a !== 'VERIFY_EMAIL' && a !== 'UPDATE_PROFILE'
