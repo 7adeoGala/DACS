@@ -215,6 +215,8 @@ export class ApiService {
     return this.http.post<League>(`${this.base}/leagues/join/${inviteCode}`, { password }).pipe(this.retryOnColdStart());
   }
 
+  private memoryGlobalLeaderboard: LeaderboardEntry[] | null = null;
+
   globalLeaderboard() {
     return this.http.get<LeaderboardEntry[]>(`${this.base}/leaderboard/global`).pipe(
       tap((entries) => {
@@ -228,17 +230,18 @@ export class ApiService {
 
   getCachedGlobalLeaderboard(): LeaderboardEntry[] | null {
     try {
-      const raw = localStorage.getItem('apex_global_leaderboard');
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('apex_global_leaderboard');
+      }
+    } catch {}
+    return this.memoryGlobalLeaderboard;
   }
 
   setCachedGlobalLeaderboard(entries: LeaderboardEntry[]): void {
+    this.memoryGlobalLeaderboard = entries;
     try {
-      if (entries && entries.length > 0) {
-        localStorage.setItem('apex_global_leaderboard', JSON.stringify(entries));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('apex_global_leaderboard');
       }
     } catch {}
   }

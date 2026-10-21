@@ -170,6 +170,7 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadData();
     this.startCountdown();
+    this.loadLeaderboard();
   }
 
   ngOnDestroy(): void {

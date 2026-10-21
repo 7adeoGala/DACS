@@ -214,14 +214,24 @@ public class PlayerService {
     public List<LeaderboardEntry> getGlobalLeaderboard() {
         var rows = predictions.getGlobalLeaderboard();
         List<LeaderboardEntry> leaderboard = new ArrayList<>();
-        int rank = 1;
-        for (var row : rows) {
+        int currentRank = 1;
+        Long lastScore = null;
+        Long lastCount = null;
+        for (int i = 0; i < rows.size(); i++) {
+            var row = rows.get(i);
+            long score = row.getTotalScore() != null ? row.getTotalScore() : 0L;
+            long count = row.getPredictionsCount() != null ? row.getPredictionsCount() : 0L;
+            if (lastScore == null || score != lastScore || count != lastCount) {
+                currentRank = i + 1;
+                lastScore = score;
+                lastCount = count;
+            }
             leaderboard.add(new LeaderboardEntry(
-                rank++,
+                currentRank,
                 row.getUserId(),
                 row.getDisplayName(),
-                row.getTotalScore(),
-                row.getPredictionsCount()
+                score,
+                count
             ));
         }
         return leaderboard;
@@ -237,14 +247,24 @@ public class PlayerService {
         }
         var rows = predictions.getLeagueLeaderboard(leagueId);
         List<LeaderboardEntry> leaderboard = new ArrayList<>();
-        int rank = 1;
-        for (var row : rows) {
+        int currentRank = 1;
+        Long lastScore = null;
+        Long lastCount = null;
+        for (int i = 0; i < rows.size(); i++) {
+            var row = rows.get(i);
+            long score = row.getTotalScore() != null ? row.getTotalScore() : 0L;
+            long count = row.getPredictionsCount() != null ? row.getPredictionsCount() : 0L;
+            if (lastScore == null || score != lastScore || count != lastCount) {
+                currentRank = i + 1;
+                lastScore = score;
+                lastCount = count;
+            }
             leaderboard.add(new LeaderboardEntry(
-                rank++,
+                currentRank,
                 row.getUserId(),
                 row.getDisplayName(),
-                row.getTotalScore(),
-                row.getPredictionsCount()
+                score,
+                count
             ));
         }
         return leaderboard;
