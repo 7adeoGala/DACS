@@ -86,7 +86,7 @@ import { ApiService } from '../../core/services/api.service';
                     (ngModelChange)="username.set($event)" 
                     (focus)="prewarm()"
                     name="username" 
-                    placeholder="ej: piloto_f1" 
+                    placeholder="ej: piloto_f1 o tu@correo.com" 
                     required 
                     autocomplete="username" />
                 </div>
@@ -233,7 +233,7 @@ export class LoginComponent implements OnInit {
         }
         this.router.navigate(['/dashboard']);
       } else {
-        this.errorMessage.set('Credenciales no válidas. Revisá tu usuario y contraseña.');
+        this.errorMessage.set('Credenciales no válidas. Revisá tu usuario/correo y contraseña.');
       }
     } catch (err: any) {
       console.error('Error de login:', err);

@@ -200,8 +200,8 @@ export class AuthService {
 
         const res = await attemptFetch(userToTry);
 
-        if (res.ok) {
-          const data = await res.json();
+        const handleSuccess = async (successRes: Response, identifierUsed: string): Promise<boolean> => {
+          const data = await successRes.json();
           (this.keycloak as any).token = data.access_token;
           (this.keycloak as any).refreshToken = data.refresh_token;
           (this.keycloak as any).idToken = data.id_token;
@@ -220,7 +220,7 @@ export class AuthService {
             sessionStorage.setItem('apex_refresh_token', data.refresh_token);
           }
 
-          const finalUsername = (this.keycloak as any).tokenParsed?.['preferred_username'] || userToTry;
+          const finalUsername = (this.keycloak as any).tokenParsed?.['preferred_username'] || identifierUsed;
 
           if (rememberMe) {
             localStorage.setItem('apex_token', data.access_token);
@@ -241,44 +241,57 @@ export class AuthService {
 
           this.provisionUserInBackend(data.access_token);
           return true;
+        };
+
+        if (res.ok) {
+          return await handleSuccess(res, userToTry);
         }
 
-        // Si falló con 400/401 y el usuario no tenía '@', probar con '@gmail.com' por si el usuario ingresó el prefijo de su correo
-        if ((res.status === 400 || res.status === 401) && !userToTry.includes('@')) {
-          try {
-            const fallbackRes = await attemptFetch(userToTry.toLowerCase() + '@gmail.com');
-            if (fallbackRes.ok) {
-              const data = await fallbackRes.json();
-              (this.keycloak as any).token = data.access_token;
-              (this.keycloak as any).refreshToken = data.refresh_token;
-              (this.keycloak as any).idToken = data.id_token;
-              (this.keycloak as any).authenticated = true;
-              (this.keycloak as any).tokenParsed = this.decodeJwt(data.access_token);
-              (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
-              (this.keycloak as any).timeSkew = 0;
-              if (!(this.keycloak as any).endpoints) {
-                (this.keycloak as any).endpoints = { token: () => tokenUrl };
-              }
-              sessionStorage.setItem('apex_token', data.access_token);
-              if (data.refresh_token) sessionStorage.setItem('apex_refresh_token', data.refresh_token);
-              const finalUsername = (this.keycloak as any).tokenParsed?.['preferred_username'] || userToTry;
-              if (rememberMe) {
-                localStorage.setItem('apex_token', data.access_token);
-                if (data.refresh_token) localStorage.setItem('apex_refresh_token', data.refresh_token);
-                localStorage.setItem('apex_username', finalUsername);
-              }
-              this.available.set(true);
-              this.authenticated.set(true);
-              this.username.set(finalUsername);
-              this.roles.set((this.keycloak as any).realmAccess?.roles ?? []);
-              this.provisionUserInBackend(data.access_token);
-              return true;
-            }
-          } catch {}
-          throw new Error('Credenciales no válidas. Revisá tu usuario/correo y contraseña.');
-        }
-
+        // Si falló con 400/401, intentar resolver el usuario alternativo (usuario <-> correo)
         if (res.status === 400 || res.status === 401) {
+          try {
+            const adminToken = await this.getMasterAdminToken();
+            const foundUser = await this.findUserByIdentifier(userToTry, adminToken);
+            if (foundUser) {
+              // Asegurar emailVerified: true en segundo plano si estaba deshabilitado
+              if (!foundUser.emailVerified && foundUser.id) {
+                fetch(`${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users/${foundUser.id}`, {
+                  method: 'PUT',
+                  headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ emailVerified: true })
+                }).catch(() => {});
+              }
+
+              // Si el usuario ingresó correo, intentar con su username canónico
+              if (foundUser.username && foundUser.username.toLowerCase() !== userToTry.toLowerCase()) {
+                const retryUsernameRes = await attemptFetch(foundUser.username);
+                if (retryUsernameRes.ok) {
+                  return await handleSuccess(retryUsernameRes, foundUser.username);
+                }
+              }
+
+              // Si el usuario ingresó username, intentar con su correo
+              if (foundUser.email && foundUser.email.toLowerCase() !== userToTry.toLowerCase()) {
+                const retryEmailRes = await attemptFetch(foundUser.email.toLowerCase());
+                if (retryEmailRes.ok) {
+                  return await handleSuccess(retryEmailRes, foundUser.username || foundUser.email);
+                }
+              }
+            }
+          } catch (resErr) {
+            console.warn('Resolución de identidad omitida en login:', resErr);
+          }
+
+          // Fallback con @gmail.com si el usuario ingresó solo el prefijo sin @
+          if (!userToTry.includes('@')) {
+            try {
+              const fallbackRes = await attemptFetch(userToTry.toLowerCase() + '@gmail.com');
+              if (fallbackRes.ok) {
+                return await handleSuccess(fallbackRes, userToTry);
+              }
+            } catch {}
+          }
+
           throw new Error('Credenciales no válidas. Revisá tu usuario/correo y contraseña.');
         }
 
@@ -499,6 +512,15 @@ export class AuthService {
     }
 
     const targetEmail = foundUser.email || (rawId.includes('@') ? rawId.toLowerCase() : null);
+
+    if (!foundUser.email && targetEmail && foundUser.id) {
+      await fetch(`${adminUsersUrl}/${foundUser.id}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify({ email: targetEmail, emailVerified: true })
+      }).catch(() => {});
+      foundUser.email = targetEmail;
+    }
 
     if (!targetEmail) {
       throw new Error('Esta cuenta no tiene un correo electrónico válido registrado para recibir el código.');
