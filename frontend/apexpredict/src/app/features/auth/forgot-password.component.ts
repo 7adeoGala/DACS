@@ -129,21 +129,8 @@ import { ApiService } from '../../core/services/api.service';
             <!-- PASO 2: INGRESAR CÓDIGO -->
             @if (step() === 2) {
               <form (ngSubmit)="handleVerifyCode()" class="auth-form">
-                <!-- CAJA DE SIMULACIÓN EN PANTALLA (TELEMETRÍA DE ENVÍO) -->
-                <div class="code-sim-box">
-                  <div class="code-sim-header">
-                    <span class="code-sim-title">
-                      <span class="code-sim-dot"></span>
-                      SIMULACIÓN DE ENVÍO DE CORREO
-                    </span>
-                    <span class="text-muted" style="font-size: 0.65rem;">DESTINO: {{ resolvedEmail() }}</span>
-                  </div>
-                  <div class="code-sim-content">
-                    <span class="code-sim-digits">{{ simulatedCode() }}</span>
-                    <button type="button" class="code-sim-btn" (click)="autoFillCode()">
-                      Auto-completar
-                    </button>
-                  </div>
+                <div class="alert-message warning" style="margin-bottom: 1.15rem; font-size: 0.85rem; line-height: 1.45;">
+                  📨 Enviamos un código de seguridad de 6 dígitos a <strong>{{ resolvedEmail() }}</strong>. Revisá tu bandeja de entrada o spam.
                 </div>
 
                 <div class="form-group">
@@ -294,7 +281,6 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
   readonly step = signal<1 | 2 | 3>(1);
   readonly identifier = signal<string>('');
   readonly resolvedEmail = signal<string>('');
-  readonly simulatedCode = signal<string>('');
   readonly enteredCode = signal<string>('');
   readonly newPassword = signal<string>('');
   readonly confirmPassword = signal<string>('');
@@ -343,26 +329,21 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
     }
 
     this.isLoading.set(true);
-    this.loadingMessage.set('Generando código de verificación y preparando despacho...');
+    this.loadingMessage.set('Despachando correo con código de verificación...');
     this.errorMessage.set('');
 
     try {
       const res = await this.auth.requestPasswordResetCode(rawId);
       this.resolvedEmail.set(res.email);
-      this.simulatedCode.set(res.code);
       this.enteredCode.set('');
       this.step.set(2);
       this.startCooldown(30);
     } catch (err: any) {
       console.error('Error al solicitar código:', err);
-      this.errorMessage.set(err?.message || 'No se pudo generar el código. Verificá los datos ingresados.');
+      this.errorMessage.set(err?.message || 'No se pudo enviar el código. Verificá los datos ingresados.');
     } finally {
       this.isLoading.set(false);
     }
-  }
-
-  autoFillCode() {
-    this.enteredCode.set(this.simulatedCode());
   }
 
   async handleResendCode() {
@@ -373,7 +354,6 @@ export class ForgotPasswordComponent implements OnInit, OnDestroy {
   handleChangeEmail() {
     this.step.set(1);
     this.enteredCode.set('');
-    this.simulatedCode.set('');
     this.errorMessage.set('');
   }
 

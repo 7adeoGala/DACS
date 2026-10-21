@@ -498,7 +498,35 @@ export class AuthService {
       throw new Error('No se pudo generar el código de verificación. Intentá nuevamente.');
     }
 
-    const targetEmail = foundUser.email || (rawId.includes('@') ? rawId.toLowerCase() : `${rawId}@apexpredict.local`);
+    const targetEmail = foundUser.email || (rawId.includes('@') ? rawId.toLowerCase() : null);
+
+    if (!targetEmail) {
+      throw new Error('Esta cuenta no tiene un correo electrónico válido registrado para recibir el código.');
+    }
+
+    // Despacho de correo real mediante el endpoint seguro de correo
+    try {
+      const emailEndpoint = typeof window !== 'undefined'
+        ? `${window.location.origin}/api/send-email`
+        : 'https://dacs-nine.vercel.app/api/send-email';
+
+      const sendRes = await fetch(emailEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: targetEmail,
+          code,
+        }),
+      });
+
+      if (!sendRes.ok) {
+        const errJson = await sendRes.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Error al despachar el correo de verificación.');
+      }
+    } catch (mailErr: any) {
+      console.error('Error enviando correo real:', mailErr);
+      throw new Error(mailErr.message || `No se pudo enviar el correo a ${targetEmail}. Verificá la conexión.`);
+    }
 
     return {
       success: true,
