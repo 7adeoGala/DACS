@@ -53,6 +53,7 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   public readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   private timerInterval: any;
+  private targetTimeMs: number = new Date('2026-10-25T20:00:00Z').getTime();
 
   // Estado reactivo con Signals
   readonly session = signal<NextSession | null>(null);
@@ -137,6 +138,9 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   readonly isLocked = computed(() => this.session()?.isLocked ?? false);
 
   constructor() {
+    // 0. Calcular cuenta regresiva inicial inmediatamente con la hora oficial (17hs Argentina)
+    this.tickCountdown();
+
     // 1. Restaurar de inmediato caché local de clasificación si existe
     const cachedLb = this.api.getCachedGlobalLeaderboard?.();
     if (cachedLb && cachedLb.length > 0) {
@@ -168,8 +172,8 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.loadData();
     this.startCountdown();
+    this.loadData();
     this.loadLeaderboard();
   }
 
@@ -187,22 +191,10 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       },
       error: () => {
         this.isLoading.set(false);
-        this.session.set({
-          id: 'round-18-cota',
-          season: 2026,
-          round: 18,
-          name: 'United States Grand Prix',
-          circuit: 'Circuit of the Americas',
-          circuitId: 'americas',
-          type: 'RACE',
-          raceDate: '2026-10-25',
-          startsAt: '2026-10-25T19:00:00Z',
-          isLocked: false,
-          matchupDriver1: 'norris',
-          matchupDriver2: 'verstappen'
-        });
-        this.updateCountdownFromDate('2026-10-25T19:00:00Z');
-        this.fetchRealWeather('30.1328', '-97.6411');
+        const fallback = this.api.getFallbackNextSession();
+        this.session.set(fallback);
+        this.updateCountdownFromDate(fallback.startsAt);
+        this.fetchRealWeather(fallback.lat, fallback.long);
       }
     });
   }
@@ -333,8 +325,24 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   private updateCountdownFromDate(targetDateStr?: string | null): void {
     if (!targetDateStr) return;
     const target = new Date(targetDateStr).getTime();
+    if (!isNaN(target)) {
+      this.targetTimeMs = target;
+      this.tickCountdown();
+    }
+  }
+
+  private startCountdown(): void {
+    this.tickCountdown();
+    if (this.timerInterval) clearInterval(this.timerInterval);
+    this.timerInterval = setInterval(() => {
+      this.tickCountdown();
+    }, 1000);
+  }
+
+  private tickCountdown(): void {
+    if (!this.targetTimeMs) return;
     const now = Date.now();
-    const diff = target - now;
+    const diff = this.targetTimeMs - now;
     if (diff > 0) {
       const d = Math.floor(diff / (1000 * 60 * 60 * 24));
       const h = Math.floor((diff / (1000 * 60 * 60)) % 24);
@@ -344,28 +352,11 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       this.hours.set(h < 10 ? `0${h}` : `${h}`);
       this.minutes.set(m < 10 ? `0${m}` : `${m}`);
       this.seconds.set(s < 10 ? `0${s}` : `${s}`);
+    } else {
+      this.days.set('00');
+      this.hours.set('00');
+      this.minutes.set('00');
+      this.seconds.set('00');
     }
-  }
-
-  private startCountdown(): void {
-    this.timerInterval = setInterval(() => {
-      let sec = parseInt(this.seconds(), 10) - 1;
-      if (sec < 0) {
-        sec = 59;
-        let min = parseInt(this.minutes(), 10) - 1;
-        if (min < 0) {
-          min = 59;
-          let hr = parseInt(this.hours(), 10) - 1;
-          if (hr < 0) {
-            hr = 23;
-            let d = parseInt(this.days(), 10) - 1;
-            if (d >= 0) this.days.set(d < 10 ? `0${d}` : `${d}`);
-          }
-          this.hours.set(hr < 10 ? `0${hr}` : `${hr}`);
-        }
-        this.minutes.set(min < 10 ? `0${min}` : `${min}`);
-      }
-      this.seconds.set(sec < 10 ? `0${sec}` : `${sec}`);
-    }, 1000);
   }
 }

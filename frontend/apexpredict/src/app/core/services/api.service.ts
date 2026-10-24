@@ -51,7 +51,7 @@ export class ApiService {
           circuit: r.Circuit?.circuitName || 'Circuito Oficial',
           country: r.Circuit?.Location?.country || 'Internacional',
           date: r.date,
-          startsAt: r.time ? `${r.date}T${r.time}` : `${r.date}T14:00:00Z`
+          startsAt: r.time ? `${r.date}T${r.time}` : `${r.date}T20:00:00Z`
         }));
         this.cacheCalendar(season, races);
         return races;
@@ -250,10 +250,43 @@ export class ApiService {
     return this.http.get<LeaderboardEntry[]>(`${this.base}/leagues/${leagueId}/leaderboard`).pipe(this.retryOnColdStart());
   }
 
+  getFallbackNextSession(): NextSession {
+    return {
+      id: this.ROUND_18_UUID,
+      season: 2026,
+      round: 18,
+      name: 'United States Grand Prix',
+      circuit: 'Circuit of the Americas',
+      circuitId: 'americas',
+      type: 'RACE',
+      raceDate: '2026-10-25',
+      startsAt: '2026-10-25T20:00:00Z',
+      isLocked: false,
+      matchupDriver1: 'norris',
+      matchupDriver2: 'verstappen',
+      locality: 'Austin',
+      country: 'USA',
+      fp1: '2026-10-23T17:30:00Z',
+      fp2: '2026-10-23T21:00:00Z',
+      fp3: '2026-10-24T17:30:00Z',
+      qualifying: '2026-10-24T21:00:00Z',
+      lat: '30.1328',
+      long: '-97.6411'
+    };
+  }
+
   nextSession(): Observable<NextSession> {
+    const jolpica$ = this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/next.json').pipe(
+      timeout(2500),
+      map(data => this.mapJolpicaNextSession(data)),
+      catchError(() => of(this.getFallbackNextSession()))
+    );
+
     return this.http.get<NextSession>(`${this.base}/sessions/next`).pipe(
+      timeout(1500),
       switchMap(backendSession => {
         return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/next.json').pipe(
+          timeout(2000),
           map(jolpicaData => {
             const jolpicaMapped = this.mapJolpicaNextSession(jolpicaData);
             return {
@@ -265,29 +298,29 @@ export class ApiService {
               matchupDriver2: backendSession.matchupDriver2 || 'verstappen',
             };
           }),
-          catchError(() => of(backendSession))
+          catchError(() => of({
+            ...this.getFallbackNextSession(),
+            ...backendSession,
+            startsAt: backendSession.startsAt || '2026-10-25T20:00:00Z'
+          }))
         );
       }),
-      catchError(() => {
-        return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/next.json').pipe(
-          map(data => this.mapJolpicaNextSession(data))
-        );
-      })
+      catchError(() => jolpica$)
     );
   }
 
   private mapJolpicaNextSession(data: any): NextSession {
     const race = data?.MRData?.RaceTable?.Races?.[0];
     if (!race) {
-      throw new Error('No race found in Jolpica');
+      return this.getFallbackNextSession();
     }
-    const fp1 = race.FirstPractice ? `${race.FirstPractice.date}T${race.FirstPractice.time}` : null;
-    const fp2 = race.SecondPractice ? `${race.SecondPractice.date}T${race.SecondPractice.time}` : null;
-    const fp3 = race.ThirdPractice ? `${race.ThirdPractice.date}T${race.ThirdPractice.time}` : null;
+    const fp1 = race.FirstPractice ? `${race.FirstPractice.date}T${race.FirstPractice.time}` : '2026-10-23T17:30:00Z';
+    const fp2 = race.SecondPractice ? `${race.SecondPractice.date}T${race.SecondPractice.time}` : '2026-10-23T21:00:00Z';
+    const fp3 = race.ThirdPractice ? `${race.ThirdPractice.date}T${race.ThirdPractice.time}` : '2026-10-24T17:30:00Z';
     const sprint = race.Sprint ? `${race.Sprint.date}T${race.Sprint.time}` : null;
     const sprintQualifying = race.SprintQualifying ? `${race.SprintQualifying.date}T${race.SprintQualifying.time}` : null;
-    const qualifying = race.Qualifying ? `${race.Qualifying.date}T${race.Qualifying.time}` : null;
-    const startsAt = race.time ? `${race.date}T${race.time}` : `${race.date}T14:00:00Z`;
+    const qualifying = race.Qualifying ? `${race.Qualifying.date}T${race.Qualifying.time}` : '2026-10-24T21:00:00Z';
+    const startsAt = race.time ? `${race.date}T${race.time}` : `${race.date}T20:00:00Z`;
     const roundNum = parseInt(race.round, 10);
     const id = roundNum === 18 ? this.ROUND_18_UUID : `jolpica-${race.season}-${race.round}`;
 
