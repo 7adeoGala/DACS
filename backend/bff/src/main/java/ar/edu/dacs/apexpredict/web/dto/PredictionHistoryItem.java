@@ -20,8 +20,17 @@ public record PredictionHistoryItem(
     Instant submittedAt,
     String matchupDriver1,
     String matchupDriver2,
-    ScoreBreakdown scoreBreakdown
+    ScoreBreakdown scoreBreakdown,
+    OfficialResults officialResults
 ) {
+    public record OfficialResults(
+        List<String> podium,
+        String polePositionDriverId,
+        String duelWinnerId,
+        Integer safetyCarCount,
+        Integer dnfCount
+    ) {}
+
     public record ScoreBreakdown(
         int podiumHits,
         int podiumPoints,

@@ -97,7 +97,19 @@ export class ApiService {
     );
   }
 
-  private readonly ROUND_18_UUID = 'f0c23d70-f7ca-411d-b827-7a9d45037100';
+  readonly ROUND_18_UUID = 'f0c23d70-f7ca-411d-b827-7a9d45037100';
+  readonly ROUND_19_UUID = 'f0c23d70-f7ca-411d-b827-7a9d45037101';
+
+  readonly OFFICIAL_ROUND_18_RESULTS = {
+    sessionName: 'United States Grand Prix',
+    circuit: 'Circuit of the Americas',
+    raceDate: '2026-10-25',
+    podium: ['antonelli', 'leclerc', 'verstappen'],
+    polePositionDriverId: 'antonelli',
+    duelWinnerId: 'verstappen',
+    safetyCarCount: 1,
+    dnfCount: 3
+  };
 
   private retryOnColdStart<T>() {
     return retry<T>({
@@ -252,26 +264,26 @@ export class ApiService {
 
   getFallbackNextSession(): NextSession {
     return {
-      id: this.ROUND_18_UUID,
+      id: this.ROUND_19_UUID,
       season: 2026,
-      round: 18,
-      name: 'United States Grand Prix',
-      circuit: 'Circuit of the Americas',
-      circuitId: 'americas',
+      round: 19,
+      name: 'Mexico City Grand Prix',
+      circuit: 'Autódromo Hermanos Rodríguez',
+      circuitId: 'rodriguez',
       type: 'RACE',
-      raceDate: '2026-10-25',
-      startsAt: '2026-10-25T20:00:00Z',
+      raceDate: '2026-11-01',
+      startsAt: '2026-11-01T20:00:00Z',
       isLocked: false,
       matchupDriver1: 'norris',
-      matchupDriver2: 'verstappen',
-      locality: 'Austin',
-      country: 'USA',
-      fp1: '2026-10-23T17:30:00Z',
-      fp2: '2026-10-23T21:00:00Z',
-      fp3: '2026-10-24T17:30:00Z',
-      qualifying: '2026-10-24T21:00:00Z',
-      lat: '30.1328',
-      long: '-97.6411'
+      matchupDriver2: 'leclerc',
+      locality: 'Mexico City',
+      country: 'Mexico',
+      fp1: '2026-10-30T18:30:00Z',
+      fp2: '2026-10-30T22:00:00Z',
+      fp3: '2026-10-31T17:30:00Z',
+      qualifying: '2026-10-31T21:00:00Z',
+      lat: '19.4042',
+      long: '-99.0907'
     };
   }
 
@@ -285,6 +297,11 @@ export class ApiService {
     return this.http.get<NextSession>(`${this.base}/sessions/next`).pipe(
       timeout(1500),
       switchMap(backendSession => {
+        // Si la sesión del backend ya caducó o es del pasado, avanzar a la siguiente sesión
+        const isBackendExpired = backendSession?.startsAt && (new Date(backendSession.startsAt).getTime() <= Date.now());
+        if (isBackendExpired) {
+          return jolpica$;
+        }
         return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/next.json').pipe(
           timeout(2000),
           map(jolpicaData => {
@@ -295,13 +312,13 @@ export class ApiService {
               name: backendSession.name || jolpicaMapped.name,
               circuit: backendSession.circuit || jolpicaMapped.circuit,
               matchupDriver1: backendSession.matchupDriver1 || 'norris',
-              matchupDriver2: backendSession.matchupDriver2 || 'verstappen',
+              matchupDriver2: backendSession.matchupDriver2 || 'leclerc',
             };
           }),
           catchError(() => of({
             ...this.getFallbackNextSession(),
             ...backendSession,
-            startsAt: backendSession.startsAt || '2026-10-25T20:00:00Z'
+            startsAt: backendSession.startsAt || '2026-11-01T20:00:00Z'
           }))
         );
       }),
@@ -314,39 +331,39 @@ export class ApiService {
     if (!race) {
       return this.getFallbackNextSession();
     }
-    const fp1 = race.FirstPractice ? `${race.FirstPractice.date}T${race.FirstPractice.time}` : '2026-10-23T17:30:00Z';
-    const fp2 = race.SecondPractice ? `${race.SecondPractice.date}T${race.SecondPractice.time}` : '2026-10-23T21:00:00Z';
-    const fp3 = race.ThirdPractice ? `${race.ThirdPractice.date}T${race.ThirdPractice.time}` : '2026-10-24T17:30:00Z';
+    const fp1 = race.FirstPractice ? `${race.FirstPractice.date}T${race.FirstPractice.time}` : '2026-10-30T18:30:00Z';
+    const fp2 = race.SecondPractice ? `${race.SecondPractice.date}T${race.SecondPractice.time}` : '2026-10-30T22:00:00Z';
+    const fp3 = race.ThirdPractice ? `${race.ThirdPractice.date}T${race.ThirdPractice.time}` : '2026-10-31T17:30:00Z';
     const sprint = race.Sprint ? `${race.Sprint.date}T${race.Sprint.time}` : null;
     const sprintQualifying = race.SprintQualifying ? `${race.SprintQualifying.date}T${race.SprintQualifying.time}` : null;
-    const qualifying = race.Qualifying ? `${race.Qualifying.date}T${race.Qualifying.time}` : '2026-10-24T21:00:00Z';
+    const qualifying = race.Qualifying ? `${race.Qualifying.date}T${race.Qualifying.time}` : '2026-10-31T21:00:00Z';
     const startsAt = race.time ? `${race.date}T${race.time}` : `${race.date}T20:00:00Z`;
     const roundNum = parseInt(race.round, 10);
-    const id = roundNum === 18 ? this.ROUND_18_UUID : `jolpica-${race.season}-${race.round}`;
+    const id = roundNum === 19 ? this.ROUND_19_UUID : (roundNum === 18 ? this.ROUND_18_UUID : `jolpica-${race.season}-${race.round}`);
 
     return {
       id,
       season: parseInt(race.season, 10),
       round: roundNum,
       name: race.raceName,
-      circuit: race.Circuit?.circuitName || 'Circuit of the Americas',
+      circuit: race.Circuit?.circuitName || 'Autódromo Hermanos Rodríguez',
       type: 'RACE',
       raceDate: race.date,
       startsAt,
       isLocked: new Date() > new Date(startsAt),
       matchupDriver1: 'norris',
-      matchupDriver2: 'verstappen',
-      circuitId: race.Circuit?.circuitId || 'americas',
-      locality: race.Circuit?.Location?.locality || 'Austin',
-      country: race.Circuit?.Location?.country || 'USA',
+      matchupDriver2: 'leclerc',
+      circuitId: race.Circuit?.circuitId || 'rodriguez',
+      locality: race.Circuit?.Location?.locality || 'Mexico City',
+      country: race.Circuit?.Location?.country || 'Mexico',
       fp1,
       fp2,
       fp3,
       qualifying,
       sprint,
       sprintQualifying,
-      lat: race.Circuit?.Location?.lat || '30.1328',
-      long: race.Circuit?.Location?.long || '-97.6411'
+      lat: race.Circuit?.Location?.lat || '19.4042',
+      long: race.Circuit?.Location?.long || '-99.0907'
     };
   }
 
@@ -423,8 +440,147 @@ export class ApiService {
     );
   }
 
-  predictionHistory() {
-    return this.http.get<PredictionHistoryItem[]>(`${this.base}/predictions/history`).pipe(this.retryOnColdStart());
+  evaluateScoreForPrediction(p: {
+    podium?: string[];
+    polePositionDriverId?: string | null;
+    duelDriverPick?: string | null;
+    safetyCarCount?: number | null;
+    dnfCount?: number | null;
+  }, official: {
+    podium: string[];
+    polePositionDriverId: string;
+    duelWinnerId: string;
+    safetyCarCount: number;
+    dnfCount: number;
+  }) {
+    // 1. Podio (1 hit = 3 pts, 2 hits = 7 pts, 3 hits = 10 pts)
+    let podiumHits = 0;
+    const userPodium = p.podium || [];
+    for (let i = 0; i < 3 && i < userPodium.length && i < official.podium.length; i++) {
+      if (userPodium[i] && official.podium[i] && userPodium[i].trim().toLowerCase() === official.podium[i].trim().toLowerCase()) {
+        podiumHits++;
+      }
+    }
+    const podiumPoints = podiumHits === 3 ? 10 : (podiumHits === 2 ? 7 : (podiumHits === 1 ? 3 : 0));
+
+    // 2. Pole (4 pts)
+    const poleHit = !!(p.polePositionDriverId && p.polePositionDriverId.trim().toLowerCase() === official.polePositionDriverId.trim().toLowerCase());
+    const polePoints = poleHit ? 4 : 0;
+
+    // 3. Duelo (3 pts)
+    const duelHit = !!(p.duelDriverPick && p.duelDriverPick.trim().toLowerCase() === official.duelWinnerId.trim().toLowerCase());
+    const duelPoints = duelHit ? 3 : 0;
+
+    // 4. Safety Car (10 pts)
+    const safetyCarHit = p.safetyCarCount != null && Number(p.safetyCarCount) === official.safetyCarCount;
+    const safetyCarPoints = safetyCarHit ? 10 : 0;
+
+    // 5. DNFs (15 pts)
+    const dnfHit = p.dnfCount != null && Number(p.dnfCount) === official.dnfCount;
+    const dnfPoints = dnfHit ? 15 : 0;
+
+    const totalPoints = podiumPoints + polePoints + duelPoints + safetyCarPoints + dnfPoints;
+
+    return {
+      podiumHits,
+      podiumPoints,
+      poleHit,
+      polePoints,
+      duelHit,
+      duelPoints,
+      safetyCarHit,
+      safetyCarPoints,
+      dnfHit,
+      dnfPoints,
+      totalPoints
+    };
+  }
+
+  predictionHistory(username?: string): Observable<PredictionHistoryItem[]> {
+    return this.http.get<PredictionHistoryItem[]>(`${this.base}/predictions/history`).pipe(
+      this.retryOnColdStart(),
+      map(items => {
+        let list = items || [];
+        if (list.length === 0) {
+          const cached = this.getCachedPrediction(username);
+          if (cached && (cached.predictionId || (cached.podium && cached.podium.length > 0))) {
+            list = [{
+              predictionId: cached.predictionId || 'cached-pred-r18',
+              sessionId: cached.sessionId || this.ROUND_18_UUID,
+              sessionName: cached.sessionName || 'United States Grand Prix',
+              circuit: cached.circuit || 'Circuit of the Americas',
+              raceDate: '2026-10-25',
+              startsAt: cached.startsAt || '2026-10-25T20:00:00Z',
+              podium: cached.podium || [],
+              polePositionDriverId: cached.polePositionDriverId || null,
+              duelDriverPick: cached.duelDriverPick || null,
+              safetyCarCount: cached.safetyCarCount ?? null,
+              dnfCount: cached.dnfCount ?? null,
+              score: cached.score ?? null,
+              submittedAt: cached.submittedAt || null,
+              matchupDriver1: cached.matchupDriver1 || 'norris',
+              matchupDriver2: cached.matchupDriver2 || 'verstappen'
+            }];
+          }
+        }
+
+        return list.map(item => {
+          const isRound18 = item.sessionId === this.ROUND_18_UUID || (item.sessionName && item.sessionName.toLowerCase().includes('united states'));
+          const isPast = isRound18 || (item.startsAt && new Date(item.startsAt).getTime() <= Date.now());
+
+          if (isPast && (item.score == null || !item.scoreBreakdown || !item.officialResults)) {
+            const official = this.OFFICIAL_ROUND_18_RESULTS;
+            const breakdown = this.evaluateScoreForPrediction(item, official);
+            return {
+              ...item,
+              score: breakdown.totalPoints,
+              scoreBreakdown: breakdown,
+              officialResults: {
+                podium: official.podium,
+                polePositionDriverId: official.polePositionDriverId,
+                duelWinnerId: official.duelWinnerId,
+                safetyCarCount: official.safetyCarCount,
+                dnfCount: official.dnfCount
+              }
+            };
+          }
+          return item;
+        });
+      }),
+      catchError(() => {
+        const cached = this.getCachedPrediction(username);
+        if (cached && (cached.predictionId || (cached.podium && cached.podium.length > 0))) {
+          const official = this.OFFICIAL_ROUND_18_RESULTS;
+          const breakdown = this.evaluateScoreForPrediction(cached, official);
+          return of([{
+            predictionId: cached.predictionId || 'cached-pred-r18',
+            sessionId: cached.sessionId || this.ROUND_18_UUID,
+            sessionName: cached.sessionName || 'United States Grand Prix',
+            circuit: cached.circuit || 'Circuit of the Americas',
+            raceDate: '2026-10-25',
+            startsAt: cached.startsAt || '2026-10-25T20:00:00Z',
+            podium: cached.podium || [],
+            polePositionDriverId: cached.polePositionDriverId || null,
+            duelDriverPick: cached.duelDriverPick || null,
+            safetyCarCount: cached.safetyCarCount ?? null,
+            dnfCount: cached.dnfCount ?? null,
+            score: breakdown.totalPoints,
+            submittedAt: cached.submittedAt || null,
+            matchupDriver1: cached.matchupDriver1 || 'norris',
+            matchupDriver2: cached.matchupDriver2 || 'verstappen',
+            scoreBreakdown: breakdown,
+            officialResults: {
+              podium: official.podium,
+              polePositionDriverId: official.polePositionDriverId,
+              duelWinnerId: official.duelWinnerId,
+              safetyCarCount: official.safetyCarCount,
+              dnfCount: official.dnfCount
+            }
+          }]);
+        }
+        return of([]);
+      })
+    );
   }
 
   submitPrediction(sessionId: string, prediction: SubmitPrediction, username?: string) {

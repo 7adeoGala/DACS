@@ -272,7 +272,7 @@ public class PredictionService {
     /**
      * Consulta el historial completo de predicciones y puntuaciones del usuario.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PredictionHistoryItem> getUserPredictionHistory(String issuer, String subject) {
         User user = users.findByIssuerAndSubject(issuer, subject).orElse(null);
         if (user == null) {
@@ -288,10 +288,31 @@ public class PredictionService {
                 if (result != null) {
                     try {
                         breakdown = scoringService.calculateScore(p, result, matchup);
+                        if (p.getScore() == null) {
+                            p.applyScore(breakdown.totalPoints(), Instant.now());
+                            predictions.save(p);
+                        }
                     } catch (Exception ignored) {}
                 }
                 String d1 = matchup != null ? matchup.getDriver1Id() : null;
                 String d2 = matchup != null ? matchup.getDriver2Id() : null;
+
+                OfficialResultSummary officialSummary = null;
+                if (result != null) {
+                    List<String> podium = result.getClassification() != null
+                        ? result.getClassification().stream().limit(3).toList()
+                        : List.of();
+                    String duelWinner = scoringService.resolveDuelWinner(result, matchup);
+                    officialSummary = new OfficialResultSummary(
+                        podium,
+                        result.getPolePositionDriverId(),
+                        duelWinner,
+                        result.getSafetyCarCount(),
+                        result.getDnfCount()
+                    );
+                }
+
+                Integer finalScore = p.getScore() != null ? p.getScore() : (breakdown != null ? breakdown.totalPoints() : null);
 
                 return new PredictionHistoryItem(
                     p.getId(),
@@ -305,7 +326,7 @@ public class PredictionService {
                     p.getDuelDriverPick(),
                     p.getSafetyCarCount(),
                     p.getDnfCount(),
-                    p.getScore(),
+                    finalScore,
                     p.getSubmittedAt(),
                     d1,
                     d2,
@@ -321,11 +342,20 @@ public class PredictionService {
                         breakdown.dnfHit(),
                         breakdown.dnfPoints(),
                         breakdown.totalPoints()
-                    ) : null
+                    ) : null,
+                    officialSummary
                 );
             })
             .toList();
     }
+
+    public record OfficialResultSummary(
+        List<String> podium,
+        String polePositionDriverId,
+        String duelWinnerId,
+        Integer safetyCarCount,
+        Integer dnfCount
+    ) {}
 
     public record ScoreBreakdownDto(
         int podiumHits,
@@ -357,7 +387,8 @@ public class PredictionService {
         Instant submittedAt,
         String matchupDriver1,
         String matchupDriver2,
-        ScoreBreakdownDto scoreBreakdown
+        ScoreBreakdownDto scoreBreakdown,
+        OfficialResultSummary officialResults
     ) {}
 
     public record NextSessionView(

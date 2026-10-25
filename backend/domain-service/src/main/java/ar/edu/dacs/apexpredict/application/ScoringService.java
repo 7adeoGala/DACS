@@ -168,7 +168,7 @@ public class ScoringService {
         return hits;
     }
 
-    private String resolveDuelWinner(SessionResult result, WeekendMatchup matchup) {
+    public String resolveDuelWinner(SessionResult result, WeekendMatchup matchup) {
         if (result.getDuelWinnerDriverId() != null && !result.getDuelWinnerDriverId().isBlank()) {
             return result.getDuelWinnerDriverId();
         }

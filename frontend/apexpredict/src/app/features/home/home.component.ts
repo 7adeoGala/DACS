@@ -86,25 +86,25 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
           <div class="schedule-row">
             <span class="sess-name">Práctica Libre 1 (FP1)</span>
             <span class="sess-time">
-              {{ nextSession()?.fp1 ? (nextSession()?.fp1 | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Viernes 23/10 · 14:30 hs (Arg)' }}
+              {{ nextSession()?.fp1 ? (nextSession()?.fp1 | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Viernes 30/10 · 15:30 hs (Arg)' }}
             </span>
           </div>
           <div class="schedule-row">
             <span class="sess-name">Práctica Libre 2 (FP2)</span>
             <span class="sess-time">
-              {{ nextSession()?.fp2 ? (nextSession()?.fp2 | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Viernes 23/10 · 18:00 hs (Arg)' }}
+              {{ nextSession()?.fp2 ? (nextSession()?.fp2 | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Viernes 30/10 · 19:00 hs (Arg)' }}
             </span>
           </div>
           <div class="schedule-row">
             <span class="sess-name">Clasificación Oficial (Q)</span>
             <span class="sess-time">
-              {{ nextSession()?.qualifying ? (nextSession()?.qualifying | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Sábado 24/10 · 18:00 hs (Arg)' }}
+              {{ nextSession()?.qualifying ? (nextSession()?.qualifying | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Sábado 31/10 · 18:00 hs (Arg)' }}
             </span>
           </div>
           <div class="schedule-row active">
             <span class="sess-name">Gran Premio (Carrera)</span>
             <span class="sess-time">
-              {{ nextSession()?.startsAt ? (nextSession()?.startsAt | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Domingo 25/10 · 17:00 hs (Arg)' }}
+              {{ nextSession()?.startsAt ? (nextSession()?.startsAt | date: 'EEE dd/MM · HH:mm' : '-0300') + ' hs (Arg)' : 'Domingo 01/11 · 17:00 hs (Arg)' }}
             </span>
           </div>
         </div>
@@ -173,7 +173,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   readonly upcomingRaces = signal<Race[]>([]);
   readonly pastRaces = signal<Race[]>([]);
   readonly nextSession = signal<NextSession | null>(null);
-  readonly currentCircuit = signal<CircuitInfo>(F1_CIRCUITS['americas'] || DEFAULT_CIRCUIT);
+  readonly currentCircuit = signal<CircuitInfo>(F1_CIRCUITS['rodriguez'] || DEFAULT_CIRCUIT);
 
   readonly showPast = signal<boolean>(false);
   readonly loading = signal(true);
@@ -301,7 +301,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     } else if (search.includes('monza') || search.includes('italia') || search.includes('italy')) {
       this.currentCircuit.set(F1_CIRCUITS['monza']);
     } else {
-      this.currentCircuit.set(F1_CIRCUITS['americas'] || DEFAULT_CIRCUIT);
+      this.currentCircuit.set(F1_CIRCUITS['rodriguez'] || DEFAULT_CIRCUIT);
     }
   }
 }

@@ -53,7 +53,7 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   public readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   private timerInterval: any;
-  private targetTimeMs: number = new Date('2026-10-25T20:00:00Z').getTime();
+  private targetTimeMs: number = new Date('2026-11-01T20:00:00Z').getTime();
 
   // Estado reactivo con Signals
   readonly session = signal<NextSession | null>(null);
@@ -90,8 +90,8 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   // Circuito actual dinámico (datos oficiales reales)
   readonly circuit = computed<CircuitInfo>(() => {
     const s = this.session();
-    const id = s?.circuitId || 'americas';
-    return F1_CIRCUITS[id] || F1_CIRCUITS['americas'] || DEFAULT_CIRCUIT;
+    const id = s?.circuitId || 'rodriguez';
+    return F1_CIRCUITS[id] || F1_CIRCUITS['rodriguez'] || DEFAULT_CIRCUIT;
   });
 
   // Cronograma dinámico calculado a partir de la API de Jolpica y hora actual

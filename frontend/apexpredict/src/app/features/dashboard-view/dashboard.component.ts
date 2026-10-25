@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -1216,183 +1216,208 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               <button type="button" class="picker-close-btn" (click)="selectedHistoryItem.set(null)" aria-label="Cerrar">✕</button>
             </div>
 
-            <!-- RESUMEN DE PUNTOS TOTALES -->
-            <div class="comparison-summary-bar">
-              <div>
-                <span class="dim" style="font-size: 0.85rem;">PUNTAJE OBTENIDO EN ESTE GP:</span>
-                <div class="comp-total-pts">{{ item.score != null ? item.score : 0 }} <span style="font-size: 1rem; color: #fff;">/ 118 PTS</span></div>
+            <div class="comparison-modal-body custom-scrollbar">
+              <!-- RESUMEN DE PUNTOS TOTALES -->
+              <div class="comparison-summary-bar">
+                <div>
+                  <span class="dim" style="font-size: 0.85rem;">PUNTAJE OBTENIDO EN ESTE GP:</span>
+                  <div class="comp-total-pts">{{ item.score != null ? item.score : 0 }} <span style="font-size: 1rem; color: #fff;">/ 42 PTS</span></div>
+                </div>
+                <div class="comp-status-badge" [class.scored]="item.score != null">
+                  {{ item.score != null ? 'CARRERA HOMOLOGADA Y PUNTUADA' : 'RESULTADOS OFICIALES EN ESPERA' }}
+                </div>
               </div>
-              <div class="comp-status-badge" [class.scored]="item.score != null">
-                {{ item.score != null ? 'CARRERA PUNTUADA' : 'RESULTADOS OFICIALES EN ESPERA' }}
+
+              @if (item.score == null) {
+                <div class="alert-box info" style="margin: 0.5rem 0;">
+                  <strong>Carrera pendiente de homologación:</strong> Esta sesión aún no ha finalizado o los comisarios de la FIA no han emitido la clasificación final oficial. Debajo podés revisar tus pronósticos guardados.
+                </div>
+              }
+
+              <!-- RESUMEN EN CHIPS -->
+              @if (item.scoreBreakdown) {
+                <div class="score-breakdown-tags" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  <span class="chip-score" [class.hit]="item.scoreBreakdown.podiumHits > 0">
+                    Podio: +{{ item.scoreBreakdown.podiumPoints }} pts ({{ item.scoreBreakdown.podiumHits }}/3 aciertos)
+                  </span>
+                  <span class="chip-score" [class.hit]="item.scoreBreakdown.poleHit">
+                    Pole: {{ item.scoreBreakdown.poleHit ? '+4 pts' : '0 pts' }}
+                  </span>
+                  <span class="chip-score" [class.hit]="item.scoreBreakdown.duelHit">
+                    Duelo: {{ item.scoreBreakdown.duelHit ? '+3 pts' : '0 pts' }}
+                  </span>
+                  <span class="chip-score" [class.hit]="item.scoreBreakdown.safetyCarHit">
+                    Safety Car: {{ item.scoreBreakdown.safetyCarHit ? '+10 pts' : '0 pts' }}
+                  </span>
+                  <span class="chip-score" [class.hit]="item.scoreBreakdown.dnfHit">
+                    Abandonos: {{ item.scoreBreakdown.dnfHit ? '+15 pts' : '0 pts' }}
+                  </span>
+                </div>
+              }
+
+              <!-- TABLA COMPARATIVA ITEM POR ITEM -->
+              <div class="comparison-table">
+                <div class="comp-header-row">
+                  <span class="c-col cat">Categoría</span>
+                  <span class="c-col pick">Tu Pronóstico</span>
+                  <span class="c-col official">Resultado FIA Oficial</span>
+                  <span class="c-col pts">Puntos</span>
+                  <span class="c-col status">Evaluación</span>
+                </div>
+
+                <!-- P1 WINNER -->
+                <div class="comp-data-row">
+                  <span class="c-col cat"><strong>P1 (Ganador GP)</strong></span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.podium[0]) }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.podium?.[0] ? getDriverName(item.officialResults?.podium?.[0]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts gold" data-label="Puntos">Top 3</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.scoreBreakdown) {
+                      @if (item.scoreBreakdown.podiumHits >= 1) {
+                        <span class="status-tag hit">ACERTADO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- P2 SEGUNDO -->
+                <div class="comp-data-row">
+                  <span class="c-col cat"><strong>P2 (Segundo Puesto)</strong></span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.podium[1]) }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.podium?.[1] ? getDriverName(item.officialResults?.podium?.[1]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts silver" data-label="Puntos">Top 3</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.scoreBreakdown) {
+                      @if (item.scoreBreakdown.podiumHits >= 2) {
+                        <span class="status-tag hit">ACERTADO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- P3 TERCERO -->
+                <div class="comp-data-row">
+                  <span class="c-col cat"><strong>P3 (Tercer Puesto)</strong></span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.podium[2]) }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.podium?.[2] ? getDriverName(item.officialResults?.podium?.[2]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts bronze" data-label="Puntos">Top 3</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.scoreBreakdown) {
+                      @if (item.scoreBreakdown.podiumHits >= 3) {
+                        <span class="status-tag hit">ACERTADO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- POLE POSITION -->
+                <div class="comp-data-row">
+                  <span class="c-col cat"><strong>Pole Position (Q3)</strong></span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.polePositionDriverId) }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.polePositionDriverId ? getDriverName(item.officialResults?.polePositionDriverId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts cyan" data-label="Puntos">4 pts</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.scoreBreakdown) {
+                      @if (item.scoreBreakdown.poleHit) {
+                        <span class="status-tag hit">ACERTADO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- DUELO DE LA FECHA -->
+                <div class="comp-data-row">
+                  <span class="c-col cat"><strong>Duelo de la Fecha</strong></span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.duelDriverPick) }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.duelWinnerId ? getDriverName(item.officialResults?.duelWinnerId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts" data-label="Puntos">3 pts</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.scoreBreakdown) {
+                      @if (item.scoreBreakdown.duelHit) {
+                        <span class="status-tag hit">ACERTADO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- SAFETY CAR -->
+                <div class="comp-data-row">
+                  <span class="c-col cat"><strong>Safety Cars (Cant.)</strong></span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ item.safetyCarCount != null ? item.safetyCarCount + ' SC' : '--' }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.safetyCarCount != null ? item.officialResults?.safetyCarCount + ' SC' : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts" data-label="Puntos">10 pts</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.scoreBreakdown) {
+                      @if (item.scoreBreakdown.safetyCarHit) {
+                        <span class="status-tag hit">EXACTO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- ABANDONOS DNFS -->
+                <div class="comp-data-row">
+                  <span class="c-col cat"><strong>Abandonos / DNFs</strong></span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ item.dnfCount != null ? item.dnfCount + ' DNFs' : '--' }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.dnfCount != null ? item.officialResults?.dnfCount + ' DNFs' : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts" data-label="Puntos">15 pts</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.scoreBreakdown) {
+                      @if (item.scoreBreakdown.dnfHit) {
+                        <span class="status-tag hit">EXACTO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
               </div>
             </div>
 
-            @if (item.score == null) {
-              <div class="alert-box info" style="margin: 1rem 0;">
-                <strong>Carrera pendiente de homologación:</strong> Esta sesión aún no ha finalizado o los comisarios de la FIA no han emitido la clasificación final oficial. Debajo podés revisar tus pronósticos bloqueados.
-              </div>
-            }
-
-            <!-- TABLA COMPARATIVA ITEM POR ITEM -->
-            <div class="comparison-table">
-              <div class="comp-header-row">
-                <span class="c-col cat">Categoría</span>
-                <span class="c-col pick">Tu Pronóstico</span>
-                <span class="c-col official">Resultado FIA Oficial</span>
-                <span class="c-col pts">Puntos</span>
-                <span class="c-col status">Evaluación</span>
-              </div>
-
-              <!-- P1 WINNER -->
-              <div class="comp-data-row">
-                <span class="c-col cat"><strong>P1 (Ganador GP)</strong></span>
-                <span class="c-col pick">{{ getDriverName(item.podium[0]) }}</span>
-                <span class="c-col official dim">
-                  {{ item.officialResults?.podium?.[0] ? getDriverName(item.officialResults?.podium?.[0]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
-                </span>
-                <span class="c-col pts gold">Top 3</span>
-                <span class="c-col status">
-                  @if (item.scoreBreakdown) {
-                    @if (item.scoreBreakdown.podiumHits >= 1) {
-                      <span class="status-tag hit">ACERTADO</span>
-                    } @else {
-                      <span class="status-tag miss">NO ACERTÓ</span>
-                    }
-                  } @else {
-                    <span class="status-tag pending">PENDIENTE</span>
-                  }
-                </span>
-              </div>
-
-              <!-- P2 SEGUNDO -->
-              <div class="comp-data-row">
-                <span class="c-col cat"><strong>P2 (Segundo Puesto)</strong></span>
-                <span class="c-col pick">{{ getDriverName(item.podium[1]) }}</span>
-                <span class="c-col official dim">
-                  {{ item.officialResults?.podium?.[1] ? getDriverName(item.officialResults?.podium?.[1]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
-                </span>
-                <span class="c-col pts silver">Top 3</span>
-                <span class="c-col status">
-                  @if (item.scoreBreakdown) {
-                    @if (item.scoreBreakdown.podiumHits >= 2) {
-                      <span class="status-tag hit">ACERTADO</span>
-                    } @else {
-                      <span class="status-tag miss">NO ACERTÓ</span>
-                    }
-                  } @else {
-                    <span class="status-tag pending">PENDIENTE</span>
-                  }
-                </span>
-              </div>
-
-              <!-- P3 TERCERO -->
-              <div class="comp-data-row">
-                <span class="c-col cat"><strong>P3 (Tercer Puesto)</strong></span>
-                <span class="c-col pick">{{ getDriverName(item.podium[2]) }}</span>
-                <span class="c-col official dim">
-                  {{ item.officialResults?.podium?.[2] ? getDriverName(item.officialResults?.podium?.[2]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
-                </span>
-                <span class="c-col pts bronze">Top 3</span>
-                <span class="c-col status">
-                  @if (item.scoreBreakdown) {
-                    @if (item.scoreBreakdown.podiumHits >= 3) {
-                      <span class="status-tag hit">ACERTADO</span>
-                    } @else {
-                      <span class="status-tag miss">NO ACERTÓ</span>
-                    }
-                  } @else {
-                    <span class="status-tag pending">PENDIENTE</span>
-                  }
-                </span>
-              </div>
-
-              <!-- POLE POSITION -->
-              <div class="comp-data-row">
-                <span class="c-col cat"><strong>Pole Position (Q3)</strong></span>
-                <span class="c-col pick">{{ getDriverName(item.polePositionDriverId) }}</span>
-                <span class="c-col official dim">
-                  {{ item.officialResults?.polePositionDriverId ? getDriverName(item.officialResults?.polePositionDriverId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
-                </span>
-                <span class="c-col pts cyan">4 pts</span>
-                <span class="c-col status">
-                  @if (item.scoreBreakdown) {
-                    @if (item.scoreBreakdown.poleHit) {
-                      <span class="status-tag hit">ACERTADO</span>
-                    } @else {
-                      <span class="status-tag miss">NO ACERTÓ</span>
-                    }
-                  } @else {
-                    <span class="status-tag pending">PENDIENTE</span>
-                  }
-                </span>
-              </div>
-
-              <!-- DUELO DE LA FECHA -->
-              <div class="comp-data-row">
-                <span class="c-col cat"><strong>Duelo de la Fecha</strong></span>
-                <span class="c-col pick">{{ getDriverName(item.duelDriverPick) }}</span>
-                <span class="c-col official dim">
-                  {{ item.officialResults?.duelWinnerId ? getDriverName(item.officialResults?.duelWinnerId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
-                </span>
-                <span class="c-col pts">3 pts</span>
-                <span class="c-col status">
-                  @if (item.scoreBreakdown) {
-                    @if (item.scoreBreakdown.duelHit) {
-                      <span class="status-tag hit">ACERTADO</span>
-                    } @else {
-                      <span class="status-tag miss">NO ACERTÓ</span>
-                    }
-                  } @else {
-                    <span class="status-tag pending">PENDIENTE</span>
-                  }
-                </span>
-              </div>
-
-              <!-- SAFETY CAR -->
-              <div class="comp-data-row">
-                <span class="c-col cat"><strong>Safety Cars (Cant.)</strong></span>
-                <span class="c-col pick">{{ item.safetyCarCount }} SC</span>
-                <span class="c-col official dim">
-                  {{ item.officialResults?.safetyCarCount != null ? item.officialResults?.safetyCarCount + ' SC' : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
-                </span>
-                <span class="c-col pts">10 pts</span>
-                <span class="c-col status">
-                  @if (item.scoreBreakdown) {
-                    @if (item.scoreBreakdown.safetyCarHit) {
-                      <span class="status-tag hit">EXACTO</span>
-                    } @else {
-                      <span class="status-tag miss">NO ACERTÓ</span>
-                    }
-                  } @else {
-                    <span class="status-tag pending">PENDIENTE</span>
-                  }
-                </span>
-              </div>
-
-              <!-- ABANDONOS DNFS -->
-              <div class="comp-data-row">
-                <span class="c-col cat"><strong>Abandonos / DNFs</strong></span>
-                <span class="c-col pick">{{ item.dnfCount }} DNFs</span>
-                <span class="c-col official dim">
-                  {{ item.officialResults?.dnfCount != null ? item.officialResults?.dnfCount + ' DNFs' : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
-                </span>
-                <span class="c-col pts">15 pts</span>
-                <span class="c-col status">
-                  @if (item.scoreBreakdown) {
-                    @if (item.scoreBreakdown.dnfHit) {
-                      <span class="status-tag hit">EXACTO</span>
-                    } @else {
-                      <span class="status-tag miss">NO ACERTÓ</span>
-                    }
-                  } @else {
-                    <span class="status-tag pending">PENDIENTE</span>
-                  }
-                </span>
-              </div>
-            </div>
-
-            <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
-              <button type="button" class="button quiet" (click)="selectedHistoryItem.set(null)">Cerrar Comparación</button>
+            <!-- FOOTER CON BOTÓN DE CIERRE -->
+            <div class="comparison-modal-footer">
+              <span class="dim comp-footer-note">Puntuación homologada según el reglamento oficial de ApexPredict (máx 42 pts).</span>
+              <button type="button" class="button primary" (click)="selectedHistoryItem.set(null)">Entendido / Cerrar</button>
             </div>
           </div>
         </div>
@@ -2919,7 +2944,32 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       font-weight: 600;
     }
     .comparison-modal {
-      max-width: 860px;
+      max-width: 820px;
+      width: min(820px, 94vw);
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .comparison-modal-body {
+      padding: 1.25rem 1.5rem;
+      overflow-y: auto;
+      max-height: calc(88vh - 130px);
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+    .comparison-modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--line);
+      background: #131720;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .comp-footer-note {
+      font-size: 0.8rem;
     }
     .comparison-summary-bar {
       display: flex;
@@ -2929,7 +2979,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       border: 1px solid var(--line);
       border-radius: var(--radius-sm);
       padding: 1rem 1.25rem;
-      margin: 1rem 0;
+      margin: 0;
       flex-wrap: wrap;
       gap: 1rem;
     }
@@ -3013,9 +3063,56 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       border: 1px solid rgba(225, 6, 0, 0.3);
     }
     .status-tag.pending {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text-muted);
-      border: 1px solid var(--line);
+      background: rgba(245, 176, 0, 0.15);
+      color: var(--gold);
+      border: 1px solid rgba(245, 176, 0, 0.3);
+    }
+    @media (max-width: 768px) {
+      .comparison-modal {
+        max-width: 100%;
+        width: 96vw;
+        max-height: 94vh;
+      }
+      .comparison-modal-body {
+        padding: 0.85rem;
+        max-height: calc(94vh - 120px);
+        gap: 1rem;
+      }
+      .comp-header-row {
+        display: none;
+      }
+      .comp-data-row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+        padding: 0.75rem 0.85rem;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-sm);
+        margin-bottom: 0.4rem;
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .comp-data-row .c-col {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .comp-data-row .c-col.cat {
+        font-size: 0.95rem;
+        border-bottom: 1px dashed var(--line);
+        padding-bottom: 4px;
+      }
+      .comp-data-row .c-col::before {
+        content: attr(data-label);
+        font-size: 0.75rem;
+        color: var(--text-dim);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .comp-data-row .c-col.cat::before {
+        content: "";
+      }
     }
     .dim {
       color: var(--text-dim);
@@ -3129,6 +3226,16 @@ export class DashboardComponent implements OnInit {
 
   // Item seleccionado en historial para comparar resultados
   readonly selectedHistoryItem = signal<PredictionHistoryItem | null>(null);
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey() {
+    if (this.selectedHistoryItem()) {
+      this.selectedHistoryItem.set(null);
+    }
+    if (this.isPickerOpen()) {
+      this.closeDriverPicker();
+    }
+  }
 
   // Sesión F1 activa
   readonly session = signal<NextSession | null>(null);
@@ -3418,7 +3525,7 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadHistory() {
-    this.api.predictionHistory().subscribe({
+    this.api.predictionHistory(this.auth.username()).subscribe({
       next: (items) => {
         this.historyItems.set(items || []);
       },
@@ -3581,7 +3688,7 @@ export class DashboardComponent implements OnInit {
     if (this.isSaving() || this.isLocked()) return;
     
     const sess = this.session();
-    const sessionId = sess?.id || 'f0c23d70-f7ca-411d-b827-7a9d45037100';
+    const sessionId = sess?.id || 'f0c23d70-f7ca-411d-b827-7a9d45037101';
 
     this.isSaving.set(true);
     this.saveError.set('');
