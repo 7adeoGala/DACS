@@ -1248,7 +1248,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               <button type="button" class="picker-close-btn" (click)="selectedHistoryItem.set(null)" aria-label="Cerrar">✕</button>
             </div>
 
-            <div class="comparison-modal-body custom-scrollbar">
+            <div class="comparison-modal-body custom-scrollbar" tabindex="0">
               <!-- RESUMEN DE PUNTOS TOTALES -->
               <div class="comparison-summary-bar">
                 <div>
@@ -3068,40 +3068,58 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       line-height: 1.4;
     }
 
-    .comparison-modal {
+    .driver-picker-modal.comparison-modal {
       max-width: 900px;
       width: min(900px, 95vw);
-      max-height: 92vh;
+      height: min(88vh, 850px);
+      max-height: 88vh;
       display: flex;
       flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.95);
+    }
+    .comparison-modal .picker-header {
+      flex: 0 0 auto;
+      flex-shrink: 0;
     }
     .comparison-modal-body {
-      flex: 1 1 auto;
+      flex: 1 1 0px;
       min-height: 0;
+      height: 0;
+      overflow-y: scroll;
+      overflow-x: hidden;
       padding: 1rem 1.25rem;
-      overflow-y: auto;
-      max-height: calc(92vh - 120px);
       display: flex;
       flex-direction: column;
       gap: 0.85rem;
       scrollbar-width: thin;
-      scrollbar-color: var(--red) rgba(255, 255, 255, 0.08);
+      scrollbar-color: var(--red) rgba(255, 255, 255, 0.1);
+      overscroll-behavior: contain;
+    }
+    .comparison-modal-body:focus {
+      outline: none;
+    }
+    .comparison-modal-body > * {
+      flex-shrink: 0;
     }
     .comparison-modal-body::-webkit-scrollbar {
-      width: 7px;
+      width: 8px;
     }
     .comparison-modal-body::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.35);
+      background: rgba(0, 0, 0, 0.45);
       border-radius: 4px;
     }
     .comparison-modal-body::-webkit-scrollbar-thumb {
       background: var(--red);
       border-radius: 4px;
+      box-shadow: 0 0 8px rgba(225, 6, 0, 0.5);
     }
     .comparison-modal-body::-webkit-scrollbar-thumb:hover {
       background: #ff3329;
     }
     .comparison-modal-footer {
+      flex: 0 0 auto;
+      flex-shrink: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -3110,7 +3128,6 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       background: #131720;
       flex-wrap: wrap;
       gap: 0.75rem;
-      flex-shrink: 0;
     }
     .comp-footer-note {
       font-size: 0.8rem;
@@ -3254,14 +3271,14 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       border: 1px solid rgba(245, 176, 0, 0.3);
     }
     @media (max-width: 768px) {
-      .comparison-modal {
+      .driver-picker-modal.comparison-modal {
         max-width: 100%;
         width: 96vw;
-        max-height: 94vh;
+        height: 92vh;
+        max-height: 92vh;
       }
       .comparison-modal-body {
         padding: 0.75rem;
-        max-height: calc(94vh - 110px);
         gap: 0.75rem;
       }
       .comp-header-row {
