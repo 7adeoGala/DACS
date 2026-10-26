@@ -13,7 +13,8 @@ import {
   PredictionDetail,
   PredictionHistoryItem,
   JolpicaDriverStanding,
-  JolpicaConstructorStanding
+  JolpicaConstructorStanding,
+  resolveCircuitShortName
 } from '../../core/models/api.models';
 import { PodiumPickerComponent, PodiumSelection } from './components/podium-picker/podium-picker.component';
 import { DriverPickerModalComponent } from '../../shared/components/driver-picker-modal/driver-picker-modal.component';
@@ -34,7 +35,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
         <section class="tab-content">
           <div class="section-hero">
             <div class="hero-intro">
-              <span class="badge-round">ROUND {{ session()?.round || 18 }} // {{ session()?.circuit || 'COTA' }}</span>
+              <span class="badge-round">ROUND {{ session()?.round || 19 }} // {{ circuitShortName() }}</span>
               <h2>Configuración de Pronósticos Oficiales</h2>
               <p class="subtitle">Asigná los 3 puestos de podio sin duplicar, poleman, duelo de la fecha y telemetría de carrera.</p>
 
@@ -3445,6 +3446,9 @@ export class DashboardComponent implements OnInit {
   readonly isLocked = computed(() => this.session()?.isLocked ?? false);
   readonly matchupDriver1 = computed(() => this.session()?.matchupDriver1 || 'norris');
   readonly matchupDriver2 = computed(() => this.session()?.matchupDriver2 || 'verstappen');
+  readonly circuitShortName = computed<string>(() => {
+    return resolveCircuitShortName(null, this.session());
+  });
 
   // Estado reactivo del pronóstico con Signals
   readonly p1DriverId = signal<string>('');

@@ -3,13 +3,13 @@
   <header class="gp-hero-header">
     <div class="gp-title-group">
       <div class="chips-row">
-        <span class="badge round-tag">ROUND {{ session()?.round || 18 }} / 24</span>
+        <span class="badge round-tag">ROUND {{ session()?.round || 19 }} / 24</span>
         @if (session()?.sprint) {
           <span class="badge sprint-tag">SPRINT WEEKEND</span>
         }
       </div>
       <h1 class="gp-main-title">
-        {{ session()?.name || 'United States Grand Prix' }} <span class="highlight-cota">// COTA</span>
+        {{ session()?.name || 'Gran Premio de Fórmula 1' }} @if (circuitShortName()) {<span class="highlight-cota">// {{ circuitShortName() }}</span>}
       </h1>
       <p class="gp-location">{{ circuit().name }} • {{ circuit().city }}, {{ circuit().country }}</p>
     </div>
@@ -369,7 +369,7 @@
           <div class="stat-line"><span class="val">3</span><span class="lbl">Victorias 2024</span></div>
           <div class="stat-line"><span class="val">11</span><span class="lbl">Podios Totales</span></div>
           <div class="stat-line"><span class="val">6</span><span class="lbl">Pole Positions</span></div>
-          <div class="stat-line highlight"><span class="val gold">21 vtas</span><span class="lbl">Vueltas Lideradas en COTA</span></div>
+          <div class="stat-line highlight"><span class="val gold">{{ norrisCircuitStat().val }}</span><span class="lbl">{{ norrisCircuitStat().lbl }}</span></div>
         </div>
       </div>
 
@@ -429,7 +429,7 @@
           <div class="stat-line"><span class="val">7</span><span class="lbl">Victorias 2024</span></div>
           <div class="stat-line"><span class="val">12</span><span class="lbl">Podios Totales</span></div>
           <div class="stat-line"><span class="val">8</span><span class="lbl">Pole Positions</span></div>
-          <div class="stat-line highlight"><span class="val gold">3 (2021-23)</span><span class="lbl">Victorias Previas en COTA</span></div>
+          <div class="stat-line highlight"><span class="val gold">{{ verCircuitStat().val }}</span><span class="lbl">{{ verCircuitStat().lbl }}</span></div>
         </div>
       </div>
     </div>

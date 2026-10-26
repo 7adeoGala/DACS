@@ -11,7 +11,8 @@ import {
   CircuitInfo,
   F1_CIRCUITS,
   DEFAULT_CIRCUIT,
-  F1_DRIVERS
+  F1_DRIVERS,
+  resolveCircuitShortName
 } from '../../core/models/api.models';
 
 export interface SessionSchedule {
@@ -90,8 +91,51 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   // Circuito actual dinámico (datos oficiales reales)
   readonly circuit = computed<CircuitInfo>(() => {
     const s = this.session();
-    const id = s?.circuitId || 'rodriguez';
-    return F1_CIRCUITS[id] || F1_CIRCUITS['rodriguez'] || DEFAULT_CIRCUIT;
+    const id = s?.circuitId || '';
+    if (id && F1_CIRCUITS[id]) {
+      return F1_CIRCUITS[id];
+    }
+    const search = `${s?.circuitId || ''} ${s?.circuit || ''} ${s?.name || ''}`.toLowerCase();
+    for (const [key, c] of Object.entries(F1_CIRCUITS)) {
+      if (
+        (key && search.includes(key)) ||
+        (c.name && search.includes(c.name.toLowerCase())) ||
+        (c.shortName && search.includes(c.shortName.toLowerCase())) ||
+        (c.city && search.includes(c.city.toLowerCase()))
+      ) {
+        return c;
+      }
+    }
+    return F1_CIRCUITS['rodriguez'] || DEFAULT_CIRCUIT;
+  });
+
+  // Sigla / nombre corto del circuito dinámico (ej: AHR, COTA, INTERLAGOS)
+  readonly circuitShortName = computed<string>(() => {
+    return resolveCircuitShortName(this.circuit(), this.session());
+  });
+
+  readonly norrisCircuitStat = computed(() => {
+    const short = this.circuitShortName();
+    if (short === 'COTA') {
+      return { val: '21 vtas', lbl: 'Vueltas Lideradas en COTA' };
+    } else if (short === 'AHR') {
+      return { val: 'P2 (2024)', lbl: 'Mejor Puesto en AHR' };
+    } else if (short === 'INTERLAGOS') {
+      return { val: 'P2 (2023)', lbl: 'Mejor Puesto en Interlagos' };
+    }
+    return { val: 'Puntos', lbl: `Historial en ${short}` };
+  });
+
+  readonly verCircuitStat = computed(() => {
+    const short = this.circuitShortName();
+    if (short === 'COTA') {
+      return { val: '3 (2021-23)', lbl: 'Victorias Previas en COTA' };
+    } else if (short === 'AHR') {
+      return { val: '5 (2017-23)', lbl: 'Victorias Previas en AHR' };
+    } else if (short === 'INTERLAGOS') {
+      return { val: '2 (2019, 23)', lbl: 'Victorias Previas en Interlagos' };
+    }
+    return { val: 'Victoria', lbl: `Victorias en ${short}` };
   });
 
   // Cronograma dinámico calculado a partir de la API de Jolpica y hora actual
