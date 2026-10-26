@@ -1129,23 +1129,55 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                       </div>
                     </div>
 
-                    <!-- DETALLE DE PICKS GUARDADOS -->
+                    <!-- DETALLE DE PICKS GUARDADOS (VALOR PUESTO) -->
                     @if (h.podium && h.podium.length > 0) {
-                      <div style="margin: 1rem 0 0.5rem; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: var(--radius-sm); border: 1px solid var(--line);">
-                        <div style="font-size: 0.82rem; margin-bottom: 4px;">
-                          <strong>Podio Elegido:</strong> P1: {{ getDriverName(h.podium[0]) }} • P2: {{ getDriverName(h.podium[1]) }} • P3: {{ getDriverName(h.podium[2]) }}
+                      <div class="history-card-picks-box">
+                        <div class="picks-box-header">
+                          <span class="picks-box-badge">TU PRONÓSTICO (VALOR PUESTO)</span>
+                          @if (h.submittedAt) {
+                            <span class="dim" style="font-size: 0.72rem;">
+                              {{ h.submittedAt | date:'d/MM HH:mm':'America/Argentina/Buenos_Aires' }} hs Arg
+                            </span>
+                          }
                         </div>
-                        <div style="font-size: 0.82rem; color: var(--text-dim);">
-                          Pole: <strong style="color: var(--cyan);">{{ getDriverName(h.polePositionDriverId) }}</strong> • 
-                          Duelo: <strong style="color: #fff;">{{ getDriverName(h.duelDriverPick) }}</strong> • 
-                          SC: <strong style="color: #fff;">{{ h.safetyCarCount }}</strong> • 
-                          DNFs: <strong style="color: #fff;">{{ h.dnfCount }}</strong>
-                        </div>
-                        @if (h.submittedAt) {
-                          <div style="font-size: 0.75rem; color: var(--text-dim); margin-top: 6px;">
-                            Registrado: {{ h.submittedAt | date:'d/MM/yyyy HH:mm':'America/Argentina/Buenos_Aires' }} hs Arg
+                        <div class="picks-content">
+                          <div class="pick-line">
+                            <span class="dim">Podio:</span>
+                            <strong>P1:</strong> {{ getDriverName(h.podium[0]) }} • 
+                            <strong>P2:</strong> {{ getDriverName(h.podium[1]) }} • 
+                            <strong>P3:</strong> {{ getDriverName(h.podium[2]) }}
                           </div>
-                        }
+                          <div class="pick-line dim">
+                            Pole: <strong style="color: var(--cyan);">{{ getDriverName(h.polePositionDriverId) }}</strong> • 
+                            Duelo: <strong style="color: #fff;">{{ getDriverName(h.duelDriverPick) }}</strong> • 
+                            SC: <strong style="color: #fff;">{{ h.safetyCarCount != null ? h.safetyCarCount : '--' }}</strong> • 
+                            DNFs: <strong style="color: #fff;">{{ h.dnfCount != null ? h.dnfCount : '--' }}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- DETALLE DE RESULTADO OFICIAL FIA (RESULTADO FINAL) -->
+                    @if (h.officialResults) {
+                      <div class="history-card-official-box">
+                        <div class="official-box-header">
+                          <span class="official-box-badge">RESULTADO OFICIAL FIA (RESULTADO FINAL)</span>
+                          <span class="dim" style="font-size: 0.72rem;">Homologado</span>
+                        </div>
+                        <div class="picks-content">
+                          <div class="pick-line">
+                            <span class="dim">Podio Real:</span>
+                            <strong style="color: var(--gold);">P1:</strong> {{ getDriverName(h.officialResults.podium?.[0]) }} • 
+                            <strong style="color: var(--silver);">P2:</strong> {{ getDriverName(h.officialResults.podium?.[1]) }} • 
+                            <strong style="color: var(--bronze);">P3:</strong> {{ getDriverName(h.officialResults.podium?.[2]) }}
+                          </div>
+                          <div class="pick-line dim">
+                            Pole Real: <strong style="color: var(--cyan);">{{ getDriverName(h.officialResults.polePositionDriverId) }}</strong> • 
+                            Duelo Ganador: <strong style="color: #fff;">{{ getDriverName(h.officialResults.duelWinnerId) }}</strong> • 
+                            SC Reales: <strong style="color: #fff;">{{ h.officialResults.safetyCarCount != null ? h.officialResults.safetyCarCount : '--' }}</strong> • 
+                            DNFs Reales: <strong style="color: #fff;">{{ h.officialResults.dnfCount != null ? h.officialResults.dnfCount : '--' }}</strong>
+                          </div>
+                        </div>
                       </div>
                     }
 
@@ -1220,7 +1252,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               <!-- RESUMEN DE PUNTOS TOTALES -->
               <div class="comparison-summary-bar">
                 <div>
-                  <span class="dim" style="font-size: 0.85rem;">PUNTAJE OBTENIDO EN ESTE GP:</span>
+                  <span class="dim" style="font-size: 0.82rem;">PUNTAJE OBTENIDO EN ESTE GP:</span>
                   <div class="comp-total-pts">{{ item.score != null ? item.score : 0 }} <span style="font-size: 1rem; color: #fff;">/ 42 PTS</span></div>
                 </div>
                 <div class="comp-status-badge" [class.scored]="item.score != null">
@@ -1229,7 +1261,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               </div>
 
               @if (item.score == null) {
-                <div class="alert-box info" style="margin: 0.5rem 0;">
+                <div class="alert-box info" style="margin: 0.4rem 0;">
                   <strong>Carrera pendiente de homologación:</strong> Esta sesión aún no ha finalizado o los comisarios de la FIA no han emitido la clasificación final oficial. Debajo podés revisar tus pronósticos guardados.
                 </div>
               }
@@ -1259,23 +1291,32 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               <div class="comparison-table">
                 <div class="comp-header-row">
                   <span class="c-col cat">Categoría</span>
-                  <span class="c-col pick">Tu Pronóstico</span>
-                  <span class="c-col official">Resultado FIA Oficial</span>
+                  <span class="c-col pick">Tu Pronóstico (Puesto)</span>
+                  <span class="c-col official">Resultado FIA (Final)</span>
                   <span class="c-col pts">Puntos</span>
                   <span class="c-col status">Evaluación</span>
                 </div>
 
+                <!-- SECCIÓN 1: PODIO DE CARRERA -->
+                <div class="comp-section-row">
+                  <span class="sec-title">🏎️ PODIO OFICIAL DE CARRERA</span>
+                  <span class="sec-badge">1 acierto = 3 pts · 2 aciertos = 7 pts · 3 aciertos = 10 pts</span>
+                </div>
+
                 <!-- P1 WINNER -->
                 <div class="comp-data-row">
-                  <span class="c-col cat"><strong>P1 (Ganador GP)</strong></span>
+                  <span class="c-col cat">
+                    <strong class="cat-name">P1 (Ganador GP)</strong>
+                    <span class="c-col-sub">1º Puesto de Carrera</span>
+                  </span>
                   <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.podium[0]) }}</span>
                   <span class="c-col official dim" data-label="Resultado FIA">
                     {{ item.officialResults?.podium?.[0] ? getDriverName(item.officialResults?.podium?.[0]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                   </span>
                   <span class="c-col pts gold" data-label="Puntos">Top 3</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.scoreBreakdown) {
-                      @if (item.scoreBreakdown.podiumHits >= 1) {
+                    @if (item.officialResults?.podium?.[0] || item.score != null) {
+                      @if (isPodiumHit(item, 0)) {
                         <span class="status-tag hit">ACERTADO</span>
                       } @else {
                         <span class="status-tag miss">NO ACERTÓ</span>
@@ -1288,15 +1329,18 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
 
                 <!-- P2 SEGUNDO -->
                 <div class="comp-data-row">
-                  <span class="c-col cat"><strong>P2 (Segundo Puesto)</strong></span>
+                  <span class="c-col cat">
+                    <strong class="cat-name">P2 (Segundo Puesto)</strong>
+                    <span class="c-col-sub">2º Puesto de Carrera</span>
+                  </span>
                   <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.podium[1]) }}</span>
                   <span class="c-col official dim" data-label="Resultado FIA">
                     {{ item.officialResults?.podium?.[1] ? getDriverName(item.officialResults?.podium?.[1]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                   </span>
                   <span class="c-col pts silver" data-label="Puntos">Top 3</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.scoreBreakdown) {
-                      @if (item.scoreBreakdown.podiumHits >= 2) {
+                    @if (item.officialResults?.podium?.[1] || item.score != null) {
+                      @if (isPodiumHit(item, 1)) {
                         <span class="status-tag hit">ACERTADO</span>
                       } @else {
                         <span class="status-tag miss">NO ACERTÓ</span>
@@ -1309,15 +1353,18 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
 
                 <!-- P3 TERCERO -->
                 <div class="comp-data-row">
-                  <span class="c-col cat"><strong>P3 (Tercer Puesto)</strong></span>
+                  <span class="c-col cat">
+                    <strong class="cat-name">P3 (Tercer Puesto)</strong>
+                    <span class="c-col-sub">3º Puesto de Carrera</span>
+                  </span>
                   <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.podium[2]) }}</span>
                   <span class="c-col official dim" data-label="Resultado FIA">
                     {{ item.officialResults?.podium?.[2] ? getDriverName(item.officialResults?.podium?.[2]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                   </span>
                   <span class="c-col pts bronze" data-label="Puntos">Top 3</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.scoreBreakdown) {
-                      @if (item.scoreBreakdown.podiumHits >= 3) {
+                    @if (item.officialResults?.podium?.[2] || item.score != null) {
+                      @if (isPodiumHit(item, 2)) {
                         <span class="status-tag hit">ACERTADO</span>
                       } @else {
                         <span class="status-tag miss">NO ACERTÓ</span>
@@ -1328,17 +1375,26 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   </span>
                 </div>
 
+                <!-- SECCIÓN 2: CLASIFICACIÓN Y DUELO -->
+                <div class="comp-section-row">
+                  <span class="sec-title">⚡ CLASIFICACIÓN Y DUELO DIRECTO</span>
+                  <span class="sec-badge">Pole = 4 pts · Duelo = 3 pts</span>
+                </div>
+
                 <!-- POLE POSITION -->
                 <div class="comp-data-row">
-                  <span class="c-col cat"><strong>Pole Position (Q3)</strong></span>
+                  <span class="c-col cat">
+                    <strong class="cat-name">Pole Position (Q3)</strong>
+                    <span class="c-col-sub">1º en Clasificación Sábado</span>
+                  </span>
                   <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.polePositionDriverId) }}</span>
                   <span class="c-col official dim" data-label="Resultado FIA">
                     {{ item.officialResults?.polePositionDriverId ? getDriverName(item.officialResults?.polePositionDriverId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                   </span>
-                  <span class="c-col pts cyan" data-label="Puntos">4 pts</span>
+                  <span class="c-col pts cyan" data-label="Puntos">+4 pts</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.scoreBreakdown) {
-                      @if (item.scoreBreakdown.poleHit) {
+                    @if (item.officialResults?.polePositionDriverId || item.score != null) {
+                      @if (isPoleHit(item)) {
                         <span class="status-tag hit">ACERTADO</span>
                       } @else {
                         <span class="status-tag miss">NO ACERTÓ</span>
@@ -1351,15 +1407,22 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
 
                 <!-- DUELO DE LA FECHA -->
                 <div class="comp-data-row">
-                  <span class="c-col cat"><strong>Duelo de la Fecha</strong></span>
+                  <span class="c-col cat">
+                    <strong class="cat-name">Duelo de la Fecha</strong>
+                    @if (item.matchupDriver1 && item.matchupDriver2) {
+                      <span class="c-col-sub">{{ getDriverName(item.matchupDriver1) }} vs {{ getDriverName(item.matchupDriver2) }}</span>
+                    } @else {
+                      <span class="c-col-sub">Piloto con mejor posición en carrera</span>
+                    }
+                  </span>
                   <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.duelDriverPick) }}</span>
                   <span class="c-col official dim" data-label="Resultado FIA">
                     {{ item.officialResults?.duelWinnerId ? getDriverName(item.officialResults?.duelWinnerId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                   </span>
-                  <span class="c-col pts" data-label="Puntos">3 pts</span>
+                  <span class="c-col pts" data-label="Puntos">+3 pts</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.scoreBreakdown) {
-                      @if (item.scoreBreakdown.duelHit) {
+                    @if (item.officialResults?.duelWinnerId || item.score != null) {
+                      @if (isDuelHit(item)) {
                         <span class="status-tag hit">ACERTADO</span>
                       } @else {
                         <span class="status-tag miss">NO ACERTÓ</span>
@@ -1370,17 +1433,28 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   </span>
                 </div>
 
+                <!-- SECCIÓN 3: INCIDENCIAS -->
+                <div class="comp-section-row">
+                  <span class="sec-title">🚨 TELEMETRÍA E INCIDENCIAS EN PISTA</span>
+                  <span class="sec-badge">Safety Car = 10 pts · Abandonos = 15 pts</span>
+                </div>
+
                 <!-- SAFETY CAR -->
                 <div class="comp-data-row">
-                  <span class="c-col cat"><strong>Safety Cars (Cant.)</strong></span>
-                  <span class="c-col pick" data-label="Tu Elección">{{ item.safetyCarCount != null ? item.safetyCarCount + ' SC' : '--' }}</span>
-                  <span class="c-col official dim" data-label="Resultado FIA">
-                    {{ item.officialResults?.safetyCarCount != null ? item.officialResults?.safetyCarCount + ' SC' : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  <span class="c-col cat">
+                    <strong class="cat-name">Autos de Seguridad</strong>
+                    <span class="c-col-sub">Safety Car / Virtual SC desplegados</span>
                   </span>
-                  <span class="c-col pts" data-label="Puntos">10 pts</span>
+                  <span class="c-col pick" data-label="Tu Elección">
+                    {{ item.safetyCarCount != null ? item.safetyCarCount + (item.safetyCarCount === 1 ? ' Auto' : ' Autos') : '--' }}
+                  </span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.safetyCarCount != null ? item.officialResults?.safetyCarCount + (item.officialResults?.safetyCarCount === 1 ? ' Auto' : ' Autos') : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts" data-label="Puntos">+10 pts</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.scoreBreakdown) {
-                      @if (item.scoreBreakdown.safetyCarHit) {
+                    @if (item.officialResults?.safetyCarCount != null || item.score != null) {
+                      @if (isSafetyCarHit(item)) {
                         <span class="status-tag hit">EXACTO</span>
                       } @else {
                         <span class="status-tag miss">NO ACERTÓ</span>
@@ -1393,15 +1467,20 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
 
                 <!-- ABANDONOS DNFS -->
                 <div class="comp-data-row">
-                  <span class="c-col cat"><strong>Abandonos / DNFs</strong></span>
-                  <span class="c-col pick" data-label="Tu Elección">{{ item.dnfCount != null ? item.dnfCount + ' DNFs' : '--' }}</span>
-                  <span class="c-col official dim" data-label="Resultado FIA">
-                    {{ item.officialResults?.dnfCount != null ? item.officialResults?.dnfCount + ' DNFs' : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  <span class="c-col cat">
+                    <strong class="cat-name">Abandonos (DNFs)</strong>
+                    <span class="c-col-sub">Retiros y pilotos no clasificados</span>
                   </span>
-                  <span class="c-col pts" data-label="Puntos">15 pts</span>
+                  <span class="c-col pick" data-label="Tu Elección">
+                    {{ item.dnfCount != null ? item.dnfCount + (item.dnfCount === 1 ? ' Piloto' : ' Pilotos') : '--' }}
+                  </span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.dnfCount != null ? item.officialResults?.dnfCount + (item.officialResults?.dnfCount === 1 ? ' Piloto' : ' Pilotos') : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts" data-label="Puntos">+15 pts</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.scoreBreakdown) {
-                      @if (item.scoreBreakdown.dnfHit) {
+                    @if (item.officialResults?.dnfCount != null || item.score != null) {
+                      @if (isDnfHit(item)) {
                         <span class="status-tag hit">EXACTO</span>
                       } @else {
                         <span class="status-tag miss">NO ACERTÓ</span>
@@ -2943,30 +3022,95 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       color: #a7f3d0;
       font-weight: 600;
     }
+    /* TARJETAS DE HISTORIAL: PICKS Y RESULTADOS OFICIALES */
+    .history-card-picks-box, .history-card-official-box {
+      margin-top: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--line);
+    }
+    .history-card-picks-box {
+      background: rgba(0, 0, 0, 0.35);
+    }
+    .history-card-official-box {
+      background: rgba(16, 185, 129, 0.06);
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+    .picks-box-header, .official-box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.35rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .picks-box-badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #cbd5e1;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .official-box-badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #34d399;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .picks-content {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-size: 0.8rem;
+    }
+    .pick-line {
+      line-height: 1.4;
+    }
+
     .comparison-modal {
-      max-width: 820px;
-      width: min(820px, 94vw);
-      max-height: 88vh;
+      max-width: 900px;
+      width: min(900px, 95vw);
+      max-height: 92vh;
       display: flex;
       flex-direction: column;
     }
     .comparison-modal-body {
-      padding: 1.25rem 1.5rem;
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 1rem 1.25rem;
       overflow-y: auto;
-      max-height: calc(88vh - 130px);
+      max-height: calc(92vh - 120px);
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
+      gap: 0.85rem;
+      scrollbar-width: thin;
+      scrollbar-color: var(--red) rgba(255, 255, 255, 0.08);
+    }
+    .comparison-modal-body::-webkit-scrollbar {
+      width: 7px;
+    }
+    .comparison-modal-body::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 4px;
+    }
+    .comparison-modal-body::-webkit-scrollbar-thumb {
+      background: var(--red);
+      border-radius: 4px;
+    }
+    .comparison-modal-body::-webkit-scrollbar-thumb:hover {
+      background: #ff3329;
     }
     .comparison-modal-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem 1.5rem;
+      padding: 0.85rem 1.25rem;
       border-top: 1px solid var(--line);
       background: #131720;
       flex-wrap: wrap;
       gap: 0.75rem;
+      flex-shrink: 0;
     }
     .comp-footer-note {
       font-size: 0.8rem;
@@ -2975,26 +3119,26 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(0, 0, 0, 0.35);
+      background: rgba(0, 0, 0, 0.4);
       border: 1px solid var(--line);
       border-radius: var(--radius-sm);
-      padding: 1rem 1.25rem;
+      padding: 0.75rem 1rem;
       margin: 0;
       flex-wrap: wrap;
-      gap: 1rem;
+      gap: 0.75rem;
     }
     .comp-total-pts {
       font-family: var(--font-mono);
-      font-size: 2rem;
+      font-size: 1.85rem;
       font-weight: 900;
       color: var(--gold);
       line-height: 1;
-      margin-top: 4px;
+      margin-top: 3px;
     }
     .comp-status-badge {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       font-weight: 700;
-      padding: 6px 12px;
+      padding: 5px 10px;
       border-radius: var(--radius-sm);
       background: rgba(245, 176, 0, 0.2);
       color: var(--gold);
@@ -3015,19 +3159,61 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
     }
     .comp-header-row, .comp-data-row {
       display: grid;
-      grid-template-columns: 2fr 2fr 2fr 1fr 1.2fr;
+      grid-template-columns: 2.1fr 2fr 2fr 1fr 1.2fr;
       align-items: center;
-      padding: 0.75rem 1rem;
-      gap: 0.75rem;
+      padding: 0.55rem 0.85rem;
+      gap: 0.65rem;
       border-bottom: 1px solid var(--line);
     }
     .comp-header-row {
       background: rgba(255, 255, 255, 0.04);
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       color: var(--text-dim);
       text-transform: uppercase;
       font-weight: 700;
       letter-spacing: 0.04em;
+    }
+    .comp-section-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.42rem 0.85rem;
+      background: rgba(225, 6, 0, 0.08);
+      border-top: 1px solid rgba(225, 6, 0, 0.25);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .comp-section-row:first-child {
+      border-top: none;
+    }
+    .sec-title {
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: #ff6b6b;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .sec-badge {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+    .c-col.cat {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .cat-name {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+    .c-col-sub {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      display: block;
     }
     .comp-data-row:last-child {
       border-bottom: none;
@@ -3074,9 +3260,9 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
         max-height: 94vh;
       }
       .comparison-modal-body {
-        padding: 0.85rem;
-        max-height: calc(94vh - 120px);
-        gap: 1rem;
+        padding: 0.75rem;
+        max-height: calc(94vh - 110px);
+        gap: 0.75rem;
       }
       .comp-header-row {
         display: none;
@@ -3086,7 +3272,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
         flex-direction: column;
         align-items: flex-start;
         gap: 0.4rem;
-        padding: 0.75rem 0.85rem;
+        padding: 0.65rem 0.75rem;
         border: 1px solid var(--line);
         border-radius: var(--radius-sm);
         margin-bottom: 0.4rem;
@@ -3663,10 +3849,44 @@ export class DashboardComponent implements OnInit {
     this.closeDriverPicker();
   }
 
-  getDriverName(id?: string | null): string {
-    if (!id || !id.trim()) return 'Sin selección';
-    const found = this.drivers.find(d => d.id === id);
-    return found ? `${found.name} (${found.team})` : id;
+  getDriverName(id?: string | null | any): string {
+    if (!id) return 'Sin selección';
+    if (typeof id === 'object' && id !== null) {
+      id = id.id || id.name || id.code || '';
+    }
+    const cleanId = String(id).trim();
+    if (!cleanId || cleanId === 'undefined' || cleanId === 'null') return 'Sin selección';
+    const found = this.drivers.find(d => d.id.toLowerCase() === cleanId.toLowerCase() || d.code.toLowerCase() === cleanId.toLowerCase());
+    return found ? `${found.name} (${found.team})` : cleanId;
+  }
+
+  isPodiumHit(item: PredictionHistoryItem, index: number): boolean {
+    if (!item?.podium?.[index] || !item?.officialResults?.podium?.[index]) return false;
+    return item.podium[index].trim().toLowerCase() === item.officialResults.podium[index].trim().toLowerCase();
+  }
+
+  isPoleHit(item: PredictionHistoryItem): boolean {
+    if (item.scoreBreakdown?.poleHit != null) return item.scoreBreakdown.poleHit;
+    if (!item?.polePositionDriverId || !item?.officialResults?.polePositionDriverId) return false;
+    return item.polePositionDriverId.trim().toLowerCase() === item.officialResults.polePositionDriverId.trim().toLowerCase();
+  }
+
+  isDuelHit(item: PredictionHistoryItem): boolean {
+    if (item.scoreBreakdown?.duelHit != null) return item.scoreBreakdown.duelHit;
+    if (!item?.duelDriverPick || !item?.officialResults?.duelWinnerId) return false;
+    return item.duelDriverPick.trim().toLowerCase() === item.officialResults.duelWinnerId.trim().toLowerCase();
+  }
+
+  isSafetyCarHit(item: PredictionHistoryItem): boolean {
+    if (item.scoreBreakdown?.safetyCarHit != null) return item.scoreBreakdown.safetyCarHit;
+    if (item?.safetyCarCount == null || item?.officialResults?.safetyCarCount == null) return false;
+    return Number(item.safetyCarCount) === Number(item.officialResults.safetyCarCount);
+  }
+
+  isDnfHit(item: PredictionHistoryItem): boolean {
+    if (item.scoreBreakdown?.dnfHit != null) return item.scoreBreakdown.dnfHit;
+    if (item?.dnfCount == null || item?.officialResults?.dnfCount == null) return false;
+    return Number(item.dnfCount) === Number(item.officialResults.dnfCount);
   }
 
   handleModalDriverSelected(event: { slot: PodiumSlot; driverId: string }) {
