@@ -12,17 +12,20 @@ public class PlayerService {
     private final LeagueRepository leagues;
     private final LeagueMemberRepository members;
     private final PredictionRepository predictions;
+    private final ScoringService scoringService;
 
     public PlayerService(
         UserRepository users,
         LeagueRepository leagues,
         LeagueMemberRepository members,
-        PredictionRepository predictions
+        PredictionRepository predictions,
+        ScoringService scoringService
     ) {
         this.users = users;
         this.leagues = leagues;
         this.members = members;
         this.predictions = predictions;
+        this.scoringService = scoringService;
     }
 
     private User getOrCreateUser(String issuer, String subject) {
@@ -210,8 +213,11 @@ public class PlayerService {
     /**
      * Tabla de posiciones global acumulada en tiempo real.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<LeaderboardEntry> getGlobalLeaderboard() {
+        try {
+            scoringService.autoScoreAllCompletedSessions();
+        } catch (Exception ignored) {}
         var rows = predictions.getGlobalLeaderboard();
         List<LeaderboardEntry> leaderboard = new ArrayList<>();
         int currentRank = 1;
@@ -240,11 +246,14 @@ public class PlayerService {
     /**
      * Tabla de posiciones de una liga privada acumulada en tiempo real.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public List<LeaderboardEntry> getLeagueLeaderboard(UUID leagueId) {
         if (!leagues.existsById(leagueId)) {
             throw new IllegalArgumentException("Liga no encontrada: " + leagueId);
         }
+        try {
+            scoringService.autoScoreAllCompletedSessions();
+        } catch (Exception ignored) {}
         var rows = predictions.getLeagueLeaderboard(leagueId);
         List<LeaderboardEntry> leaderboard = new ArrayList<>();
         int currentRank = 1;

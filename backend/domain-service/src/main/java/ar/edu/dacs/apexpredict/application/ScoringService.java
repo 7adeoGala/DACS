@@ -156,6 +156,51 @@ public class ScoringService {
         return summaries;
     }
 
+    /**
+     * Evalúa y asigna puntuación automáticamente al iniciar la aplicación.
+     */
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    @Transactional
+    public void onApplicationReady() {
+        try {
+            autoScoreAllCompletedSessions();
+        } catch (Exception e) {
+            log.error("Error en auto-score durante inicio de aplicación: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Evalúa y asigna puntuación automáticamente a todas las predicciones pendientes (score == null)
+     * de cualquier sesión que ya tenga resultados oficiales publicados.
+     */
+    @Transactional
+    public void autoScoreAllCompletedSessions() {
+        var allResults = results.findAll();
+        var now = Instant.now();
+        for (var result : allResults) {
+            var session = result.getSession();
+            if (session == null) continue;
+            var matchup = matchups.findBySessionId(session.getId()).orElse(null);
+            var sessionPredictions = predictions.findBySessionId(session.getId());
+            for (var prediction : sessionPredictions) {
+                if (prediction.getScore() == null) {
+                    try {
+                        var breakdown = calculateScore(prediction, result, matchup);
+                        prediction.applyScore(breakdown.totalPoints(), now);
+                        predictions.save(prediction);
+                        log.info("Auto-score asignado a usuario {} en sesión {}: {} pts",
+                            prediction.getUser() != null ? prediction.getUser().getDisplayName() : "anon",
+                            session.getName(),
+                            breakdown.totalPoints()
+                        );
+                    } catch (Exception e) {
+                        log.error("Error al auto-puntuar predicción {}: {}", prediction.getId(), e.getMessage());
+                    }
+                }
+            }
+        }
+    }
+
     private int calculatePodiumHits(List<String> predictedPodium, List<String> actualClassification) {
         if (predictedPodium == null || actualClassification == null) return 0;
         int hits = 0;
