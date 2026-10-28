@@ -3586,10 +3586,12 @@ export class DashboardComponent implements OnInit {
     this.restoreLocalCache();
 
     this.loadNextSession();
-    this.loadCurrentPrediction();
-    this.loadUserLeagues();
-    this.loadGlobalLeaderboard();
-    this.loadHistory();
+    if (this.auth.authenticated()) {
+      this.loadCurrentPrediction();
+      this.loadUserLeagues();
+      this.loadGlobalLeaderboard();
+      this.loadHistory();
+    }
     this.loadF1Standings();
 
     // Comprobar parámetros de ruta (ej: /join/:inviteCode)
@@ -3732,6 +3734,9 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadCurrentPrediction(sessionId?: string) {
+    if (!this.auth.authenticated()) {
+      return;
+    }
     const targetSessionId = sessionId || this.session()?.id;
     const request$ = targetSessionId
       ? this.api.predictionForSession(targetSessionId, this.auth.username())
@@ -3761,6 +3766,9 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadUserLeagues() {
+    if (!this.auth.authenticated()) {
+      return;
+    }
     this.api.leagues(this.auth.username()).subscribe({
       next: (leagues) => {
         if (typeof localStorage !== 'undefined') {
@@ -3802,6 +3810,10 @@ export class DashboardComponent implements OnInit {
   }
 
   loadGlobalLeaderboard() {
+    if (!this.auth.authenticated()) {
+      this.isLoadingGlobalLeaderboard.set(false);
+      return;
+    }
     this.isLoadingGlobalLeaderboard.set(true);
     this.globalLeaderboardError.set(null);
     this.api.globalLeaderboard().subscribe({
@@ -3829,6 +3841,9 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadHistory() {
+    if (!this.auth.authenticated()) {
+      return;
+    }
     this.api.predictionHistory(this.auth.username()).subscribe({
       next: (items) => {
         this.historyItems.set(items || []);

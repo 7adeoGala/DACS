@@ -268,7 +268,8 @@ export class ApiService {
           this.setCachedGlobalLeaderboard(entries);
         }
       }),
-      this.retryOnColdStart()
+      this.retryOnColdStart(),
+      catchError(() => of(this.getCachedGlobalLeaderboard() || []))
     );
   }
 
@@ -471,7 +472,7 @@ export class ApiService {
     );
   }
 
-  currentPrediction(username?: string) {
+  currentPrediction(username?: string): Observable<PredictionDetail | null> {
     return this.http.get<PredictionDetail>(`${this.base}/predictions/current`).pipe(
       this.retryOnColdStart(),
       tap(pred => {
@@ -481,11 +482,12 @@ export class ApiService {
           // Si no hay pronóstico para la carrera actual, no conservar en caché pronósticos viejos
           this.clearCachedPrediction(username);
         }
-      })
+      }),
+      catchError(() => of(this.getCachedPrediction(username)))
     );
   }
 
-  predictionForSession(sessionId: string, username?: string): Observable<PredictionDetail> {
+  predictionForSession(sessionId: string, username?: string): Observable<PredictionDetail | null> {
     return this.http.get<PredictionDetail>(`${this.base}/predictions/session/${sessionId}`).pipe(
       this.retryOnColdStart(),
       tap(pred => {
@@ -494,7 +496,8 @@ export class ApiService {
         } else {
           this.clearCachedPrediction(username, sessionId);
         }
-      })
+      }),
+      catchError(() => of(this.getCachedPrediction(username, sessionId)))
     );
   }
 

@@ -73,13 +73,6 @@ public class PredictionController {
         @AuthenticationPrincipal Jwt jwt,
         @PathVariable String sessionId
     ) {
-        UUID uuid = null;
-        try {
-            uuid = UUID.fromString(sessionId);
-        } catch (Exception ignored) {}
-        if (uuid != null) {
-            return predictionService.getUserPrediction(jwt.getIssuer().toString(), jwt.getSubject(), uuid);
-        }
         return predictionService.getUserPrediction(jwt.getIssuer().toString(), jwt.getSubject(), sessionId);
     }
 

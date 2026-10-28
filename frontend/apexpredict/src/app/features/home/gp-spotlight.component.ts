@@ -344,7 +344,9 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.startCountdown();
     this.loadData();
-    this.loadLeaderboard();
+    if (this.auth.authenticated()) {
+      this.loadLeaderboard();
+    }
   }
 
   ngOnDestroy(): void {
@@ -397,6 +399,9 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   }
 
   private loadUserPrediction(username?: string): void {
+    if (!this.auth.authenticated()) {
+      return;
+    }
     const sess = this.session();
     const request$ = sess?.id
       ? this.api.predictionForSession(sess.id, username)
@@ -430,6 +435,10 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   }
 
   private loadLeaderboard(): void {
+    if (!this.auth.authenticated()) {
+      this.isLoadingLeaderboard.set(false);
+      return;
+    }
     this.isLoadingLeaderboard.set(true);
     this.api.globalLeaderboard().subscribe({
       next: (entries: LeaderboardEntry[]) => {
