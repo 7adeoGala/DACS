@@ -142,11 +142,27 @@ export class ApiService {
     fetch('https://dacs-1-v4ik.onrender.com/conector/ping', { mode: 'no-cors' }).catch(() => {});
   }
 
-  getCachedPrediction(username?: string): PredictionDetail | null {
+  getCachedPrediction(username?: string, sessionId?: string): PredictionDetail | null {
     try {
-      const key = username ? `apex_pred_${username.toLowerCase()}` : 'apex_current_prediction';
-      const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : null;
+      const user = username ? username.toLowerCase() : 'anon';
+      if (sessionId) {
+        const sessionSpecific = localStorage.getItem(`apex_pred_${user}_${sessionId}`);
+        if (sessionSpecific) {
+          const parsed = JSON.parse(sessionSpecific);
+          if (parsed && (parsed.predictionId || (parsed.podium && parsed.podium.length > 0))) {
+            return parsed;
+          }
+        }
+      }
+      const generalKey = username ? `apex_pred_${user}` : 'apex_current_prediction';
+      const raw = localStorage.getItem(generalKey);
+      if (!raw) return null;
+      const pred: PredictionDetail = JSON.parse(raw);
+      // Si la predicción en caché pertenece a otra carrera anterior y tenemos sessionId activo, ignorar
+      if (sessionId && pred?.sessionId && pred.sessionId !== sessionId) {
+        return null;
+      }
+      return pred;
     } catch {
       return null;
     }
@@ -154,8 +170,24 @@ export class ApiService {
 
   setCachedPrediction(pred: PredictionDetail, username?: string) {
     try {
-      const key = username ? `apex_pred_${username.toLowerCase()}` : 'apex_current_prediction';
-      localStorage.setItem(key, JSON.stringify(pred));
+      const user = username ? username.toLowerCase() : 'anon';
+      if (pred.sessionId) {
+        localStorage.setItem(`apex_pred_${user}_${pred.sessionId}`, JSON.stringify(pred));
+      }
+      const generalKey = username ? `apex_pred_${user}` : 'apex_current_prediction';
+      localStorage.setItem(generalKey, JSON.stringify(pred));
+    } catch {}
+  }
+
+  clearCachedPrediction(username?: string, sessionId?: string) {
+    try {
+      const user = username ? username.toLowerCase() : 'anon';
+      if (sessionId) {
+        localStorage.removeItem(`apex_pred_${user}_${sessionId}`);
+      }
+      const generalKey = username ? `apex_pred_${user}` : 'apex_current_prediction';
+      localStorage.removeItem(generalKey);
+      localStorage.removeItem('apex_current_prediction');
     } catch {}
   }
 
@@ -433,8 +465,24 @@ export class ApiService {
     return this.http.get<PredictionDetail>(`${this.base}/predictions/current`).pipe(
       this.retryOnColdStart(),
       tap(pred => {
-        if (pred && (pred.predictionId || pred.podium?.length)) {
+        if (pred && (pred.predictionId || (pred.podium && pred.podium.length > 0))) {
           this.setCachedPrediction(pred, username);
+        } else {
+          // Si no hay pronóstico para la carrera actual, no conservar en caché pronósticos viejos
+          this.clearCachedPrediction(username);
+        }
+      })
+    );
+  }
+
+  predictionForSession(sessionId: string, username?: string): Observable<PredictionDetail> {
+    return this.http.get<PredictionDetail>(`${this.base}/predictions/session/${sessionId}`).pipe(
+      this.retryOnColdStart(),
+      tap(pred => {
+        if (pred && (pred.predictionId || (pred.podium && pred.podium.length > 0))) {
+          this.setCachedPrediction(pred, username);
+        } else {
+          this.clearCachedPrediction(username, sessionId);
         }
       })
     );

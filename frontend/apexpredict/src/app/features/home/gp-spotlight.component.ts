@@ -86,7 +86,7 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   readonly norrisVotes = signal<number>(58);
   readonly verstappenVotes = signal<number>(42);
   readonly totalDuelVotes = signal<string>('14.820');
-  readonly duelPick = signal<'norris' | 'verstappen' | null>('verstappen');
+  readonly duelPick = signal<string | null>(null);
 
   // Circuito actual dinámico (datos oficiales reales)
   readonly circuit = computed<CircuitInfo>(() => {
@@ -195,18 +195,27 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     effect(() => {
       const isAuth = this.auth.authenticated();
       const username = this.auth.username();
+      const sess = this.session();
 
       if (isAuth) {
-        // Restaurar caché de pronóstico de inmediato (evita estado "Sin definir")
-        const cachedPred = this.api.getCachedPrediction?.(username);
+        // Restaurar caché de pronóstico SOLO si corresponde a la sesión activa
+        const cachedPred = this.api.getCachedPrediction?.(username, sess?.id);
         if (cachedPred && (cachedPred.predictionId || (cachedPred.podium && cachedPred.podium.length > 0))) {
-          this.currentPrediction.set(cachedPred);
-          if (cachedPred.duelDriverPick) {
-            this.duelPick.set(cachedPred.duelDriverPick as 'norris' | 'verstappen');
+          if (!sess || !cachedPred.sessionId || cachedPred.sessionId === sess.id) {
+            this.currentPrediction.set(cachedPred);
+            if (cachedPred.duelDriverPick) {
+              this.duelPick.set(cachedPred.duelDriverPick);
+            }
+          } else {
+            this.currentPrediction.set(null);
+            this.duelPick.set(null);
           }
+        } else {
+          this.currentPrediction.set(null);
+          this.duelPick.set(null);
         }
 
-        // Cargar pronóstico fresco desde el backend
+        // Cargar pronóstico fresco desde el backend para esta sesión
         this.loadUserPrediction(username);
 
         // Cargar tabla de líderes con autenticación
@@ -228,10 +237,22 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   private loadData(): void {
     this.api.nextSession().subscribe({
       next: (sessionData) => {
+        const prevSessionId = this.session()?.id;
         this.session.set(sessionData);
         this.isLoading.set(false);
         this.updateCountdownFromDate(sessionData.startsAt);
         this.fetchRealWeather(sessionData.lat, sessionData.long);
+
+        // Al cambiar de carrera, reestablecer el estado del pronóstico
+        if (prevSessionId && prevSessionId !== sessionData.id) {
+          this.currentPrediction.set(null);
+          this.duelPick.set(null);
+          this.api.clearCachedPrediction?.(this.auth.username());
+        }
+
+        if (this.auth.authenticated()) {
+          this.loadUserPrediction(this.auth.username());
+        }
       },
       error: () => {
         this.isLoading.set(false);
@@ -244,16 +265,35 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   }
 
   private loadUserPrediction(username?: string): void {
-    this.api.currentPrediction(username).subscribe({
+    const sess = this.session();
+    const request$ = sess?.id
+      ? this.api.predictionForSession(sess.id, username)
+      : this.api.currentPrediction(username);
+
+    request$.subscribe({
       next: (predData) => {
-        if (predData) {
-          this.currentPrediction.set(predData);
-          if (predData.duelDriverPick) {
-            this.duelPick.set(predData.duelDriverPick as 'norris' | 'verstappen');
+        if (predData && (predData.predictionId || (predData.podium && predData.podium.length > 0))) {
+          // Comprobar que el pronóstico devuelto pertenece a la sesión activa
+          if (!sess || !predData.sessionId || predData.sessionId === sess.id) {
+            this.currentPrediction.set(predData);
+            if (predData.duelDriverPick) {
+              this.duelPick.set(predData.duelDriverPick);
+            }
+            return;
           }
         }
+        // Carrera nueva o sin pronóstico para esta fecha: reestablecer a limpio
+        this.currentPrediction.set(null);
+        this.duelPick.set(null);
+        this.api.clearCachedPrediction?.(username);
       },
-      error: () => {}
+      error: () => {
+        const current = this.currentPrediction();
+        if (sess && current?.sessionId && current.sessionId !== sess.id) {
+          this.currentPrediction.set(null);
+          this.duelPick.set(null);
+        }
+      }
     });
   }
 

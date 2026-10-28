@@ -3477,6 +3477,7 @@ export class DashboardComponent implements OnInit {
 
   readonly hasExistingPrediction = signal<boolean>(false);
   readonly predictionSubmittedAt = signal<string | null>(null);
+  readonly currentPredictionSessionId = signal<string | null>(null);
 
   readonly isPodiumComplete = computed(() => {
     return !!(this.p1DriverId() && this.p2DriverId() && this.p3DriverId());
@@ -3574,7 +3575,17 @@ export class DashboardComponent implements OnInit {
   private loadNextSession() {
     this.api.nextSession().subscribe({
       next: (sess) => {
+        const prevSessionId = this.session()?.id;
         this.session.set(sess);
+
+        // Si la carrera cambió o el pronóstico en pantalla es de otra carrera, reestablecer
+        const activePredSession = this.currentPredictionSessionId();
+        if ((prevSessionId && prevSessionId !== sess.id) || (activePredSession && activePredSession !== sess.id)) {
+          this.clearPredictionState();
+        }
+
+        // Cargar pronóstico específico para la carrera actual
+        this.loadCurrentPrediction(sess.id);
       },
       error: () => {}
     });
@@ -3590,6 +3601,8 @@ export class DashboardComponent implements OnInit {
     this.dnfs.set(0);
     this.hasExistingPrediction.set(false);
     this.predictionSubmittedAt.set(null);
+    this.currentPredictionSessionId.set(null);
+    this.api.clearCachedPrediction?.(this.auth.username());
   }
 
   private restoreLocalCache() {
@@ -3598,9 +3611,16 @@ export class DashboardComponent implements OnInit {
     if (cachedLb && cachedLb.length > 0) {
       this.globalLeaderboard.set(cachedLb);
     }
-    const cachedPred = this.api.getCachedPrediction?.(user);
+    const currentSessionId = this.session()?.id;
+    const cachedPred = this.api.getCachedPrediction?.(user, currentSessionId);
     if (cachedPred && (cachedPred.predictionId || (cachedPred.podium && cachedPred.podium.length > 0))) {
-      this.applyPredictionToState(cachedPred);
+      if (!currentSessionId || !cachedPred.sessionId || cachedPred.sessionId === currentSessionId) {
+        this.applyPredictionToState(cachedPred);
+      } else {
+        this.clearPredictionState();
+      }
+    } else {
+      this.clearPredictionState();
     }
     const cachedLeagues = this.api.getCachedLeagues?.(user);
     if (cachedLeagues && cachedLeagues.length > 0) {
@@ -3622,6 +3642,14 @@ export class DashboardComponent implements OnInit {
   }
 
   private applyPredictionToState(pred: PredictionDetail) {
+    const currentSessionId = this.session()?.id;
+    if (currentSessionId && pred.sessionId && pred.sessionId !== currentSessionId) {
+      this.clearPredictionState();
+      return;
+    }
+
+    this.currentPredictionSessionId.set(pred.sessionId || currentSessionId || null);
+
     if (pred.podium && pred.podium.length >= 3) {
       this.p1DriverId.set(pred.podium[0] || '');
       this.p2DriverId.set(pred.podium[1] || '');
@@ -3646,17 +3674,29 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  private loadCurrentPrediction() {
-    this.api.currentPrediction(this.auth.username()).subscribe({
+  private loadCurrentPrediction(sessionId?: string) {
+    const targetSessionId = sessionId || this.session()?.id;
+    const request$ = targetSessionId
+      ? this.api.predictionForSession(targetSessionId, this.auth.username())
+      : this.api.currentPrediction(this.auth.username());
+
+    request$.subscribe({
       next: (pred) => {
         if (pred && (pred.predictionId || (pred.podium && pred.podium.length > 0))) {
+          if (targetSessionId && pred.sessionId && pred.sessionId !== targetSessionId) {
+            this.clearPredictionState();
+            return;
+          }
           this.applyPredictionToState(pred);
         } else {
           this.clearPredictionState();
         }
       },
       error: () => {
-        if (!this.hasExistingPrediction()) {
+        const cached = this.api.getCachedPrediction?.(this.auth.username(), targetSessionId);
+        if (cached && (cached.predictionId || (cached.podium && cached.podium.length > 0))) {
+          this.applyPredictionToState(cached);
+        } else {
           this.clearPredictionState();
         }
       }
@@ -3951,9 +3991,11 @@ export class DashboardComponent implements OnInit {
         this.isSaving.set(false);
         this.saveSuccess.set(true);
         this.hasExistingPrediction.set(true);
+        this.currentPredictionSessionId.set(sessionId);
         this.predictionSubmittedAt.set(res?.submittedAt || new Date().toISOString());
         this.api.setCachedPrediction?.({
           ...res,
+          sessionId,
           podium: payload.podium,
           polePositionDriverId: payload.polePositionDriverId,
           duelDriverPick: payload.duelDriverPick,
