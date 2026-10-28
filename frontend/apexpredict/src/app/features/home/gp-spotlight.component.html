@@ -344,32 +344,46 @@
     }
   </div>
 
-  <!-- Sección Head-to-Head: Norris vs Verstappen -->
+  <!-- Sección Head-to-Head: Duelo Dinámico Oficial de la Fecha -->
   <section class="duel-section">
     <div class="duel-header">
       <div class="duel-badge">DUELO DE LA FECHA // HEAD-TO-HEAD OFICIAL</div>
-      <h2>LANDO NORRIS <span class="vs">VS</span> MAX VERSTAPPEN</h2>
-      <p class="duel-desc">Diferencia en el Campeonato WDC: 52 puntos. ¿Quién saldrá de Austin con ventaja?</p>
+      <h2>{{ duelDriver1().name | uppercase }} <span class="vs">VS</span> {{ duelDriver2().name | uppercase }}</h2>
+      <p class="duel-desc">
+        Diferencia en el Campeonato WDC: {{ pointsDelta() }} puntos. ¿Quién saldrá de {{ circuitCity() }} con ventaja?
+      </p>
       <div class="champ-pts-strip">
-        <span class="nor-pts">NOR: 279 PTS</span>
-        <span class="delta-pts">Δ -52</span>
-        <span class="ver-pts">VER: 331 PTS</span>
+        <span class="d1-pts" [style.color]="duelDriver1().teamColor">{{ duelDriver1().code }}: {{ driver1Points() }} PTS</span>
+        <span class="delta-pts">{{ deltaLabel() }}</span>
+        <span class="d2-pts" [style.color]="duelDriver2().teamColor">{{ duelDriver2().code }}: {{ driver2Points() }} PTS</span>
       </div>
     </div>
 
     <div class="duel-battle-grid">
-      <!-- Columna Norris -->
-      <div class="driver-battle-side norris-side">
+      <!-- Columna Piloto 1 -->
+      <div class="driver-battle-side d1-side" [style.border-color]="duelDriver1().teamColor + '40'">
         <div class="driver-meta">
-          <span class="team-tag">MCLAREN FORMULA 1 TEAM</span>
-          <h3>Lando NORRIS</h3>
-          <span class="car-number">CAR #1 • MCL40</span>
+          <span class="team-tag">{{ driver1TeamDetails().fullName }}</span>
+          <h3>{{ duelDriver1().name }}</h3>
+          <span class="car-number">CAR #{{ duelDriver1().number }} • {{ driver1TeamDetails().carModel }}</span>
         </div>
         <div class="driver-stats-column">
-          <div class="stat-line"><span class="val">3</span><span class="lbl">Victorias 2024</span></div>
-          <div class="stat-line"><span class="val">11</span><span class="lbl">Podios Totales</span></div>
-          <div class="stat-line"><span class="val">6</span><span class="lbl">Pole Positions</span></div>
-          <div class="stat-line highlight"><span class="val gold">{{ norrisCircuitStat().val }}</span><span class="lbl">{{ norrisCircuitStat().lbl }}</span></div>
+          <div class="stat-line">
+            <span class="val" [style.color]="duelDriver1().teamColor">{{ driver1Wins() }}</span>
+            <span class="lbl">Victorias {{ seasonYear() }}</span>
+          </div>
+          <div class="stat-line">
+            <span class="val">{{ driver1Podiums() }}</span>
+            <span class="lbl">Podios Totales</span>
+          </div>
+          <div class="stat-line">
+            <span class="val">{{ driver1Poles() }}</span>
+            <span class="lbl">Pole Positions</span>
+          </div>
+          <div class="stat-line highlight">
+            <span class="val gold">{{ driver1CircuitStat().val }}</span>
+            <span class="lbl">{{ driver1CircuitStat().lbl }}</span>
+          </div>
         </div>
       </div>
 
@@ -377,26 +391,38 @@
       <div class="battle-center-metrics">
         <div class="metric-title">TELEMETRÍA COMPARADA</div>
         <div class="compare-bar-group">
-          <div class="compare-labels"><span>10</span><span class="metric-name">QUALI HEAD-TO-HEAD</span><span>8</span></div>
+          <div class="compare-labels">
+            <span [style.color]="duelDriver1().teamColor">{{ qualiD1() }}</span>
+            <span class="metric-name">QUALI HEAD-TO-HEAD</span>
+            <span [style.color]="duelDriver2().teamColor">{{ qualiD2() }}</span>
+          </div>
           <div class="duo-progress-bar">
-            <div class="progress-left nor" style="width: 55%;"></div>
-            <div class="progress-right ver" style="width: 45%;"></div>
+            <div class="progress-left" [style.background]="duelDriver1().teamColor" [style.width.%]="qualiD1Pct()"></div>
+            <div class="progress-right" [style.background]="duelDriver2().teamColor" [style.width.%]="qualiD2Pct()"></div>
           </div>
         </div>
 
         <div class="compare-bar-group">
-          <div class="compare-labels"><span>8</span><span class="metric-name">DELANTE EN CARRERA</span><span>10</span></div>
+          <div class="compare-labels">
+            <span [style.color]="duelDriver1().teamColor">{{ raceD1() }}</span>
+            <span class="metric-name">DELANTE EN CARRERA</span>
+            <span [style.color]="duelDriver2().teamColor">{{ raceD2() }}</span>
+          </div>
           <div class="duo-progress-bar">
-            <div class="progress-left nor" style="width: 44%;"></div>
-            <div class="progress-right ver" style="width: 56%;"></div>
+            <div class="progress-left" [style.background]="duelDriver1().teamColor" [style.width.%]="raceD1Pct()"></div>
+            <div class="progress-right" [style.background]="duelDriver2().teamColor" [style.width.%]="raceD2Pct()"></div>
           </div>
         </div>
 
         <div class="compare-bar-group">
-          <div class="compare-labels"><span>1.98s</span><span class="metric-name">PIT STOP RÉCORD</span><span>1.90s</span></div>
+          <div class="compare-labels">
+            <span [style.color]="duelDriver1().teamColor">{{ driver1TeamDetails().pitRecord }}</span>
+            <span class="metric-name">PIT STOP RÉCORD</span>
+            <span [style.color]="duelDriver2().teamColor">{{ driver2TeamDetails().pitRecord }}</span>
+          </div>
           <div class="duo-progress-bar">
-            <div class="progress-left nor" style="width: 49%;"></div>
-            <div class="progress-right ver" style="width: 51%;"></div>
+            <div class="progress-left" [style.background]="duelDriver1().teamColor" [style.width.%]="pitD1Pct()"></div>
+            <div class="progress-right" [style.background]="duelDriver2().teamColor" [style.width.%]="pitD2Pct()"></div>
           </div>
         </div>
 
@@ -407,29 +433,41 @@
             <span class="vote-total">{{ totalDuelVotes() }} VOTOS</span>
           </div>
           <div class="vote-bar">
-            <div class="vote-fill-nor" [style.width.%]="norrisVotes()"></div>
-            <div class="vote-fill-ver" [style.width.%]="verstappenVotes()"></div>
+            <div class="vote-fill-d1" [style.background]="duelDriver1().teamColor" [style.width.%]="driver1Votes()"></div>
+            <div class="vote-fill-d2" [style.background]="duelDriver2().teamColor" [style.width.%]="driver2Votes()"></div>
           </div>
           <div class="vote-percentages">
-            <span class="nor-label">NOR: {{ norrisVotes() }}%</span>
-            <span class="ver-label">{{ verstappenVotes() }}% :VER</span>
+            <span class="d1-label" [style.color]="duelDriver1().teamColor">{{ duelDriver1().code }}: {{ driver1Votes() }}%</span>
+            <span class="d2-label" [style.color]="duelDriver2().teamColor">{{ driver2Votes() }}% :{{ duelDriver2().code }}</span>
           </div>
           <span class="vote-trend">Tendencia en tiempo real en la comunidad</span>
         </div>
       </div>
 
-      <!-- Columna Verstappen -->
-      <div class="driver-battle-side ver-side">
+      <!-- Columna Piloto 2 -->
+      <div class="driver-battle-side d2-side" [style.border-color]="duelDriver2().teamColor + '40'">
         <div class="driver-meta">
-          <span class="team-tag">ORACLE RED BULL RACING</span>
-          <h3>Max VERSTAPPEN</h3>
-          <span class="car-number">CAR #3 • RB22</span>
+          <span class="team-tag">{{ driver2TeamDetails().fullName }}</span>
+          <h3>{{ duelDriver2().name }}</h3>
+          <span class="car-number">CAR #{{ duelDriver2().number }} • {{ driver2TeamDetails().carModel }}</span>
         </div>
         <div class="driver-stats-column">
-          <div class="stat-line"><span class="val">7</span><span class="lbl">Victorias 2024</span></div>
-          <div class="stat-line"><span class="val">12</span><span class="lbl">Podios Totales</span></div>
-          <div class="stat-line"><span class="val">8</span><span class="lbl">Pole Positions</span></div>
-          <div class="stat-line highlight"><span class="val gold">{{ verCircuitStat().val }}</span><span class="lbl">{{ verCircuitStat().lbl }}</span></div>
+          <div class="stat-line">
+            <span class="val" [style.color]="duelDriver2().teamColor">{{ driver2Wins() }}</span>
+            <span class="lbl">Victorias {{ seasonYear() }}</span>
+          </div>
+          <div class="stat-line">
+            <span class="val">{{ driver2Podiums() }}</span>
+            <span class="lbl">Podios Totales</span>
+          </div>
+          <div class="stat-line">
+            <span class="val">{{ driver2Poles() }}</span>
+            <span class="lbl">Pole Positions</span>
+          </div>
+          <div class="stat-line highlight">
+            <span class="val gold">{{ driver2CircuitStat().val }}</span>
+            <span class="lbl">{{ driver2CircuitStat().lbl }}</span>
+          </div>
         </div>
       </div>
     </div>

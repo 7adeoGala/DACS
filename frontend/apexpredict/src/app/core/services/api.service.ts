@@ -461,6 +461,16 @@ export class ApiService {
     );
   }
 
+  jolpicaDriverSeasonResults(driverId: string): Observable<any[]> {
+    const cleanId = (driverId || '').toLowerCase().trim();
+    const jId = cleanId === 'verstappen' ? 'max_verstappen' : cleanId;
+    return this.http.get<any>(`https://api.jolpi.ca/ergast/f1/current/drivers/${jId}/results.json`).pipe(
+      timeout(3500),
+      map(data => data?.MRData?.RaceTable?.Races || []),
+      catchError(() => of([]))
+    );
+  }
+
   currentPrediction(username?: string) {
     return this.http.get<PredictionDetail>(`${this.base}/predictions/current`).pipe(
       this.retryOnColdStart(),

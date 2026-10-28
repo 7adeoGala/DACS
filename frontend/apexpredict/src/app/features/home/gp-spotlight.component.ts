@@ -2,6 +2,7 @@ import { Component, signal, computed, inject, OnInit, OnDestroy, effect } from '
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import {
@@ -12,6 +13,8 @@ import {
   F1_CIRCUITS,
   DEFAULT_CIRCUIT,
   F1_DRIVERS,
+  DriverOption,
+  JolpicaDriverStanding,
   resolveCircuitShortName
 } from '../../core/models/api.models';
 
@@ -39,6 +42,35 @@ export interface PaddockStandingUser {
   points: number;
   predictionsCount: number;
   isCurrentUser: boolean;
+}
+
+export interface TeamDetail {
+  fullName: string;
+  carModel: string;
+  pitRecord: string;
+}
+
+const TEAM_DETAILS: Record<string, TeamDetail> = {
+  mclaren: { fullName: 'MCLAREN FORMULA 1 TEAM', carModel: 'MCL40', pitRecord: '1.98s' },
+  'red bull': { fullName: 'ORACLE RED BULL RACING', carModel: 'RB22', pitRecord: '1.90s' },
+  ferrari: { fullName: 'SCUDERIA FERRARI HP', carModel: 'SF-26', pitRecord: '2.01s' },
+  mercedes: { fullName: 'MERCEDES-AMG PETRONAS F1 TEAM', carModel: 'W16', pitRecord: '2.05s' },
+  williams: { fullName: 'WILLIAMS RACING', carModel: 'FW47', pitRecord: '2.14s' },
+  'aston martin': { fullName: 'ASTON MARTIN ARAMCO F1 TEAM', carModel: 'AMR25', pitRecord: '2.20s' },
+  alpine: { fullName: 'BWT ALPINE F1 TEAM', carModel: 'A525', pitRecord: '2.18s' },
+  'racing bulls': { fullName: 'VISA CASH APP RB F1 TEAM', carModel: 'VCARB 02', pitRecord: '2.25s' },
+  audi: { fullName: 'AUDI F1 TEAM', carModel: 'C45', pitRecord: '2.30s' },
+  haas: { fullName: 'MONEYGRAM HAAS F1 TEAM', carModel: 'VF-25', pitRecord: '2.22s' },
+  cadillac: { fullName: 'CADILLAC FORMULA 1 TEAM', carModel: 'CAD-01', pitRecord: '2.40s' }
+};
+
+function getTeamDetail(teamName?: string): TeamDetail {
+  if (!teamName) return { fullName: 'FORMULA 1 TEAM', carModel: 'F1-26', pitRecord: '2.10s' };
+  const lower = teamName.toLowerCase();
+  for (const [key, detail] of Object.entries(TEAM_DETAILS)) {
+    if (lower.includes(key)) return detail;
+  }
+  return { fullName: `${teamName.toUpperCase()} F1 TEAM`, carModel: 'F1-26', pitRecord: '2.10s' };
 }
 
 @Component({
@@ -82,11 +114,108 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   readonly minutes = signal<string>('00');
   readonly seconds = signal<string>('00');
 
+  // Clasificación oficial de pilotos de Jolpica (en vivo)
+  readonly driverStandings = signal<JolpicaDriverStanding[]>([]);
+
+  // Duelo dinámico de la fecha actual (según sesión activa)
+  readonly duelDriver1Id = computed(() => this.session()?.matchupDriver1 || 'norris');
+  readonly duelDriver2Id = computed(() => this.session()?.matchupDriver2 || 'leclerc');
+
+  readonly duelDriver1 = computed<DriverOption>(() => this.getDriverById(this.duelDriver1Id()));
+  readonly duelDriver2 = computed<DriverOption>(() => this.getDriverById(this.duelDriver2Id()));
+
+  readonly driver1TeamDetails = computed(() => getTeamDetail(this.duelDriver1().team));
+  readonly driver2TeamDetails = computed(() => getTeamDetail(this.duelDriver2().team));
+
+  readonly driver1Standing = computed(() => this.findStanding(this.duelDriver1().id));
+  readonly driver2Standing = computed(() => this.findStanding(this.duelDriver2().id));
+
+  readonly driver1Points = computed<number>(() => {
+    const std = this.driver1Standing();
+    if (std?.points != null) return parseInt(std.points, 10);
+    const d1 = this.duelDriver1().id.toLowerCase();
+    if (d1 === 'norris') return 211;
+    if (d1 === 'verstappen') return 236;
+    if (d1 === 'leclerc') return 233;
+    if (d1 === 'antonelli') return 365;
+    return 150;
+  });
+
+  readonly driver2Points = computed<number>(() => {
+    const std = this.driver2Standing();
+    if (std?.points != null) return parseInt(std.points, 10);
+    const d2 = this.duelDriver2().id.toLowerCase();
+    if (d2 === 'leclerc') return 233;
+    if (d2 === 'verstappen') return 236;
+    if (d2 === 'norris') return 211;
+    return 130;
+  });
+
+  readonly pointsDelta = computed<number>(() => Math.abs(this.driver1Points() - this.driver2Points()));
+
+  readonly deltaLabel = computed<string>(() => {
+    const diff = this.driver1Points() - this.driver2Points();
+    if (diff === 0) return 'Δ 0';
+    return diff > 0 ? `Δ +${diff}` : `Δ ${diff}`;
+  });
+
+  readonly driver1Wins = computed<number>(() => {
+    const std = this.driver1Standing();
+    if (std?.wins != null) return parseInt(std.wins, 10);
+    if (this.duelDriver1().id.toLowerCase() === 'norris') return 2;
+    return 0;
+  });
+
+  readonly driver2Wins = computed<number>(() => {
+    const std = this.driver2Standing();
+    if (std?.wins != null) return parseInt(std.wins, 10);
+    const d2 = this.duelDriver2().id.toLowerCase();
+    if (d2 === 'leclerc') return 1;
+    if (d2 === 'verstappen') return 2;
+    return 0;
+  });
+
+  readonly seasonYear = computed<number>(() => this.session()?.season || 2026);
+
+  // Telemetría comparada dinámica (Quali, Carrera, Podios, Poles)
+  readonly qualiD1 = signal<number>(5);
+  readonly qualiD2 = signal<number>(13);
+  readonly raceD1 = signal<number>(7);
+  readonly raceD2 = signal<number>(11);
+  readonly driver1Podiums = signal<number>(5);
+  readonly driver2Podiums = signal<number>(6);
+  readonly driver1Poles = signal<number>(3);
+  readonly driver2Poles = signal<number>(0);
+
+  readonly qualiD1Pct = computed(() => {
+    const tot = this.qualiD1() + this.qualiD2();
+    return tot > 0 ? Math.round((this.qualiD1() / tot) * 100) : 50;
+  });
+  readonly qualiD2Pct = computed(() => 100 - this.qualiD1Pct());
+
+  readonly raceD1Pct = computed(() => {
+    const tot = this.raceD1() + this.raceD2();
+    return tot > 0 ? Math.round((this.raceD1() / tot) * 100) : 50;
+  });
+  readonly raceD2Pct = computed(() => 100 - this.raceD1Pct());
+
+  readonly pitD1Pct = computed(() => {
+    const p1 = parseFloat(this.driver1TeamDetails().pitRecord) || 2.0;
+    const p2 = parseFloat(this.driver2TeamDetails().pitRecord) || 2.0;
+    const tot = p1 + p2;
+    return tot > 0 ? Math.round((p2 / tot) * 100) : 50;
+  });
+  readonly pitD2Pct = computed(() => 100 - this.pitD1Pct());
+
   // Voto de comunidad en duelo directo
-  readonly norrisVotes = signal<number>(58);
-  readonly verstappenVotes = signal<number>(42);
+  readonly driver1Votes = signal<number>(54);
+  readonly driver2Votes = signal<number>(46);
   readonly totalDuelVotes = signal<string>('14.820');
   readonly duelPick = signal<string | null>(null);
+
+  // Compatibilidad con templates y bindings previos
+  readonly norrisVotes = this.driver1Votes;
+  readonly verstappenVotes = this.driver2Votes;
 
   // Circuito actual dinámico (datos oficiales reales)
   readonly circuit = computed<CircuitInfo>(() => {
@@ -114,29 +243,17 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     return resolveCircuitShortName(this.circuit(), this.session());
   });
 
-  readonly norrisCircuitStat = computed(() => {
-    const short = this.circuitShortName();
-    if (short === 'COTA') {
-      return { val: '21 vtas', lbl: 'Vueltas Lideradas en COTA' };
-    } else if (short === 'AHR') {
-      return { val: 'P2 (2024)', lbl: 'Mejor Puesto en AHR' };
-    } else if (short === 'INTERLAGOS') {
-      return { val: 'P2 (2023)', lbl: 'Mejor Puesto en Interlagos' };
-    }
-    return { val: 'Puntos', lbl: `Historial en ${short}` };
+  readonly circuitCity = computed<string>(() => {
+    return this.circuit().city || this.session()?.locality || 'la fecha';
   });
 
-  readonly verCircuitStat = computed(() => {
-    const short = this.circuitShortName();
-    if (short === 'COTA') {
-      return { val: '3 (2021-23)', lbl: 'Victorias Previas en COTA' };
-    } else if (short === 'AHR') {
-      return { val: '5 (2017-23)', lbl: 'Victorias Previas en AHR' };
-    } else if (short === 'INTERLAGOS') {
-      return { val: '2 (2019, 23)', lbl: 'Victorias Previas en Interlagos' };
-    }
-    return { val: 'Victoria', lbl: `Victorias en ${short}` };
-  });
+  // Estadísticas históricas del circuito dinámicas para ambos duelistas
+  readonly driver1CircuitStat = computed(() => this.getDriverCircuitStat(this.duelDriver1().id));
+  readonly driver2CircuitStat = computed(() => this.getDriverCircuitStat(this.duelDriver2().id));
+
+  // Compatibilidad hacia atrás
+  readonly norrisCircuitStat = this.driver1CircuitStat;
+  readonly verCircuitStat = this.driver2CircuitStat;
 
   // Cronograma dinámico calculado a partir de la API de Jolpica y hora actual
   readonly schedule = computed<SessionSchedule[]>(() => {
@@ -235,6 +352,16 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   }
 
   private loadData(): void {
+    // 1. Cargar clasificación oficial WDC de pilotos desde la API Jolpica
+    this.api.jolpicaDriverStandings().subscribe({
+      next: (standings) => {
+        if (standings && standings.length > 0) {
+          this.driverStandings.set(standings);
+        }
+      }
+    });
+
+    // 2. Cargar sesión activa
     this.api.nextSession().subscribe({
       next: (sessionData) => {
         const prevSessionId = this.session()?.id;
@@ -242,6 +369,10 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         this.isLoading.set(false);
         this.updateCountdownFromDate(sessionData.startsAt);
         this.fetchRealWeather(sessionData.lat, sessionData.long);
+
+        const d1 = sessionData.matchupDriver1 || 'norris';
+        const d2 = sessionData.matchupDriver2 || 'leclerc';
+        this.loadDuelHeadToHead(d1, d2);
 
         // Al cambiar de carrera, reestablecer el estado del pronóstico
         if (prevSessionId && prevSessionId !== sessionData.id) {
@@ -260,6 +391,7 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         this.session.set(fallback);
         this.updateCountdownFromDate(fallback.startsAt);
         this.fetchRealWeather(fallback.lat, fallback.long);
+        this.loadDuelHeadToHead(fallback.matchupDriver1 || 'norris', fallback.matchupDriver2 || 'leclerc');
       }
     });
   }
@@ -331,6 +463,192 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     if (!id) return '-';
     const found = F1_DRIVERS.find(d => d.id.toLowerCase() === id.toLowerCase());
     return found ? found.name.toUpperCase() : id.toUpperCase();
+  }
+
+  getDriverById(id?: string | null): DriverOption {
+    if (!id) return F1_DRIVERS[0];
+    const clean = id.toLowerCase().trim();
+    const found = F1_DRIVERS.find(d => d.id.toLowerCase() === clean || d.code.toLowerCase() === clean);
+    return found || {
+      id: clean,
+      name: id.toUpperCase(),
+      code: id.slice(0, 3).toUpperCase(),
+      number: 0,
+      team: 'F1 Team',
+      teamColor: '#E10600'
+    };
+  }
+
+  findStanding(driverId: string): JolpicaDriverStanding | null {
+    const list = this.driverStandings();
+    if (!list || list.length === 0) return null;
+    const target = (driverId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return list.find(s => {
+      const sId = (s.driverId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const sCode = (s.code || '').toLowerCase();
+      const sName = (s.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return sId === target ||
+        (sId === 'maxverstappen' && target === 'verstappen') ||
+        (target === 'maxverstappen' && sId === 'verstappen') ||
+        sCode === target ||
+        sName.includes(target);
+    }) || null;
+  }
+
+  getDriverCircuitStat(driverId: string): { val: string; lbl: string } {
+    const short = this.circuitShortName();
+    const dId = (driverId || '').toLowerCase();
+
+    if (short === 'AHR') {
+      if (dId === 'norris') return { val: 'P2 (2024)', lbl: 'Mejor Puesto en AHR' };
+      if (dId === 'leclerc') return { val: 'P3 (2023)', lbl: 'Mejor Puesto en AHR' };
+      if (dId === 'verstappen') return { val: '5 (2017-23)', lbl: 'Victorias Previas en AHR' };
+      if (dId === 'sainz') return { val: 'P1 (2024)', lbl: 'Último Ganador en AHR' };
+      if (dId === 'hamilton') return { val: '2 (2016, 19)', lbl: 'Victorias en AHR' };
+      if (dId === 'perez') return { val: '2 Podios', lbl: 'Héroe Local en AHR' };
+      if (dId === 'colapinto') return { val: 'P12 (2024)', lbl: 'Historial en AHR' };
+      if (dId === 'russell') return { val: 'P4 (2022)', lbl: 'Mejor Puesto en AHR' };
+      if (dId === 'piastri') return { val: 'P8 (2023)', lbl: 'Historial en AHR' };
+      if (dId === 'antonelli') return { val: 'FP1 Rookie', lbl: 'Debut Oficial en AHR' };
+    } else if (short === 'COTA') {
+      if (dId === 'norris') return { val: '21 vtas', lbl: 'Vueltas Lideradas en COTA' };
+      if (dId === 'verstappen') return { val: '3 (2021-23)', lbl: 'Victorias Previas en COTA' };
+      if (dId === 'leclerc') return { val: 'P1 (2024)', lbl: 'Último Ganador en COTA' };
+      if (dId === 'sainz') return { val: 'P2 (2024)', lbl: 'Podio en COTA' };
+      if (dId === 'hamilton') return { val: '5 Victorias', lbl: 'Récord Histórico en COTA' };
+    } else if (short === 'INTERLAGOS') {
+      if (dId === 'norris') return { val: 'P2 (2023)', lbl: 'Mejor Puesto en Interlagos' };
+      if (dId === 'verstappen') return { val: '2 (2019, 23)', lbl: 'Victorias en Interlagos' };
+      if (dId === 'russell') return { val: 'P1 (2022)', lbl: 'Ganador en Interlagos' };
+      if (dId === 'hamilton') return { val: '3 (2016-21)', lbl: 'Victorias en Interlagos' };
+      if (dId === 'leclerc') return { val: 'P4 (2022)', lbl: 'Mejor Puesto en Interlagos' };
+    }
+
+    const standing = this.findStanding(dId);
+    if (standing) {
+      return { val: `P${standing.position} (${standing.points} pts)`, lbl: `Posición Oficial WDC` };
+    }
+    return { val: 'Puntos F1', lbl: `Historial en ${short}` };
+  }
+
+  loadDuelHeadToHead(d1Id: string, d2Id: string): void {
+    const clean1 = (d1Id || 'norris').toLowerCase();
+    const clean2 = (d2Id || 'leclerc').toLowerCase();
+
+    // Valores iniciales consistentes de la temporada
+    if (clean1 === 'norris' && clean2 === 'leclerc') {
+      this.qualiD1.set(5);
+      this.qualiD2.set(13);
+      this.raceD1.set(7);
+      this.raceD2.set(11);
+      this.driver1Podiums.set(5);
+      this.driver2Podiums.set(6);
+      this.driver1Poles.set(3);
+      this.driver2Poles.set(0);
+      this.driver1Votes.set(54);
+      this.driver2Votes.set(46);
+    } else if (clean1 === 'norris' && clean2 === 'verstappen') {
+      this.qualiD1.set(10);
+      this.qualiD2.set(8);
+      this.raceD1.set(8);
+      this.raceD2.set(10);
+      this.driver1Podiums.set(5);
+      this.driver2Podiums.set(10);
+      this.driver1Poles.set(3);
+      this.driver2Poles.set(2);
+      this.driver1Votes.set(58);
+      this.driver2Votes.set(42);
+    }
+
+    // Consulta en vivo a Jolpica Ergast API para resultados carrera por carrera de la temporada actual
+    forkJoin({
+      r1: this.api.jolpicaDriverSeasonResults(clean1),
+      r2: this.api.jolpicaDriverSeasonResults(clean2)
+    }).subscribe({
+      next: ({ r1, r2 }) => {
+        if (!r1 || !r2 || r1.length === 0 || r2.length === 0) return;
+
+        let q1 = 0, q2 = 0;
+        let rc1 = 0, rc2 = 0;
+        let pod1 = 0, pod2 = 0;
+        let pole1 = 0, pole2 = 0;
+
+        const maxCommon = Math.min(r1.length, r2.length);
+        for (let i = 0; i < maxCommon; i++) {
+          const res1 = r1[i]?.Results?.[0];
+          const res2 = r2[i]?.Results?.[0];
+          if (res1 && res2) {
+            const g1 = parseInt(res1.grid, 10);
+            const g2 = parseInt(res2.grid, 10);
+            if (g1 > 0 && g2 > 0) {
+              if (g1 < g2) q1++;
+              else if (g2 < g1) q2++;
+            }
+            const p1 = parseInt(res1.position, 10);
+            const p2 = parseInt(res2.position, 10);
+            if (p1 > 0 && p2 > 0) {
+              if (p1 < p2) rc1++;
+              else if (p2 < p1) rc2++;
+            }
+          }
+        }
+
+        for (const race of r1) {
+          const p = parseInt(race?.Results?.[0]?.position, 10);
+          const g = parseInt(race?.Results?.[0]?.grid, 10);
+          if (p > 0 && p <= 3) pod1++;
+          if (g === 1) pole1++;
+        }
+
+        for (const race of r2) {
+          const p = parseInt(race?.Results?.[0]?.position, 10);
+          const g = parseInt(race?.Results?.[0]?.grid, 10);
+          if (p > 0 && p <= 3) pod2++;
+          if (g === 1) pole2++;
+        }
+
+        if (q1 > 0 || q2 > 0) {
+          this.qualiD1.set(q1);
+          this.qualiD2.set(q2);
+        }
+        if (rc1 > 0 || rc2 > 0) {
+          this.raceD1.set(rc1);
+          this.raceD2.set(rc2);
+        }
+        this.driver1Podiums.set(pod1);
+        this.driver2Podiums.set(pod2);
+        this.driver1Poles.set(pole1);
+        this.driver2Poles.set(pole2);
+      },
+      error: () => {}
+    });
+  }
+
+  selectDuelWinner(driverId: string): void {
+    this.duelPick.set(driverId);
+    const sess = this.session();
+    if (sess?.id) {
+      const cur = this.currentPrediction() || {
+        predictionId: null,
+        sessionId: sess.id,
+        sessionName: sess.name,
+        circuit: sess.circuit,
+        startsAt: sess.startsAt,
+        isLocked: sess.isLocked,
+        podium: [],
+        polePositionDriverId: null,
+        duelDriverPick: driverId,
+        safetyCarCount: null,
+        dnfCount: null,
+        score: null,
+        submittedAt: null,
+        matchupDriver1: sess.matchupDriver1,
+        matchupDriver2: sess.matchupDriver2
+      };
+      cur.duelDriverPick = driverId;
+      this.currentPrediction.set(cur);
+      this.api.setCachedPrediction?.(cur, this.auth.username());
+    }
   }
 
   /**
