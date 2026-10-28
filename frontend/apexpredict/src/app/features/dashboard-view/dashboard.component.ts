@@ -716,37 +716,39 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 <!-- TABLA DE POSICIONES DE LA LIGA -->
                 <h4 style="margin: 1.5rem 0 1rem; font-size: 1.05rem;">Participantes de la Liga ({{ leagueLeaderboard().length }})</h4>
                 @if (leagueLeaderboard().length > 0) {
-                  <table class="data-table">
-                    <thead>
-                      <tr>
-                        <th>Pos</th>
-                        <th>Corredor / Usuario</th>
-                        <th>Puntos Totales</th>
-                        <th>Estado de Pronóstico</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      @for (entry of leagueLeaderboard(); track entry.userId) {
+                  <div class="table-responsive">
+                    <table class="data-table">
+                      <thead>
                         <tr>
-                          <td><strong>#{{ entry.rank }}</strong></td>
-                          <td style="color: #fff; font-weight: 600;">
-                            {{ entry.displayName }}
-                            @if (auth.username() && entry.displayName.toLowerCase().includes(auth.username().toLowerCase())) {
-                              <span style="font-size: 0.75rem; color: var(--cyan); margin-left: 4px;">(Tú)</span>
-                            }
-                          </td>
-                          <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
-                          <td>
-                            @if (entry.predictionsCount > 0) {
-                              <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">Pronóstico Enviado</span>
-                            } @else {
-                              <span class="dim" style="font-size: 0.85rem;">Sin pronóstico aún</span>
-                            }
-                          </td>
+                          <th>Pos</th>
+                          <th>Corredor / Usuario</th>
+                          <th>Puntos Totales</th>
+                          <th>Estado de Pronóstico</th>
                         </tr>
-                      }
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        @for (entry of leagueLeaderboard(); track entry.userId) {
+                          <tr>
+                            <td><strong>#{{ entry.rank }}</strong></td>
+                            <td style="color: #fff; font-weight: 600;">
+                              {{ entry.displayName }}
+                              @if (auth.username() && entry.displayName.toLowerCase().includes(auth.username().toLowerCase())) {
+                                <span style="font-size: 0.75rem; color: var(--cyan); margin-left: 4px;">(Tú)</span>
+                              }
+                            </td>
+                            <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
+                            <td>
+                              @if (entry.predictionsCount > 0) {
+                                <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">Pronóstico Enviado</span>
+                              } @else {
+                                <span class="dim" style="font-size: 0.85rem;">Sin pronóstico aún</span>
+                              }
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
                 } @else {
                   <p class="dim" style="padding: 1rem 0;">Aún no hay puntuaciones registradas en esta liga privada.</p>
                 }
@@ -944,37 +946,39 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               }
 
               @if (globalLeaderboard().length > 0) {
-                <table class="data-table" style="margin-top: 1.5rem;">
-                  <thead>
-                    <tr>
-                      <th>Pos</th>
-                      <th>Corredor / Escudería</th>
-                      <th>Puntos Totales</th>
-                      <th>Pronósticos Realizados</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (entry of globalLeaderboard(); track entry.userId) {
+                <div class="table-responsive" style="margin-top: 1.5rem;">
+                  <table class="data-table">
+                    <thead>
                       <tr>
-                        <td><strong>#{{ entry.rank }}</strong></td>
-                        <td style="color: #fff; font-weight: 600;">
-                          {{ entry.displayName }}
-                          @if (auth.username() && entry.displayName.toLowerCase().includes(auth.username().toLowerCase())) {
-                            <span style="font-size: 0.75rem; color: var(--cyan); margin-left: 4px;">(Tú)</span>
-                          }
-                        </td>
-                        <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
-                        <td>
-                          @if (entry.predictionsCount > 0) {
-                            <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">{{ entry.predictionsCount }} Carrera (Enviado)</span>
-                          } @else {
-                            <span class="dim" style="font-size: 0.85rem;">0 Carreras</span>
-                          }
-                        </td>
+                        <th>Pos</th>
+                        <th>Corredor / Escudería</th>
+                        <th>Puntos Totales</th>
+                        <th>Pronósticos Realizados</th>
                       </tr>
-                    }
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      @for (entry of globalLeaderboard(); track entry.userId) {
+                        <tr>
+                          <td><strong>#{{ entry.rank }}</strong></td>
+                          <td style="color: #fff; font-weight: 600;">
+                            {{ entry.displayName }}
+                            @if (auth.username() && entry.displayName.toLowerCase().includes(auth.username().toLowerCase())) {
+                              <span style="font-size: 0.75rem; color: var(--cyan); margin-left: 4px;">(Tú)</span>
+                            }
+                          </td>
+                          <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
+                          <td>
+                            @if (entry.predictionsCount > 0) {
+                              <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">{{ entry.predictionsCount }} Carrera (Enviado)</span>
+                            } @else {
+                              <span class="dim" style="font-size: 0.85rem;">0 Carreras</span>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               } @else if (isLoadingGlobalLeaderboard()) {
                 <div style="padding: 3rem 0; text-align: center;">
                   <div class="spinner-block"></div>
@@ -1009,35 +1013,37 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               </div>
 
               @if (driverStandings().length > 0) {
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Pos</th>
-                      <th>Piloto</th>
-                      <th>Escudería</th>
-                      <th>Nacionalidad</th>
-                      <th>Victorias</th>
-                      <th>Puntos Totales</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (d of driverStandings(); track d.driverId || d.position) {
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
                       <tr>
-                        <td><strong>#{{ d.position }}</strong></td>
-                        <td style="color: #fff; font-weight: 700;">
-                          {{ d.name }}
-                          @if (d.code) {
-                            <span class="dtc-code" style="margin-left: 6px;">{{ d.code }}</span>
-                          }
-                        </td>
-                        <td style="color: var(--text-muted);">{{ d.team }}</td>
-                        <td class="dim">{{ d.nationality }}</td>
-                        <td style="font-family: var(--font-mono); font-weight: 600;">{{ d.wins }}</td>
-                        <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 800;">{{ d.points }} pts</td>
+                        <th>Pos</th>
+                        <th>Piloto</th>
+                        <th>Escudería</th>
+                        <th>Nacionalidad</th>
+                        <th>Victorias</th>
+                        <th>Puntos Totales</th>
                       </tr>
-                    }
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      @for (d of driverStandings(); track d.driverId || d.position) {
+                        <tr>
+                          <td><strong>#{{ d.position }}</strong></td>
+                          <td style="color: #fff; font-weight: 700;">
+                            {{ d.name }}
+                            @if (d.code) {
+                              <span class="dtc-code" style="margin-left: 6px;">{{ d.code }}</span>
+                            }
+                          </td>
+                          <td style="color: var(--text-muted);">{{ d.team }}</td>
+                          <td class="dim">{{ d.nationality }}</td>
+                          <td style="font-family: var(--font-mono); font-weight: 600;">{{ d.wins }}</td>
+                          <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 800;">{{ d.points }} pts</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               } @else {
                 <p class="dim" style="padding: 2rem 0; text-align: center;">Cargando posiciones oficiales de pilotos de F1…</p>
               }
@@ -1056,28 +1062,30 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
               </div>
 
               @if (constructorStandings().length > 0) {
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Pos</th>
-                      <th>Escudería</th>
-                      <th>País / Origen</th>
-                      <th>Victorias</th>
-                      <th>Puntos Totales</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (c of constructorStandings(); track c.constructorId || c.position) {
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
                       <tr>
-                        <td><strong>#{{ c.position }}</strong></td>
-                        <td style="color: #fff; font-weight: 700; font-size: 1rem;">{{ c.name }}</td>
-                        <td class="dim">{{ c.nationality }}</td>
-                        <td style="font-family: var(--font-mono); font-weight: 600;">{{ c.wins }}</td>
-                        <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 800;">{{ c.points }} pts</td>
+                        <th>Pos</th>
+                        <th>Escudería</th>
+                        <th>País / Origen</th>
+                        <th>Victorias</th>
+                        <th>Puntos Totales</th>
                       </tr>
-                    }
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      @for (c of constructorStandings(); track c.constructorId || c.position) {
+                        <tr>
+                          <td><strong>#{{ c.position }}</strong></td>
+                          <td style="color: #fff; font-weight: 700; font-size: 1rem;">{{ c.name }}</td>
+                          <td class="dim">{{ c.nationality }}</td>
+                          <td style="font-family: var(--font-mono); font-weight: 600;">{{ c.wins }}</td>
+                          <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 800;">{{ c.points }} pts</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
               } @else {
                 <p class="dim" style="padding: 2rem 0; text-align: center;">Cargando posiciones oficiales de constructores de F1…</p>
               }
@@ -3410,6 +3418,55 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
       .comp-header-row, .comp-data-row {
         grid-template-columns: 1fr;
         gap: 0.35rem;
+      }
+    }
+    @media (max-width: 576px) {
+      .dashboard-page {
+        margin: 0.5rem auto 2rem;
+        padding: 0 0.65rem;
+      }
+      .section-hero {
+        padding: 1rem 0.85rem;
+      }
+      .section-hero h2 {
+        font-size: 1.35rem;
+      }
+      .scoring-rules-panel {
+        padding: 0.75rem;
+      }
+      .tabs-bar {
+        gap: 0.85rem;
+      }
+      .tabs-bar button {
+        font-size: 0.92rem;
+        padding: 0.65rem 0.25rem;
+      }
+      .submit-bar {
+        width: 100%;
+      }
+      .submit-bar .button {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        font-size: 0.95rem;
+        justify-content: center;
+      }
+      .stepper-hero {
+        gap: 0.75rem;
+      }
+      .step-hero-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 1.25rem;
+      }
+      .step-hero-val {
+        font-size: 1.75rem;
+      }
+      .spotlight-card {
+        padding: 1rem 0.85rem;
+      }
+      .badge-round {
+        font-size: 0.68rem;
+        padding: 3px 7px;
       }
     }
   `]

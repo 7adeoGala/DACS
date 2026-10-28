@@ -669,6 +669,29 @@
   }
 }
 
+@media (max-width: 576px) {
+  .podium-card-wrapper {
+    padding: 1rem 0.85rem;
+  }
+  .card-title {
+    font-size: 1.15rem;
+  }
+  .driver-template-card {
+    padding: 0.85rem;
+  }
+  .dtc-name {
+    font-size: 1.05rem;
+  }
+  .podium-pedestal-base {
+    height: 48px;
+  }
+  .btn-clear-all-podium {
+    width: 100%;
+    margin-top: 0.5rem;
+    text-align: center;
+  }
+}
+
 /* ======================================================== */
 /* ESTADO VACÍO (SIN PILOTO SELECCIONADO)                   */
 /* ======================================================== */

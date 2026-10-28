@@ -1496,4 +1496,66 @@
   }
 }
 
+/* OPTIMIZACIÓN RESPONSIVE BOOTSTRAP PARA TELÉFONOS CELULARES */
+@media (max-width: 576px) {
+  .gp-telemetry-container {
+    padding: 12px 10px 32px 10px;
+  }
+  .gp-main-title {
+    font-size: 1.65rem;
+    line-height: 1.15;
+  }
+  .countdown-banner {
+    padding: 14px 12px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .countdown-left,
+  .countdown-right {
+    width: 100%;
+  }
+  .countdown-boxes {
+    gap: 6px;
+    width: 100%;
+  }
+  .time-box {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 8px 4px;
+  }
+  .time-box .num {
+    font-size: 1.35rem;
+  }
+  .time-box .label {
+    font-size: 0.55rem;
+  }
+  .btn-cta-predict {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+  }
+  .circuit-display-card {
+    padding: 14px 12px;
+  }
+  .circuit-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .meteo-metrics {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .duel-battle-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .driver-battle-side {
+    padding: 14px;
+  }
+  .user-pred-card,
+  .league-preview-card {
+    padding: 14px;
+  }
+}
+
 

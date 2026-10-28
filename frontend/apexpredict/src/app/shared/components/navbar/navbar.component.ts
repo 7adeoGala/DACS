@@ -147,7 +147,7 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
     <header class="navbar-wrapper">
       <div class="navbar-container">
         <!-- LOGO ESTILIZADO APEXPREDICT -->
-        <a routerLink="/" class="brand-logo">
+        <a routerLink="/" class="brand-logo" (click)="closeMobileNav()">
           <svg class="logo-racing-mark" viewBox="0 0 18 18" width="20" height="20" fill="none" style="margin-right: 3px;">
             <path d="M2 14L8 4H12L6 14H2Z" fill="var(--red)"/>
             <path d="M8 14L14 4H18L12 14H8Z" fill="#ffffff"/>
@@ -155,9 +155,9 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
           <span class="txt-apex">APEX</span> <span class="txt-predict">PREDICT</span>
         </a>
 
-        <!-- NAVEGACIÓN EN UN SOLO RENGLÓN CON ESPACIADO AMPLIO (SOLO USUARIOS AUTENTICADOS) -->
+        <!-- NAVEGACIÓN DESKTOP (PANTALLAS GRANDES) -->
         @if (auth.isAuthenticated()) {
-          <nav class="nav-links">
+          <nav class="nav-links d-none d-lg-flex">
             <a routerLink="/" [class.active]="isCurrent('inicio')">Inicio</a>
             <a routerLink="/dashboard" [queryParams]="{ tab: 'pronostico' }" [class.active]="isCurrent('predicciones')">Predicciones</a>
             <a routerLink="/dashboard" [queryParams]="{ tab: 'ligas' }" [class.active]="isCurrent('ligas')">Mis Ligas</a>
@@ -183,13 +183,13 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                   [style.color]="activeTeam().textColor || '#ffffff'">
                   {{ savedInitials() }}
                 </div>
-                <div class="user-meta-column">
+                <div class="user-meta-column d-none d-sm-flex">
                   <span class="user-name-text" [title]="savedDisplayName()">
                     {{ savedDisplayName() }}
                   </span>
                   <span class="user-pts-text">{{ auth.userPoints() }} PTS</span>
                 </div>
-                <span class="chevron-icon">{{ isProfileOpen() ? '▲' : '▼' }}</span>
+                <span class="chevron-icon d-none d-sm-inline">{{ isProfileOpen() ? '▲' : '▼' }}</span>
               </button>
 
               <!-- MENÚ FLOTANTE DROPDOWN -->
@@ -387,6 +387,19 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                 </div>
               }
             </div>
+
+            <!-- BOTÓN HAMBURGUESA BOOTSTRAP PARA TELÉFONOS MÓVILES -->
+            <button 
+              type="button" 
+              class="navbar-toggler d-flex d-lg-none" 
+              [class.active]="isMobileNavOpen()"
+              (click)="toggleMobileNav($event)"
+              aria-label="Menú de navegación"
+              [attr.aria-expanded]="isMobileNavOpen()">
+              <span class="navbar-toggler-bar"></span>
+              <span class="navbar-toggler-bar"></span>
+              <span class="navbar-toggler-bar"></span>
+            </button>
           } @else {
             <!-- ACCIONES DE SESIÓN PARA VISITANTES (ARRIBA A LA DERECHA) -->
             <div class="nav-auth-buttons">
@@ -400,6 +413,31 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
           }
         </div>
       </div>
+
+      <!-- MENÚ DESPLEGABLE MÓVIL BOOTSTRAP (EN PANTALLAS PEQUEÑAS < 992px) -->
+      @if (auth.isAuthenticated() && isMobileNavOpen()) {
+        <nav class="mobile-nav-drawer d-lg-none" (click)="$event.stopPropagation()">
+          <a routerLink="/" [class.active]="isCurrent('inicio')" (click)="closeMobileNav()" class="mobile-nav-link">
+            <span class="nav-icon">🏁</span> Inicio
+          </a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'pronostico' }" [class.active]="isCurrent('predicciones')" (click)="closeMobileNav()" class="mobile-nav-link">
+            <span class="nav-icon">🎯</span> Predicciones GP
+          </a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'ligas' }" [class.active]="isCurrent('ligas')" (click)="closeMobileNav()" class="mobile-nav-link">
+            <span class="nav-icon">🏆</span> Mis Ligas Privadas
+          </a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'posiciones' }" [class.active]="isCurrent('posiciones')" (click)="closeMobileNav()" class="mobile-nav-link">
+            <span class="nav-icon">📊</span> Posiciones & F1 Standings
+          </a>
+          <a routerLink="/dashboard" [queryParams]="{ tab: 'historial' }" [class.active]="isCurrent('historial')" (click)="closeMobileNav()" class="mobile-nav-link">
+            <span class="nav-icon">📜</span> Historial de Pronósticos
+          </a>
+          <div class="mobile-nav-footer">
+            <span class="dim" style="font-size: 0.8rem;">Puntaje acumulado:</span>
+            <span class="mobile-pts-badge">{{ auth.userPoints() }} PTS</span>
+          </div>
+        </nav>
+      }
     </header>
   `,
   styles: [`
@@ -1107,19 +1145,109 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       text-decoration: underline;
     }
 
-    @media (max-width: 768px) {
+    /* HAMBURGUESA BOOTSTRAP PARA TELÉFONOS */
+    .navbar-toggler {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 8px;
+      width: 38px;
+      height: 38px;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-left: 0.25rem;
+    }
+    .navbar-toggler:hover, .navbar-toggler.active {
+      background: rgba(225, 6, 0, 0.15);
+      border-color: rgba(225, 6, 0, 0.5);
+    }
+    .navbar-toggler-bar {
+      display: block;
+      width: 20px;
+      height: 2px;
+      background-color: #ffffff;
+      border-radius: 2px;
+      transition: all 0.25s ease;
+    }
+    .navbar-toggler.active .navbar-toggler-bar:nth-child(1) {
+      transform: translateY(7px) rotate(45deg);
+    }
+    .navbar-toggler.active .navbar-toggler-bar:nth-child(2) {
+      opacity: 0;
+    }
+    .navbar-toggler.active .navbar-toggler-bar:nth-child(3) {
+      transform: translateY(-7px) rotate(-45deg);
+    }
+
+    /* MOBILE NAVIGATION DRAWER */
+    .mobile-nav-drawer {
+      display: flex;
+      flex-direction: column;
+      background: #0d1118;
+      border-top: 1px solid var(--line);
+      border-bottom: 2px solid var(--red);
+      padding: 0.75rem 1rem 1rem;
+      gap: 0.35rem;
+      animation: fadeInDropdown 0.2s ease-out;
+    }
+    .mobile-nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.15s ease;
+    }
+    .mobile-nav-link:hover, .mobile-nav-link.active {
+      background: rgba(225, 6, 0, 0.12);
+      color: #ffffff;
+      border-left: 3px solid var(--red);
+    }
+    .mobile-nav-footer {
+      margin-top: 0.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mobile-pts-badge {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--gold);
+      font-weight: 800;
+      background: rgba(245, 176, 0, 0.12);
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(245, 176, 0, 0.3);
+    }
+    .dim {
+      color: var(--text-dim, #64748b);
+    }
+
+    @media (max-width: 991px) {
       .navbar-wrapper {
-        padding: 0.75rem 1rem;
-      }
-      .nav-links {
-        gap: 1rem;
-        overflow-x: auto;
-        font-size: 0.82rem;
+        padding: 0.65rem 1rem;
       }
       .profile-dropdown-menu {
-        right: -10px;
-        width: calc(100vw - 2rem);
+        right: 0;
+        width: calc(100vw - 1.5rem);
         max-width: 335px;
+      }
+      .profile-trigger-btn {
+        max-width: 170px;
+        padding: 3px 8px 3px 4px;
+      }
+      .user-name-text {
+        max-width: 90px;
       }
       .nav-auth-buttons {
         gap: 0.4rem;
@@ -1143,8 +1271,9 @@ export class NavbarComponent implements OnInit {
   readonly teams = F1_TEAMS_OPTIONS;
   readonly drivers: F1Driver[] = F1_DRIVERS;
 
-  // Estado del dropdown del perfil
+  // Estado del dropdown del perfil y navegación móvil
   readonly isProfileOpen = signal<boolean>(false);
+  readonly isMobileNavOpen = signal<boolean>(false);
   readonly isSaving = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'success' | 'error'>('idle');
 
@@ -1221,6 +1350,7 @@ export class NavbarComponent implements OnInit {
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
         this.currentUrl.set(event.urlAfterRedirects || event.url);
+        this.isMobileNavOpen.set(false);
       }
     });
 
@@ -1259,6 +1389,10 @@ export class NavbarComponent implements OnInit {
       this.closeProfileMenu();
       return;
     }
+    if (this.isMobileNavOpen() && !this.elementRef.nativeElement.contains(target)) {
+      this.closeMobileNav();
+      return;
+    }
     // Si hace click fuera de un custom select abierto, cerrarlo
     if (!target?.closest('.custom-select-container')) {
       this.isTeamSelectOpen.set(false);
@@ -1276,6 +1410,21 @@ export class NavbarComponent implements OnInit {
     if (this.isProfileOpen()) {
       this.closeProfileMenu();
     }
+    if (this.isMobileNavOpen()) {
+      this.closeMobileNav();
+    }
+  }
+
+  toggleMobileNav(event: MouseEvent) {
+    event.stopPropagation();
+    this.isMobileNavOpen.update((v) => !v);
+    if (this.isMobileNavOpen()) {
+      this.closeProfileMenu();
+    }
+  }
+
+  closeMobileNav() {
+    this.isMobileNavOpen.set(false);
   }
 
   toggleProfileMenu(event: MouseEvent) {
@@ -1288,6 +1437,7 @@ export class NavbarComponent implements OnInit {
   }
 
   openProfileMenu() {
+    this.closeMobileNav();
     // Al abrir, sincronizar el borrador con los últimos datos guardados
     this.isTeamSelectOpen.set(false);
     this.isDriverSelectOpen.set(false);
