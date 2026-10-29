@@ -156,11 +156,11 @@ public class PredictionService {
     @Transactional(readOnly = true)
     public PredictionDetailView getUserPrediction(String issuer, String subject, UUID sessionId) {
         User user = getOrCreateUser(issuer, subject);
-        Session session = sessions.findById(sessionId).orElse(null);
-        if (session == null) {
-            session = resolveSession(sessionId.toString());
+        Session resolved = sessions.findById(sessionId).orElse(null);
+        if (resolved == null) {
+            resolved = resolveSession(sessionId.toString());
         }
-        if (session == null) {
+        if (resolved == null) {
             return new PredictionDetailView(
                 null,
                 sessionId,
@@ -180,6 +180,7 @@ public class PredictionService {
             );
         }
 
+        final Session session = resolved;
         Instant now = Instant.now();
         boolean isLocked = session.getStartsAt() == null || !now.isBefore(session.getStartsAt());
 
@@ -249,16 +250,17 @@ public class PredictionService {
         SubmitPredictionRequest request
     ) {
         User user = getOrCreateUser(issuer, subject);
-        Session session = sessions.findById(sessionId).orElse(null);
-        if (session == null) {
-            session = resolveSession(sessionId.toString());
+        Session resolved = sessions.findById(sessionId).orElse(null);
+        if (resolved == null) {
+            resolved = resolveSession(sessionId.toString());
         }
-        if (session == null) {
-            session = sessions.findFirstByStartsAtAfterOrderByStartsAtAsc(Instant.now()).orElse(null);
+        if (resolved == null) {
+            resolved = sessions.findFirstByStartsAtAfterOrderByStartsAtAsc(Instant.now()).orElse(null);
         }
-        if (session == null) {
+        if (resolved == null) {
             throw new IllegalArgumentException("Sesión no encontrada: " + sessionId);
         }
+        final Session session = resolved;
 
         Instant now = Instant.now();
 
