@@ -104,6 +104,18 @@ export class AuthService {
       checkLoginIframe: false,
     });
 
+    const restoreTokens = () => {
+      const currentSavedToken = localStorage.getItem('apex_token') || sessionStorage.getItem('apex_token');
+      const currentSavedRefresh = localStorage.getItem('apex_refresh_token') || sessionStorage.getItem('apex_refresh_token');
+      if (currentSavedToken) {
+        (this.keycloak as any).token = currentSavedToken;
+        (this.keycloak as any).refreshToken = currentSavedRefresh || undefined;
+        (this.keycloak as any).authenticated = true;
+        (this.keycloak as any).tokenParsed = this.decodeJwt(currentSavedToken);
+        (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
+      }
+    };
+
     if (hasOAuthCallback) {
       try {
         await initPromise;
@@ -116,6 +128,7 @@ export class AuthService {
         }
       } catch (err) {
         console.warn('Keycloak no disponible para SSO silencioso:', err);
+        restoreTokens();
         if (!this.authenticated()) {
           this.available.set(false);
         }
@@ -128,17 +141,25 @@ export class AuthService {
         );
         await Promise.race([initPromise, timeoutPromise]);
         (this.keycloak as any).timeSkew = 0;
+        restoreTokens();
         this.available.set(true);
         sync();
       } catch (err) {
         console.warn('Keycloak init continuará en segundo plano (arranque rápido):', err);
         initPromise.then(() => {
           (this.keycloak as any).timeSkew = 0;
+          restoreTokens();
           this.available.set(true);
           sync();
         }).catch(() => {});
+        restoreTokens();
         sync();
       }
+    }
+
+    // Si el token almacenado ya expiró, renovarlo proactivamente en segundo plano
+    if (this.authenticated() && this.isTokenExpired()) {
+      this.refreshAccessToken().catch(() => {});
     }
   }
 
@@ -326,6 +347,123 @@ export class AuthService {
     } catch (e) {
       console.warn('Registro de usuario en backend diferido:', e);
     }
+  }
+
+  private isRefreshing = false;
+  private refreshPromise: Promise<string | null> | null = null;
+
+  isTokenExpired(token?: string | null): boolean {
+    const t = token || (this.keycloak as any).token || 
+      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('apex_token') : null) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('apex_token') : null);
+    if (!t) return false;
+    try {
+      const decoded = this.decodeJwt(t);
+      if (!decoded || !decoded.exp) return false;
+      // Considerar expirado si le quedan menos de 30 segundos
+      return Date.now() >= ((decoded.exp * 1000) - 30000);
+    } catch {
+      return false;
+    }
+  }
+
+  async refreshAccessToken(): Promise<string | null> {
+    if (this.isRefreshing && this.refreshPromise) {
+      return this.refreshPromise;
+    }
+
+    const refreshToken =
+      (this.keycloak as any).refreshToken ||
+      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('apex_refresh_token') : null) ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('apex_refresh_token') : null);
+
+    if (!refreshToken) {
+      return null;
+    }
+
+    this.isRefreshing = true;
+    this.refreshPromise = (async () => {
+      try {
+        const tokenUrl = `${environment.keycloak.url}/realms/${environment.keycloak.realm}/protocol/openid-connect/token`;
+        const res = await fetch(tokenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: environment.keycloak.clientId,
+            grant_type: 'refresh_token',
+            refresh_token: refreshToken
+          }).toString()
+        });
+
+        if (!res.ok) {
+          if (res.status === 400 || res.status === 401) {
+            console.warn('El refresh token ha expirado. Limpiando credenciales caducadas.');
+            this.clearLocalSession();
+          }
+          return null;
+        }
+
+        const data = await res.json();
+        if (data.access_token) {
+          (this.keycloak as any).token = data.access_token;
+          if (data.refresh_token) {
+            (this.keycloak as any).refreshToken = data.refresh_token;
+          }
+          (this.keycloak as any).authenticated = true;
+          (this.keycloak as any).tokenParsed = this.decodeJwt(data.access_token);
+          (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
+          (this.keycloak as any).timeSkew = 0;
+
+          if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem('apex_token', data.access_token);
+            if (data.refresh_token) {
+              sessionStorage.setItem('apex_refresh_token', data.refresh_token);
+            }
+          }
+          if (typeof localStorage !== 'undefined' && localStorage.getItem('apex_token')) {
+            localStorage.setItem('apex_token', data.access_token);
+            if (data.refresh_token) {
+              localStorage.setItem('apex_refresh_token', data.refresh_token);
+            }
+          }
+          this.authenticated.set(true);
+          return data.access_token;
+        }
+        return null;
+      } catch (err) {
+        console.warn('Error renovando token:', err);
+        return null;
+      } finally {
+        this.isRefreshing = false;
+        this.refreshPromise = null;
+      }
+    })();
+
+    return this.refreshPromise;
+  }
+
+  clearLocalSession(): void {
+    try {
+      if (this.keycloak && typeof this.keycloak.clearToken === 'function') {
+        this.keycloak.clearToken();
+      }
+    } catch {}
+    (this.keycloak as any).token = undefined;
+    (this.keycloak as any).refreshToken = undefined;
+    (this.keycloak as any).authenticated = false;
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem('apex_token');
+      sessionStorage.removeItem('apex_refresh_token');
+      sessionStorage.removeItem('apex_username');
+    }
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('apex_token');
+      localStorage.removeItem('apex_refresh_token');
+      localStorage.removeItem('apex_username');
+    }
+    this.authenticated.set(false);
+    this.username.set('');
+    this.roles.set([]);
   }
 
   login(route = 'dashboard', idpHint?: string): Promise<void> {

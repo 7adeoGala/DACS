@@ -249,8 +249,16 @@ public class PredictionService {
         SubmitPredictionRequest request
     ) {
         User user = getOrCreateUser(issuer, subject);
-        Session session = sessions.findById(sessionId)
-            .orElseThrow(() -> new IllegalArgumentException("Sesión no encontrada: " + sessionId));
+        Session session = sessions.findById(sessionId).orElse(null);
+        if (session == null) {
+            session = resolveSession(sessionId.toString());
+        }
+        if (session == null) {
+            session = sessions.findFirstByStartsAtAfterOrderByStartsAtAsc(Instant.now()).orElse(null);
+        }
+        if (session == null) {
+            throw new IllegalArgumentException("Sesión no encontrada: " + sessionId);
+        }
 
         Instant now = Instant.now();
 

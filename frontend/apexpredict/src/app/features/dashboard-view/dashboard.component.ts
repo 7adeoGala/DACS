@@ -3634,6 +3634,7 @@ export class DashboardComponent implements OnInit {
   private loadNextSession() {
     this.api.nextSession().subscribe({
       next: (sess) => {
+        if (!sess || !sess.id) return;
         const prevSessionId = this.session()?.id;
         this.session.set(sess);
 
@@ -4085,6 +4086,8 @@ export class DashboardComponent implements OnInit {
         this.isSaving.set(false);
         if (err.status === 502 || err.status === 504) {
           this.saveError.set('Los servidores de telemetría tardaron en responder debido al arranque inicial. Volvé a presionar "Guardar Pronóstico" ahora que el canal ya está abierto.');
+        } else if (err.status === 401) {
+          this.saveError.set('Tu sesión ha expirado o no estás autenticado. Por favor, iniciá sesión nuevamente para registrar tu pronóstico.');
         } else {
           this.saveError.set(err.error?.description || err.error?.message || 'Error al persistir el pronóstico en la base de datos.');
         }
