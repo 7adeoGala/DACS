@@ -95,7 +95,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                         <div class="scoring-rule-card">
                           <span class="rule-card-indicator sc"></span>
                           <span class="rule-card-label">Safety car /VSC:</span>
-                          <span class="rule-card-pts sc">+10 pts</span>
+                          <span class="rule-card-pts sc">+6 pts</span>
                         </div>
                       </div>
                     </div>
@@ -106,7 +106,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                         <div class="scoring-rule-card">
                           <span class="rule-card-indicator dnf"></span>
                           <span class="rule-card-label">DNF:</span>
-                          <span class="rule-card-pts dnf">+15 pts</span>
+                          <span class="rule-card-pts dnf">+6 pts</span>
                         </div>
                       </div>
                     </div>
@@ -1202,10 +1202,10 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                           Duelo: {{ h.scoreBreakdown.duelHit ? '+' + (h.scoreBreakdown.duelPoints || 3) + ' pts' : '0 pts' }}
                         </span>
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.safetyCarHit">
-                          Safety Car: {{ h.scoreBreakdown.safetyCarHit ? '+10 pts' : '0 pts' }}
+                          Safety Car: {{ h.scoreBreakdown.safetyCarHit ? '+' + (h.scoreBreakdown.safetyCarPoints || 6) + ' pts' : '0 pts' }}
                         </span>
                         <span class="chip-score" [class.hit]="h.scoreBreakdown.dnfHit">
-                          DNFs: {{ h.scoreBreakdown.dnfHit ? '+15 pts' : '0 pts' }}
+                          DNFs: {{ h.scoreBreakdown.dnfHit ? '+' + (h.scoreBreakdown.dnfPoints || 6) + ' pts' : '0 pts' }}
                         </span>
                       </div>
                     }
@@ -1288,10 +1288,10 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                     Duelo: {{ item.scoreBreakdown.duelHit ? '+3 pts' : '0 pts' }}
                   </span>
                   <span class="chip-score" [class.hit]="item.scoreBreakdown.safetyCarHit">
-                    Safety Car: {{ item.scoreBreakdown.safetyCarHit ? '+10 pts' : '0 pts' }}
+                    Safety Car: {{ item.scoreBreakdown.safetyCarHit ? '+' + (item.scoreBreakdown.safetyCarPoints || 6) + ' pts' : '0 pts' }}
                   </span>
                   <span class="chip-score" [class.hit]="item.scoreBreakdown.dnfHit">
-                    Abandonos: {{ item.scoreBreakdown.dnfHit ? '+15 pts' : '0 pts' }}
+                    Abandonos: {{ item.scoreBreakdown.dnfHit ? '+' + (item.scoreBreakdown.dnfPoints || 6) + ' pts' : '0 pts' }}
                   </span>
                 </div>
               }
@@ -1445,7 +1445,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                 <!-- SECCIÓN 3: INCIDENCIAS -->
                 <div class="comp-section-row">
                   <span class="sec-title">🚨 TELEMETRÍA E INCIDENCIAS EN PISTA</span>
-                  <span class="sec-badge">Safety Car = 10 pts · Abandonos = 15 pts</span>
+                  <span class="sec-badge">Safety Car = 6 pts · Abandonos = 6 pts</span>
                 </div>
 
                 <!-- SAFETY CAR -->
@@ -1460,7 +1460,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   <span class="c-col official dim" data-label="Resultado FIA">
                     {{ item.officialResults?.safetyCarCount != null ? item.officialResults?.safetyCarCount + (item.officialResults?.safetyCarCount === 1 ? ' Auto' : ' Autos') : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                   </span>
-                  <span class="c-col pts" data-label="Puntos">+10 pts</span>
+                  <span class="c-col pts" data-label="Puntos">+6 pts</span>
                   <span class="c-col status" data-label="Evaluación">
                     @if (item.officialResults?.safetyCarCount != null || item.score != null) {
                       @if (isSafetyCarHit(item)) {
@@ -1486,7 +1486,7 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
                   <span class="c-col official dim" data-label="Resultado FIA">
                     {{ item.officialResults?.dnfCount != null ? item.officialResults?.dnfCount + (item.officialResults?.dnfCount === 1 ? ' Piloto' : ' Pilotos') : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
                   </span>
-                  <span class="c-col pts" data-label="Puntos">+15 pts</span>
+                  <span class="c-col pts" data-label="Puntos">+6 pts</span>
                   <span class="c-col status" data-label="Evaluación">
                     @if (item.officialResults?.dnfCount != null || item.score != null) {
                       @if (isDnfHit(item)) {

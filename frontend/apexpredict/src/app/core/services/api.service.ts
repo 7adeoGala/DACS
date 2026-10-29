@@ -532,13 +532,13 @@ export class ApiService {
     const duelHit = !!(p.duelDriverPick && p.duelDriverPick.trim().toLowerCase() === official.duelWinnerId.trim().toLowerCase());
     const duelPoints = duelHit ? 3 : 0;
 
-    // 4. Safety Car (10 pts)
+    // 4. Safety Car (6 pts)
     const safetyCarHit = p.safetyCarCount != null && Number(p.safetyCarCount) === official.safetyCarCount;
-    const safetyCarPoints = safetyCarHit ? 10 : 0;
+    const safetyCarPoints = safetyCarHit ? 6 : 0;
 
-    // 5. DNFs (15 pts)
+    // 5. DNFs (6 pts)
     const dnfHit = p.dnfCount != null && Number(p.dnfCount) === official.dnfCount;
-    const dnfPoints = dnfHit ? 15 : 0;
+    const dnfPoints = dnfHit ? 6 : 0;
 
     const totalPoints = podiumPoints + polePoints + duelPoints + safetyCarPoints + dnfPoints;
 

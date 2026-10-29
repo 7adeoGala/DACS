@@ -347,7 +347,8 @@ El sistema de cálculo de puntos para el ranking de ligas y global opera bajo la
 | **Tercer Lugar (P3)** | Acierto exacto del 3° puesto | **+15 puntos** |
 | **Podio Invertido / En Desorden** | Piloto en el podio pero en distinta posición | **+5 puntos** c/u |
 | **Vuelta Rápida Oficial** | Acierto exacto del piloto con vuelta rápida | **+10 puntos** |
-| **Safety Car (Sí/No)** | Acierto si hubo o no auto de seguridad físico | **+10 puntos** |
+| **Safety Car (Exacto)** | Acierto de la cantidad exacta de autos de seguridad (SC/VSC) | **+6 puntos** |
+| **Abandonos (DNFs Exacto)** | Acierto de la cantidad exacta de abandonos/retiros | **+6 puntos** |
 | **Piloto del Día (DotD)** | Acierto de la votación oficial de la F1 | **+10 puntos** |
 | **Pleno de Podio (Bonus)** | Acertar P1, P2 y P3 exactos | **+15 puntos extra** |
 
