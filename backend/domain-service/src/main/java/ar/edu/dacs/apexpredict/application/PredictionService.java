@@ -71,7 +71,6 @@ public class PredictionService {
      * Consulta el pronóstico del usuario para una sesión, indicando el estado del Lock Time.
      */
     @Transactional(readOnly = true)
-    @Transactional(readOnly = true)
     public Session resolveSession(String sessionIdentifier) {
         if (sessionIdentifier == null || sessionIdentifier.isBlank()) {
             return null;
