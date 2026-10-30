@@ -56,14 +56,14 @@ function sendTlsEmail(options) {
         let htmlContent = '';
 
         if (isNotification) {
-          subject = options.subject || '🏁 Alerta de Gran Premio - ApexPredict F1';
+          subject = options.subject || 'Alerta de Gran Premio - ApexPredict F1';
           const title = options.title || 'Recordatorio de Pronósticos F1';
           const message = options.message || 'Se acerca el cierre del Lock Time para la próxima carrera. ¡Cargá tus pronósticos ahora!';
           
           htmlContent = [
             '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; background: #0b0e14; color: #ffffff; padding: 32px; border-radius: 12px; max-width: 520px; margin: 20px auto; border: 1px solid #ff8000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">',
             '<div style="text-align: center; margin-bottom: 24px;">',
-            '<h1 style="color: #ff8000; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 2px; font-family: monospace;">🏎️ APEXPREDICT</h1>',
+            '<h1 style="color: #ff8000; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 2px; font-family: monospace;">APEXPREDICT</h1>',
             '<p style="color: #64748b; font-size: 11px; margin: 4px 0 0; letter-spacing: 1.5px; text-transform: uppercase;">Notificaciones de Carrera & Alertas</p>',
             '</div>',
             `<h2 style="color: #f8fafc; font-size: 18px; margin: 0 0 14px;">${title}</h2>`,
@@ -81,14 +81,14 @@ function sendTlsEmail(options) {
           htmlContent = [
             '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; background: #0b0e14; color: #ffffff; padding: 32px; border-radius: 12px; max-width: 520px; margin: 20px auto; border: 1px solid #e10600; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">',
             '<div style="text-align: center; margin-bottom: 24px;">',
-            '<h1 style="color: #e10600; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 2px; font-family: monospace;">🏎️ APEXPREDICT</h1>',
+            '<h1 style="color: #e10600; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 2px; font-family: monospace;">APEXPREDICT</h1>',
             '<p style="color: #64748b; font-size: 11px; margin: 4px 0 0; letter-spacing: 1.5px; text-transform: uppercase;">Seguridad & Autenticación F1</p>',
             '</div>',
             '<p style="color: #e2e8f0; font-size: 15px; line-height: 1.5; margin: 0 0 16px;">Has solicitado restablecer tu contraseña o verificar tu identidad. Utilizá el siguiente código de seguridad de 6 dígitos para continuar:</p>',
             '<div style="background: rgba(18, 23, 34, 0.9); border: 2px dashed #00f2fe; border-radius: 10px; padding: 20px; text-align: center; margin: 24px 0;">',
             `<span style="font-size: 36px; font-weight: 900; letter-spacing: 10px; color: #00f2fe; font-family: monospace; text-shadow: 0 0 12px rgba(0, 242, 254, 0.4);">${code}</span>`,
             '</div>',
-            '<p style="color: #94a3b8; font-size: 13px; line-height: 1.5; margin: 0 0 8px;">⏱️ Este código expira en <strong>15 minutos</strong>.</p>',
+            '<p style="color: #94a3b8; font-size: 13px; line-height: 1.5; margin: 0 0 8px;">Este código expira en <strong>15 minutos</strong>.</p>',
             '<p style="color: #64748b; font-size: 12px; line-height: 1.4; margin: 16px 0 0; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 12px;">Si no solicitaste este cambio, podés ignorar este correo; tu cuenta permanece completamente segura.</p>',
             '</div>'
           ].join('\r\n');

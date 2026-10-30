@@ -86,7 +86,12 @@
                       </div>
                     </div>
                     <div class="input-with-icon">
-                      <span class="input-icon">👤</span>
+                      <span class="input-icon">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                          <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                      </span>
                       <input 
                         type="text" 
                         id="displayNameInput"
@@ -99,7 +104,13 @@
                     </div>
                     @if (isDuplicateName()) {
                       <div class="username-alert-box duplicate">
-                        <span class="alert-icon">⚠</span>
+                        <span class="alert-icon">
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                          </svg>
+                        </span>
                         <div class="alert-text">
                           <strong>Nombre de usuario repetido</strong>
                           <span>{{ duplicateErrorMessage() || 'Este nombre de usuario ya está en uso. Debes cambiarlo para poder guardar.' }}</span>
@@ -107,7 +118,13 @@
                       </div>
                     } @else if (isDisplayNameEmpty() && formDisplayName() !== '') {
                       <div class="username-alert-box empty">
-                        <span class="alert-icon">⚠</span>
+                        <span class="alert-icon">
+                          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                          </svg>
+                        </span>
                         <div class="alert-text">
                           <span>El nombre público no puede estar vacío.</span>
                         </div>
@@ -246,25 +263,25 @@
                     } @else if (isCheckingName()) {
                       <span class="spinner-mini"></span> Comprobando disponibilidad...
                     } @else if (isDuplicateName()) {
-                      <span>🚫 USUARIO REPETIDO (BLOQUEADO)</span>
+                      <span>USUARIO YA REGISTRADO</span>
                     } @else if (isDisplayNameEmpty()) {
-                      <span>⚠ NOMBRE REQUERIDO</span>
+                      <span>NOMBRE REQUERIDO</span>
                     } @else if (saveStatus() === 'success') {
-                      <span>✓ Perfil Guardado</span>
+                      <span>Perfil Guardado</span>
                     } @else if (saveStatus() === 'error') {
-                      <span>⚠ Error al guardar</span>
+                      <span>Error al guardar</span>
                     } @else {
-                      <span>💾 GUARDAR PERFIL</span>
+                      <span>GUARDAR PERFIL</span>
                     }
                   </button>
 
                   <!-- FOOTER: CAMBIAR CONTRASEÑA & CERRAR SESIÓN -->
                   <div class="dropdown-footer">
                     <a [href]="changePasswordUrl()" target="_blank" rel="noopener noreferrer" class="link-security" title="Cambiar contraseña">
-                      🔒 Cambiar contraseña ↗
+                      Cambiar contraseña ↗
                     </a>
                     <button type="button" class="btn-dropdown-logout" (click)="auth.logout()">
-                      🚪 Cerrar Sesión
+                      Cerrar Sesión
                     </button>
                   </div>
                 </div>
@@ -301,19 +318,19 @@
       @if (auth.isAuthenticated() && isMobileNavOpen()) {
         <nav class="mobile-nav-drawer d-lg-none" (click)="$event.stopPropagation()">
           <a routerLink="/" [class.active]="isCurrent('inicio')" (click)="closeMobileNav()" class="mobile-nav-link">
-            <span class="nav-icon">🏁</span> Inicio
+            Inicio
           </a>
           <a routerLink="/dashboard" [queryParams]="{ tab: 'pronostico' }" [class.active]="isCurrent('predicciones')" (click)="closeMobileNav()" class="mobile-nav-link">
-            <span class="nav-icon">🎯</span> Predicciones GP
+            Predicciones GP
           </a>
           <a routerLink="/dashboard" [queryParams]="{ tab: 'ligas' }" [class.active]="isCurrent('ligas')" (click)="closeMobileNav()" class="mobile-nav-link">
-            <span class="nav-icon">🏆</span> Mis Ligas Privadas
+            Mis Ligas Privadas
           </a>
           <a routerLink="/dashboard" [queryParams]="{ tab: 'posiciones' }" [class.active]="isCurrent('posiciones')" (click)="closeMobileNav()" class="mobile-nav-link">
-            <span class="nav-icon">📊</span> Posiciones & F1 Standings
+            Posiciones & F1 Standings
           </a>
           <a routerLink="/dashboard" [queryParams]="{ tab: 'historial' }" [class.active]="isCurrent('historial')" (click)="closeMobileNav()" class="mobile-nav-link">
-            <span class="nav-icon">📜</span> Historial de Pronósticos
+            Historial de Pronósticos
           </a>
           <div class="mobile-nav-footer">
             <span class="dim" style="font-size: 0.8rem;">Puntaje acumulado:</span>

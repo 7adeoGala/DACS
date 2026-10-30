@@ -130,7 +130,7 @@ import { ApiService } from '../../core/services/api.service';
             @if (step() === 2) {
               <form (ngSubmit)="handleVerifyCode()" class="auth-form">
                 <div class="alert-message warning" style="margin-bottom: 1.15rem; font-size: 0.85rem; line-height: 1.45;">
-                  📨 Enviamos un código de seguridad de 6 dígitos a <strong>{{ resolvedEmail() }}</strong>. Revisá tu bandeja de entrada o spam.
+                  Enviamos un código de seguridad de 6 dígitos a <strong>{{ resolvedEmail() }}</strong>. Revisá tu bandeja de entrada o spam.
                 </div>
 
                 <div class="form-group">
@@ -178,7 +178,7 @@ import { ApiService } from '../../core/services/api.service';
             @if (step() === 3) {
               <form (ngSubmit)="handleCompleteReset()" class="auth-form">
                 <div class="alert-message success" style="margin-bottom: 0.75rem;">
-                  ✓ Código verificado para <strong>{{ resolvedEmail() }}</strong>.
+                  Código verificado para <strong>{{ resolvedEmail() }}</strong>.
                 </div>
 
                 <div class="form-group">
