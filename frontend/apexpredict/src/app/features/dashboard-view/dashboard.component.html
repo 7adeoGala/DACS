@@ -1,0 +1,1486 @@
+<div class="dashboard-page">
+
+
+      <!-- ========================================== -->
+      <!-- TAB 1: PRONÓSTICO GP                       -->
+      <!-- ========================================== -->
+      @if (activeTab() === 'pronostico') {
+        <section class="tab-content">
+          <div class="section-hero">
+            <div class="hero-intro">
+              <span class="badge-round">ROUND {{ session()?.round || 19 }} // {{ circuitShortName() }}</span>
+              <h2>Configuración de Pronósticos Oficiales</h2>
+              <p class="subtitle">Asigná los 3 puestos de podio sin duplicar, poleman, duelo de la fecha y telemetría de carrera.</p>
+
+              <!-- DETALLE DE LOS PUNTAJES OFICIALES DE LA PREDICCIÓN -->
+              <div class="scoring-rules-panel">
+                <div class="scoring-rules-title">Los puntajes:</div>
+                <div class="scoring-groups-list">
+                  <!-- PREDICCIONES DEL PODIO DE LA CARRERA -->
+                  <div class="scoring-group">
+                    <div class="scoring-group-label">Predicciones del podio de la carrera:</div>
+                    <div class="scoring-group-cards">
+                      <div class="scoring-rule-card">
+                        <span class="rule-card-indicator gold"></span>
+                        <span class="rule-card-label">Acierto de podio completo:</span>
+                        <span class="rule-card-pts gold">+10 pts</span>
+                      </div>
+                      <div class="scoring-rule-card">
+                        <span class="rule-card-indicator silver"></span>
+                        <span class="rule-card-label">Acierto de 2 posiciones del podio:</span>
+                        <span class="rule-card-pts silver">+7 pts</span>
+                      </div>
+                      <div class="scoring-rule-card">
+                        <span class="rule-card-indicator bronze"></span>
+                        <span class="rule-card-label">Acierto 1 posición del podio:</span>
+                        <span class="rule-card-pts bronze">+3 pts</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- SUBGRUPOS DE OTRAS PREDICCIONES -->
+                  <div class="scoring-subgroups-grid">
+                    <div class="scoring-group">
+                      <div class="scoring-group-label">Predicción del poleman:</div>
+                      <div class="scoring-group-cards">
+                        <div class="scoring-rule-card">
+                          <span class="rule-card-indicator cyan"></span>
+                          <span class="rule-card-label">Poleman:</span>
+                          <span class="rule-card-pts cyan">+4 pts</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="scoring-group">
+                      <div class="scoring-group-label">Predicción del duelo de pilotos:</div>
+                      <div class="scoring-group-cards">
+                        <div class="scoring-rule-card">
+                          <span class="rule-card-indicator duel"></span>
+                          <span class="rule-card-label">Ganador del duelo de pilotos:</span>
+                          <span class="rule-card-pts duel">+3 pts</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="scoring-group">
+                      <div class="scoring-group-label">Predicción de Safety Car / VSC:</div>
+                      <div class="scoring-group-cards">
+                        <div class="scoring-rule-card">
+                          <span class="rule-card-indicator sc"></span>
+                          <span class="rule-card-label">Safety car /VSC:</span>
+                          <span class="rule-card-pts sc">+6 pts</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="scoring-group">
+                      <div class="scoring-group-label">Predicción de abandonos (DNF):</div>
+                      <div class="scoring-group-cards">
+                        <div class="scoring-rule-card">
+                          <span class="rule-card-indicator dnf"></span>
+                          <span class="rule-card-label">DNF:</span>
+                          <span class="rule-card-pts dnf">+6 pts</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARTEL DINÁMICO DE ESTADO CON SEMÁFORO F1 -->
+          @if (isSaving()) {
+            <!-- ESTADO AMARILLO: CARGANDO -->
+            <div class="prediction-status-card status-yellow">
+              <div class="traffic-lights-box" aria-hidden="true">
+                <div class="traffic-housing">
+                  <span class="traffic-light light-red off"></span>
+                  <span class="traffic-light light-yellow on pulse"></span>
+                  <span class="traffic-light light-green off"></span>
+                </div>
+              </div>
+              <div class="status-content">
+                <div class="status-headline">
+                  <span class="status-indicator-tag yellow">EN PROCESO</span>
+                  <h3 class="status-text yellow">Cargando pronóstico...</h3>
+                </div>
+                <p class="status-subtext">
+                  Conectando con los servidores y sincronizando tus elecciones en la base de datos...
+                </p>
+              </div>
+            </div>
+          } @else if (hasExistingPrediction()) {
+            <!-- ESTADO VERDE: CARGADO -->
+            <div class="prediction-status-card status-green">
+              <div class="traffic-lights-box" aria-hidden="true">
+                <div class="traffic-housing">
+                  <span class="traffic-light light-red off"></span>
+                  <span class="traffic-light light-yellow off"></span>
+                  <span class="traffic-light light-green on"></span>
+                </div>
+              </div>
+              <div class="status-content">
+                <div class="status-headline">
+                  <span class="status-indicator-tag green">GUARDADO</span>
+                  <h3 class="status-text green">Pronóstico cargado</h3>
+                </div>
+                <p class="status-subtext">
+                  Tu pronóstico oficial está activo y registrado en la base de datos para este Gran Premio.
+                  @if (predictionSubmittedAt()) {
+                    <span class="status-timestamp">
+                      (Último envío: {{ predictionSubmittedAt() | date:'d/MM HH:mm':'America/Argentina/Buenos_Aires' }} hs Arg)
+                    </span>
+                  }
+                </p>
+              </div>
+            </div>
+          } @else {
+            <!-- ESTADO ROJO: SIN CARGAR -->
+            <div class="prediction-status-card status-red">
+              <div class="traffic-lights-box" aria-hidden="true">
+                <div class="traffic-housing">
+                  <span class="traffic-light light-red on"></span>
+                  <span class="traffic-light light-yellow off"></span>
+                  <span class="traffic-light light-green off"></span>
+                </div>
+              </div>
+              <div class="status-content">
+                <div class="status-headline">
+                  <span class="status-indicator-tag red">PENDIENTE</span>
+                  <h3 class="status-text red">Pronóstico sin cargar</h3>
+                </div>
+                <p class="status-subtext">
+                  Aún no has registrado tu pronóstico oficial para este Gran Premio. Completá tus selecciones abajo y presioná "Guardar Pronóstico".
+                </p>
+              </div>
+            </div>
+          }
+
+          @if (isLocked()) {
+            <div class="alert-box error" style="margin-bottom: 1rem;">
+              <strong>PRONÓSTICOS BLOQUEADOS:</strong> La sesión oficial ya ha comenzado. El pronóstico se encuentra en modo solo lectura.
+            </div>
+          }
+
+          @if (saveError()) {
+            <div class="alert-box error" style="margin-bottom: 1rem;">
+              {{ saveError() }}
+            </div>
+          }
+
+          <!-- 1. PODIO OFICIAL DE CARRERA (P1, P2, P3) - COMPONENTE MODULAR -->
+          <app-podium-picker 
+            [(p1DriverId)]="p1DriverId"
+            [(p2DriverId)]="p2DriverId"
+            [(p3DriverId)]="p3DriverId"
+            (onSavePodium)="handleSavePodium($event)" />
+
+
+          <!-- 2. POLEMAN, SAFETY CARS Y ABANDONOS (MISMA LÍNEA) -->
+          <div class="grid-three-cols">
+            <!-- TARJETA 1: POLE POSITION -->
+            <div class="spotlight-card telemetry-card pole-card">
+              <div class="card-title-row">
+                <div class="card-title-group">
+                  <span class="telemetry-icon-badge pole">P</span>
+                  <div>
+                    <h4>Pole Position (Sábado)</h4>
+                    <span class="dim" style="font-size: 0.82rem;">Piloto más veloz en Q3</span>
+                  </div>
+                </div>
+              </div>
+              
+              @if (getDriver(poleDriverId()); as d) {
+                <div class="driver-template-card pole-slot" 
+                     [style.--driver-color]="d.teamColor"
+                     (click)="openDriverPicker('pole')"
+                     [class.disabled-card]="isLocked()">
+                  <div class="dtc-header">
+                    <span class="dtc-team" [style.color]="d.teamColor" [style.background]="d.teamColor + '20'">
+                      {{ d.team }}
+                    </span>
+                    <div class="dtc-badges">
+                      <span class="dtc-code">{{ d.code }}</span>
+                      <span class="dtc-num">#{{ d.number }}</span>
+                    </div>
+                  </div>
+                  <div class="dtc-main">
+                    <div class="dtc-name">{{ d.name }}</div>
+                  </div>
+                  <div class="dtc-action">
+                    <span>Cambiar Piloto</span>
+                    <span class="action-icon">⇄</span>
+                    <button type="button" class="btn-slot-remove" title="Quitar selección" (click)="$event.stopPropagation(); poleDriverId.set('')">
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              } @else {
+                <div class="driver-template-card empty-slot pole-slot" 
+                     (click)="openDriverPicker('pole')"
+                     [class.disabled-card]="isLocked()">
+                  <div class="dtc-empty-state">
+                    <span class="empty-icon">+</span>
+                    <span class="empty-text">Elegir Poleman</span>
+                    <span class="empty-hint">Click para seleccionar</span>
+                  </div>
+                </div>
+              }
+            </div>
+
+            <!-- TARJETA 2: SAFETY CAR -->
+            <div class="spotlight-card telemetry-card sc-card">
+              <div class="card-title-row">
+                <div class="card-title-group">
+                  <span class="telemetry-icon-badge sc">SC</span>
+                  <div>
+                    <h4>Auto de Seguridad (Safety Car)</h4>
+                    <span class="dim" style="font-size: 0.82rem;">Apariciones físicas de SC o Virtual SC</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="telemetry-display-box">
+                <div class="stepper-hero">
+                  <button 
+                    type="button" 
+                    class="step-hero-btn" 
+                    [disabled]="isLocked() || safetyCars() <= 0" 
+                    (click)="decrementSC()"
+                    aria-label="Disminuir Safety Cars">
+                    −
+                  </button>
+                  <div class="step-hero-center">
+                    <span class="step-hero-val">{{ safetyCars() }}</span>
+                    <span class="step-hero-unit">{{ safetyCars() === 1 ? 'Aparición estimada' : 'Apariciones estimadas' }}</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    class="step-hero-btn" 
+                    [disabled]="isLocked() || safetyCars() >= 10" 
+                    (click)="incrementSC()"
+                    aria-label="Aumentar Safety Cars">
+                    +
+                  </button>
+                </div>
+                <div class="telemetry-range-hint">
+                  <span>Rango: 0 a 10</span>
+                  <span class="telemetry-status-pill">
+                    {{ safetyCars() === 0 ? 'Carrera Limpia' : (safetyCars() <= 2 ? 'Normal' : 'Accidentada') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- TARJETA 3: ABANDONOS DNFs -->
+            <div class="spotlight-card telemetry-card dnf-card">
+              <div class="card-title-row">
+                <div class="card-title-group">
+                  <span class="telemetry-icon-badge dnf">DNF</span>
+                  <div>
+                    <h4>Abandonos de Carrera (DNFs)</h4>
+                    <span class="dim" style="font-size: 0.82rem;">Monoplazas fuera de carrera</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="telemetry-display-box">
+                <div class="stepper-hero">
+                  <button 
+                    type="button" 
+                    class="step-hero-btn" 
+                    [disabled]="isLocked() || dnfs() <= 0" 
+                    (click)="decrementDNFs()"
+                    aria-label="Disminuir Abandonos">
+                    −
+                  </button>
+                  <div class="step-hero-center">
+                    <span class="step-hero-val">{{ dnfs() }}</span>
+                    <span class="step-hero-unit">{{ dnfs() === 1 ? 'Auto retirado' : 'Autos retirados' }}</span>
+                  </div>
+                  <button 
+                    type="button" 
+                    class="step-hero-btn" 
+                    [disabled]="isLocked() || dnfs() >= 20" 
+                    (click)="incrementDNFs()"
+                    aria-label="Aumentar Abandonos">
+                    +
+                  </button>
+                </div>
+                <div class="telemetry-range-hint">
+                  <span>Rango: 0 a 20</span>
+                  <span class="telemetry-status-pill">
+                    {{ dnfs() === 0 ? 'Sin Abandonos' : (dnfs() <= 3 ? 'Desgaste Normal' : 'Alto Caos') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. DUELO DE PILOTOS DEBAJO A ANCHO COMPLETO -->
+          <div class="spotlight-card duel-spotlight-card">
+            <div class="card-title-row">
+              <div class="duel-title-wrap">
+                <div class="duel-badge-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14.5 17.5L3 6V3h3l11.5 11.5"/>
+                    <path d="m13 19 6 2 2-6-2-2-6 6Z"/>
+                    <path d="M9.5 6.5 21 18v3h-3L6.5 9.5"/>
+                    <path d="m11 5-6-2-2 6 2 2 6-6Z"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4>Duelo Directo de la Fecha</h4>
+                  <span class="dim" style="font-size: 0.82rem;">Elegí qué piloto superará a su rival directo en el fin de semana</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- SELECTOR DE PILOTOS EN FORMATO ARENA F1 -->
+            <div class="duel-arena-grid">
+              <!-- PILOTO 1 -->
+              @if (getDriver(matchupDriver1()); as d1) {
+                <button 
+                  type="button"
+                  class="duel-driver-card"
+                  [class.selected]="duelWinnerId() === d1.id"
+                  [class.unselected]="duelWinnerId() && duelWinnerId() !== d1.id"
+                  [style.--driver-team-color]="d1.teamColor"
+                  [disabled]="isLocked()"
+                  (click)="toggleDuelWinner(d1.id)"
+                  aria-label="Seleccionar a {{ d1.name }} como ganador del duelo">
+                  <div class="ddc-top">
+                    <span class="ddc-team-pill" [style.color]="d1.teamColor" [style.background]="d1.teamColor + '18'">
+                      {{ d1.team }}
+                    </span>
+                    <span class="ddc-number">#{{ d1.number }}</span>
+                  </div>
+                  <div class="ddc-name">{{ d1.name }}</div>
+                  <div class="ddc-selection-status">
+                    @if (duelWinnerId() === d1.id) {
+                      <span class="status-picked">
+                        <svg class="check-icon-svg" viewBox="0 0 20 20" width="13" height="13" fill="currentColor" aria-hidden="true">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        GANADOR ELEGIDO
+                      </span>
+                    } @else {
+                      <span class="status-choose">Elegir Piloto</span>
+                    }
+                  </div>
+                </button>
+              } @else {
+                <button 
+                  type="button"
+                  class="duel-driver-card"
+                  [class.selected]="duelWinnerId() === matchupDriver1()"
+                  [class.unselected]="duelWinnerId() && duelWinnerId() !== matchupDriver1()"
+                  [disabled]="isLocked()"
+                  (click)="toggleDuelWinner(matchupDriver1())">
+                  <div class="ddc-name">{{ getDriverName(matchupDriver1()) }}</div>
+                </button>
+              }
+
+              <!-- VS BADGE -->
+              <div class="duel-vs-separator" aria-hidden="true">
+                <span class="vs-text">VS</span>
+              </div>
+
+              <!-- PILOTO 2 -->
+              @if (getDriver(matchupDriver2()); as d2) {
+                <button 
+                  type="button"
+                  class="duel-driver-card"
+                  [class.selected]="duelWinnerId() === d2.id"
+                  [class.unselected]="duelWinnerId() && duelWinnerId() !== d2.id"
+                  [style.--driver-team-color]="d2.teamColor"
+                  [disabled]="isLocked()"
+                  (click)="toggleDuelWinner(d2.id)"
+                  aria-label="Seleccionar a {{ d2.name }} como ganador del duelo">
+                  <div class="ddc-top">
+                    <span class="ddc-team-pill" [style.color]="d2.teamColor" [style.background]="d2.teamColor + '18'">
+                      {{ d2.team }}
+                    </span>
+                    <span class="ddc-number">#{{ d2.number }}</span>
+                  </div>
+                  <div class="ddc-name">{{ d2.name }}</div>
+                  <div class="ddc-selection-status">
+                    @if (duelWinnerId() === d2.id) {
+                      <span class="status-picked">
+                        <svg class="check-icon-svg" viewBox="0 0 20 20" width="13" height="13" fill="currentColor" aria-hidden="true">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        GANADOR ELEGIDO
+                      </span>
+                    } @else {
+                      <span class="status-choose">Elegir Piloto</span>
+                    }
+                  </div>
+                </button>
+              } @else {
+                <button 
+                  type="button"
+                  class="duel-driver-card"
+                  [class.selected]="duelWinnerId() === matchupDriver2()"
+                  [class.unselected]="duelWinnerId() && duelWinnerId() !== matchupDriver2()"
+                  [disabled]="isLocked()"
+                  (click)="toggleDuelWinner(matchupDriver2())">
+                  <div class="ddc-name">{{ getDriverName(matchupDriver2()) }}</div>
+                </button>
+              }
+            </div>
+
+            <!-- BLOQUE EXPLICATIVO DE CRITERIOS DE VICTORIA Y DESEMPATE -->
+            <div class="duel-criteria-panel">
+              <div class="criteria-header-row">
+                <svg class="criteria-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                  <path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/>
+                  <path d="M7 21h10"/>
+                  <path d="M12 3v18"/>
+                  <path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>
+                </svg>
+                <span class="criteria-label">Criterio de definición del duelo:</span>
+              </div>
+              <div class="criteria-items-list">
+                <div class="criteria-item">
+                  <span class="criteria-badge-num">1</span>
+                  <div class="criteria-desc">
+                    <strong>Puntos del fin de semana:</strong> Gana quien sume la mayor cantidad de puntos oficiales en la fecha.
+                  </div>
+                </div>
+                <div class="criteria-item">
+                  <span class="criteria-badge-num">2</span>
+                  <div class="criteria-desc">
+                    <strong>En formato Sprint:</strong> Se calcula la combinatoria de puntos obtenidos en ambas carreras (Sprint + GP Domingo).
+                  </div>
+                </div>
+                <div class="criteria-item">
+                  <span class="criteria-badge-num">3</span>
+                  <div class="criteria-desc">
+                    <strong>Criterio de desempate:</strong> A igualdad de puntos (o sin unidades), se define por la <strong>mejor posición final en carrera</strong>.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- BOTÓN DE GUARDADO CON FEEDBACK -->
+          <div class="submit-bar">
+            <button 
+              class="button" 
+              type="button" 
+              [disabled]="!canSavePrediction()" 
+              (click)="savePrediction()">
+              @if (isSaving()) {
+                <span>Sincronizando con base de datos…</span>
+              } @else if (saveSuccess()) {
+                <span>¡Pronóstico Guardado en Servidor!</span>
+              } @else if (isLocked()) {
+                <span>Pronósticos Cerrados</span>
+              } @else if (isPodiumDuplicate()) {
+                <span>No podés repetir pilotos en el podio</span>
+              } @else if (hasExistingPrediction()) {
+                <span>Actualizar Mi Pronóstico Oficial</span>
+              } @else {
+                <span>Guardar Mi Pronóstico Oficial</span>
+              }
+            </button>
+          </div>
+        </section>
+      }
+
+      <!-- ========================================== -->
+      <!-- TAB 2: MIS LIGAS PRIVADAS (SIN BUSCADOR)   -->
+      <!-- ========================================== -->
+      @if (activeTab() === 'ligas') {
+        <section class="tab-content">
+          <!-- SUB-NAVEGACIÓN INTERNA -->
+          <div class="sub-nav-leagues">
+            <button 
+              type="button"
+              [class.active]="leagueSubTab() === 'list'" 
+              (click)="leagueSubTab.set('list')">
+              Mis Ligas ({{ myLeagues().length }})
+            </button>
+            <button 
+              type="button"
+              [class.active]="leagueSubTab() === 'create'" 
+              (click)="leagueSubTab.set('create')">
+              Crear Nueva Liga
+            </button>
+            <button 
+              type="button"
+              [class.active]="leagueSubTab() === 'join'" 
+              (click)="leagueSubTab.set('join')">
+              Unirse por Link / Clave
+            </button>
+          </div>
+
+          @if (leagueSuccess()) {
+            <div class="alert-box success">
+              {{ leagueSuccess() }}
+            </div>
+          }
+
+          @if (leagueError()) {
+            <div class="alert-box error">
+              {{ leagueError() }}
+            </div>
+          }
+
+          <!-- SUB-TAB 1: LISTADO DE MIS LIGAS -->
+          @if (leagueSubTab() === 'list') {
+            @if (myLeagues().length > 0) {
+              <!-- SELECTOR DE LIGAS SI PERTENECE A MÁS DE UNA -->
+              @if (myLeagues().length > 1) {
+                <div class="league-pills-row">
+                  @for (l of myLeagues(); track l.id) {
+                    <button 
+                      type="button"
+                      class="league-chip" 
+                      [class.active]="selectedLeague()?.id === l.id" 
+                      (click)="selectLeague(l)">
+                      {{ l.name }}
+                      @if (l.hasPassword) {
+                        <span class="lock-indicator" title="Protegida con contraseña" style="display: inline-flex; vertical-align: middle; margin-left: 4px;">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                          </svg>
+                        </span>
+                      }
+                    </button>
+                  }
+                </div>
+              }
+
+              <!-- CAJA DE INVITACIÓN DIRECTA DE LA LIGA SELECCIONADA -->
+              <div class="invite-strip">
+                <div class="invite-row">
+                  <div>
+                    <span class="badge-red">ENLACE OFICIAL DE ACCESO RÁPIDO</span>
+                    <p style="margin-top: 4px; font-size: 0.95rem;">
+                      Compartí este enlace con tus amigos para que se sumen a <strong>{{ selectedLeague()?.name }}</strong>:
+                    </p>
+                  </div>
+                  <div class="copy-group">
+                    <input 
+                      type="text" 
+                      readonly 
+                      [value]="getInviteUrl(selectedLeague()?.inviteCode)" 
+                      class="copy-input"/>
+                    <button class="button small" type="button" (click)="copyInviteUrl()">
+                      {{ copySuccess() ? 'Copiado' : 'Copiar Link' }}
+                    </button>
+                  </div>
+                </div>
+
+                @if (selectedLeague()?.hasPassword) {
+                  <div class="league-password-bar">
+                    <div class="password-label-group">
+                      <span class="password-tag">CONTRASEÑA DE ACCESO</span>
+                      <p class="password-hint">
+                        Esta liga está protegida. Los corredores necesitarán esta clave para ingresar.
+                      </p>
+                    </div>
+                    <div class="password-action-group">
+                      <div class="password-field-container">
+                        <input 
+                          [type]="showLeaguePassword() ? 'text' : 'password'" 
+                          readonly 
+                          [value]="getLeaguePassword(selectedLeague())" 
+                          class="password-display-input"
+                          aria-label="Contraseña de la liga" />
+                        <button 
+                          type="button" 
+                          class="password-visibility-btn" 
+                          (click)="toggleLeaguePasswordVisibility()"
+                          [title]="showLeaguePassword() ? 'Ocultar contraseña' : 'Ver contraseña'"
+                          [attr.aria-label]="showLeaguePassword() ? 'Ocultar contraseña' : 'Ver contraseña'">
+                          @if (showLeaguePassword()) {
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                              <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                          } @else {
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                              <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                          }
+                        </button>
+                      </div>
+                      <button class="button small quiet" type="button" (click)="copyLeaguePassword()">
+                        {{ copyPasswordSuccess() ? 'Copiada' : 'Copiar Clave' }}
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- PODIO TOP 3 DE LA LIGA -->
+              <div class="spotlight-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <h3 class="podium-title" style="margin: 0;">Podio de la Liga: {{ selectedLeague()?.name }}</h3>
+                  @if (selectedLeague()?.hasPassword) {
+                    <div 
+                      class="password-pill-badge" 
+                      (click)="toggleLeaguePasswordVisibility()"
+                      role="button"
+                      tabindex="0"
+                      title="Clic para mostrar u ocultar la contraseña">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                      </svg>
+                      <span>Clave: <strong class="font-mono">{{ showLeaguePassword() ? getLeaguePassword(selectedLeague()) : '••••••••' }}</strong></span>
+                      <span class="pill-toggle-action">
+                        {{ showLeaguePassword() ? '(Ocultar)' : '(Mostrar)' }}
+                      </span>
+                    </div>
+                  }
+                </div>
+
+                @if (leagueLeaderboard().length >= 1) {
+                  <div class="league-podium-pedestals">
+                    <!-- P2: PLATA -->
+                    <div class="pedestal silver-ped">
+                      <div class="pos-badge">P2</div>
+                      <div class="pilot-name">{{ leagueLeaderboard()[1]?.displayName || 'Esperando corredor' }}</div>
+                      <div class="pilot-pts">{{ leagueLeaderboard()[1]?.totalScore || 0 }} pts</div>
+                      <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                        {{ (leagueLeaderboard()[1]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
+                      </span>
+                    </div>
+
+                    <!-- P1: ORO -->
+                    <div class="pedestal gold-ped">
+                      <div class="crown" aria-hidden="true">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/>
+                          <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
+                          <path d="M4 22h16"/>
+                          <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h10c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-2c-.55 0-1-.45-1-1v-2.34"/>
+                          <path d="M6 4h12a2 2 0 0 1 2 2v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V6a2 2 0 0 1 2-2z"/>
+                        </svg>
+                      </div>
+                      <div class="pos-badge">P1</div>
+                      <div class="pilot-name">{{ leagueLeaderboard()[0]?.displayName || 'Líder' }}</div>
+                      <div class="pilot-pts">{{ leagueLeaderboard()[0]?.totalScore || 0 }} pts</div>
+                      <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                        {{ (leagueLeaderboard()[0]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
+                      </span>
+                    </div>
+
+                    <!-- P3: BRONCE -->
+                    <div class="pedestal bronze-ped">
+                      <div class="pos-badge">P3</div>
+                      <div class="pilot-name">{{ leagueLeaderboard()[2]?.displayName || 'Esperando corredor' }}</div>
+                      <div class="pilot-pts">{{ leagueLeaderboard()[2]?.totalScore || 0 }} pts</div>
+                      <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                        {{ (leagueLeaderboard()[2]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
+                      </span>
+                    </div>
+                  </div>
+                }
+
+                <!-- TABLA DE POSICIONES DE LA LIGA -->
+                <h4 style="margin: 1.5rem 0 1rem; font-size: 1.05rem;">Participantes de la Liga ({{ leagueLeaderboard().length }})</h4>
+                @if (leagueLeaderboard().length > 0) {
+                  <div class="table-responsive">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Pos</th>
+                          <th>Corredor / Usuario</th>
+                          <th>Puntos Totales</th>
+                          <th>Estado de Pronóstico</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        @for (entry of leagueLeaderboard(); track entry.userId) {
+                          <tr>
+                            <td><strong>#{{ entry.rank }}</strong></td>
+                            <td style="color: #fff; font-weight: 600;">
+                              {{ entry.displayName }}
+                              @if (auth.username() && entry.displayName.toLowerCase().includes(auth.username().toLowerCase())) {
+                                <span style="font-size: 0.75rem; color: var(--cyan); margin-left: 4px;">(Tú)</span>
+                              }
+                            </td>
+                            <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
+                            <td>
+                              @if (entry.predictionsCount > 0) {
+                                <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">Pronóstico Enviado</span>
+                              } @else {
+                                <span class="dim" style="font-size: 0.85rem;">Sin pronóstico aún</span>
+                              }
+                            </td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                } @else {
+                  <p class="dim" style="padding: 1rem 0;">Aún no hay puntuaciones registradas en esta liga privada.</p>
+                }
+              </div>
+            } @else {
+              <!-- EMPTY STATE CUANDO NO TIENE LIGAS -->
+              <div class="spotlight-card" style="text-align: center; padding: 3rem 1.5rem;">
+                <div class="empty-state-f1-icon" style="margin: 0 auto 1.25rem; display: flex; justify-content: center;">
+                  <svg width="68" height="68" viewBox="0 0 64 64" fill="none" stroke="currentColor">
+                    <rect x="6" y="16" width="52" height="32" rx="8" stroke="var(--line-strong)" stroke-width="2" fill="rgba(255,255,255,0.03)" />
+                    <circle cx="16" cy="32" r="4.5" fill="var(--red)" />
+                    <circle cx="24" cy="32" r="4.5" fill="var(--red)" />
+                    <circle cx="32" cy="32" r="4.5" fill="var(--red)" />
+                    <circle cx="40" cy="32" r="4.5" fill="var(--red)" />
+                    <circle cx="48" cy="32" r="4.5" fill="var(--red)" />
+                    <line x1="32" y1="48" x2="32" y2="58" stroke="var(--line-strong)" stroke-width="3" stroke-linecap="round"/>
+                    <line x1="22" y1="58" x2="42" y2="58" stroke="var(--line-strong)" stroke-width="3" stroke-linecap="round"/>
+                  </svg>
+                </div>
+                <h2>Aún no pertenecés a ninguna liga privada</h2>
+                <p class="dim" style="max-width: 500px; margin: 0.5rem auto 1.5rem;">
+                  Creá tu propia liga privada con contraseña o ingresá mediante el link de invitación que te compartieron tus amigos.
+                </p>
+                <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+                  <button class="button" type="button" (click)="leagueSubTab.set('create')">Crear Nueva Liga</button>
+                  <button class="button quiet" type="button" (click)="leagueSubTab.set('join')">Unirme por Link o Código</button>
+                </div>
+              </div>
+            }
+          }
+
+          <!-- SUB-TAB 2: CREAR NUEVA LIGA -->
+          @if (leagueSubTab() === 'create') {
+            <div class="spotlight-card form-box">
+              <h3>Crear Nueva Liga Privada</h3>
+              <p class="dim">Tu liga será 100% confidencial. Nadie podrá buscarla en listas públicas; solo ingresarán quienes reciban tu link o código de invitación.</p>
+              
+              <div class="form-group">
+                <label>Nombre de la Liga (requerido) *</label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="newLeagueName" 
+                  placeholder="Ej: Escudería Amigos F1" 
+                  class="form-input"/>
+              </div>
+
+              <div class="form-group">
+                <label>Descripción (opcional)</label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="newLeagueDescription" 
+                  placeholder="Ej: Torneo privado de amigos del trabajo" 
+                  class="form-input"/>
+              </div>
+
+              <div class="form-group">
+                <label>Contraseña de Acceso (opcional)</label>
+                <input 
+                  type="password" 
+                  [(ngModel)]="newLeaguePassword" 
+                  placeholder="Dejar vacío si es de acceso directo con link" 
+                  class="form-input"/>
+                <span class="dim" style="font-size: 0.8rem; margin-top: 4px;">Si definís una contraseña, los usuarios deberán ingresarla al unirse.</span>
+              </div>
+
+              <button 
+                class="button" 
+                type="button" 
+                [disabled]="!newLeagueName.trim() || isCreatingLeague()" 
+                (click)="createLeague()">
+                {{ isCreatingLeague() ? 'Creando en base de datos…' : 'Crear Liga y Persistir' }}
+              </button>
+            </div>
+          }
+
+          <!-- SUB-TAB 3: UNIRSE POR LINK O CLAVE -->
+          @if (leagueSubTab() === 'join') {
+            <div class="spotlight-card form-box">
+              <h3>Unirse a una Liga Privada</h3>
+              <p class="dim">Pegá el link completo de invitación o el código UUID proporcionado por el creador de la liga.</p>
+              
+              <div class="form-group">
+                <label>Link o Código de Invitación *</label>
+                <input 
+                  type="text" 
+                  [(ngModel)]="joinCode" 
+                  placeholder="Ej: https://.../join/345c4e89... o 345c4e89-..." 
+                  class="form-input"/>
+              </div>
+
+              <div class="form-group">
+                <label>Contraseña (si la liga la requiere)</label>
+                <input 
+                  type="password" 
+                  [(ngModel)]="joinPassword" 
+                  placeholder="Contraseña de acceso" 
+                  class="form-input"/>
+              </div>
+
+              <button 
+                class="button" 
+                type="button" 
+                [disabled]="!joinCode.trim() || isJoiningLeague()" 
+                (click)="joinLeague()">
+                {{ isJoiningLeague() ? 'Verificando e ingresando…' : 'Unirme a la Liga' }}
+              </button>
+            </div>
+          }
+        </section>
+      }
+
+      <!-- ========================================== -->
+      <!-- TAB 3: POSICIONES (JUGADORES, WDC, WCC)    -->
+      <!-- ========================================== -->
+      @if (activeTab() === 'posiciones') {
+        <section class="tab-content">
+          <!-- SUB-NAVEGACIÓN INTERNA DE POSICIONES -->
+          <div class="sub-nav-leagues">
+            <button 
+              type="button"
+              [class.active]="posicionesSubTab() === 'jugadores'" 
+              (click)="posicionesSubTab.set('jugadores')">
+              Jugadores Global ({{ globalLeaderboard().length }})
+            </button>
+            <button 
+              type="button"
+              [class.active]="posicionesSubTab() === 'pilotos'" 
+              (click)="posicionesSubTab.set('pilotos')">
+              Pilotos F1 (WDC)
+            </button>
+            <button 
+              type="button"
+              [class.active]="posicionesSubTab() === 'equipos'" 
+              (click)="posicionesSubTab.set('equipos')">
+              Equipos F1 (WCC)
+            </button>
+          </div>
+
+          <!-- 1. JUGADORES GLOBAL (COMUNIDAD APEXPREDICT) -->
+          @if (posicionesSubTab() === 'jugadores') {
+            <div class="spotlight-card">
+              <div class="card-title-row">
+                <div>
+                  <h3>Clasificación Global de la Comunidad</h3>
+                  <p class="dim" style="margin-top: 4px;">Puntos y pronósticos registrados en tiempo real por todos los corredores de ApexPredict.</p>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  @if (isLoadingGlobalLeaderboard()) {
+                    <span class="dim" style="font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem;">
+                      <span class="spinner-inline"></span> Sincronizando...
+                    </span>
+                  }
+                  <span class="mono-pts">{{ globalLeaderboard().length }} Pilotos Registrados</span>
+                </div>
+              </div>
+
+              @if (globalLeaderboard().length >= 3) {
+                <div class="league-podium-pedestals">
+                  <div class="pedestal silver-ped">
+                    <div class="pos-badge">P2</div>
+                    <div class="pilot-name">{{ globalLeaderboard()[1]?.displayName }}</div>
+                    <div class="pilot-pts">{{ globalLeaderboard()[1]?.totalScore }} pts</div>
+                    <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                      {{ (globalLeaderboard()[1]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
+                    </span>
+                  </div>
+
+                  <div class="pedestal gold-ped">
+                    <div class="crown" aria-hidden="true">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 9H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2"/>
+                        <path d="M18 9h2a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-2"/>
+                        <path d="M4 22h16"/>
+                        <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h10c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-2c-.55 0-1-.45-1-1v-2.34"/>
+                        <path d="M6 4h12a2 2 0 0 1 2 2v3a6 6 0 0 1-6 6h-4a6 6 0 0 1-6-6V6a2 2 0 0 1 2-2z"/>
+                      </svg>
+                    </div>
+                    <div class="pos-badge">P1</div>
+                    <div class="pilot-name">{{ globalLeaderboard()[0]?.displayName }}</div>
+                    <div class="pilot-pts">{{ globalLeaderboard()[0]?.totalScore }} pts</div>
+                    <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                      {{ (globalLeaderboard()[0]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
+                    </span>
+                  </div>
+
+                  <div class="pedestal bronze-ped">
+                    <div class="pos-badge">P3</div>
+                    <div class="pilot-name">{{ globalLeaderboard()[2]?.displayName }}</div>
+                    <div class="pilot-pts">{{ globalLeaderboard()[2]?.totalScore }} pts</div>
+                    <span class="dim" style="font-size: 0.75rem; margin-top: 2px;">
+                      {{ (globalLeaderboard()[2]?.predictionsCount || 0) > 0 ? 'Pronóstico cargado' : 'Pendiente' }}
+                    </span>
+                  </div>
+                </div>
+              }
+
+              @if (globalLeaderboard().length > 0) {
+                <div class="table-responsive" style="margin-top: 1.5rem;">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Corredor / Escudería</th>
+                        <th>Puntos Totales</th>
+                        <th>Pronósticos Realizados</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (entry of globalLeaderboard(); track entry.userId) {
+                        <tr>
+                          <td><strong>#{{ entry.rank }}</strong></td>
+                          <td style="color: #fff; font-weight: 600;">
+                            {{ entry.displayName }}
+                            @if (auth.username() && entry.displayName.toLowerCase().includes(auth.username().toLowerCase())) {
+                              <span style="font-size: 0.75rem; color: var(--cyan); margin-left: 4px;">(Tú)</span>
+                            }
+                          </td>
+                          <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 700;">{{ entry.totalScore }} pts</td>
+                          <td>
+                            @if (entry.predictionsCount > 0) {
+                              <span style="color: var(--green); font-weight: 600; font-size: 0.85rem;">{{ entry.predictionsCount }} Carrera (Enviado)</span>
+                            } @else {
+                              <span class="dim" style="font-size: 0.85rem;">0 Carreras</span>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else if (isLoadingGlobalLeaderboard()) {
+                <div style="padding: 3rem 0; text-align: center;">
+                  <div class="spinner-block"></div>
+                  <p class="dim" style="margin: 0;">Conectando con el servidor y cargando clasificación global…</p>
+                </div>
+              } @else if (globalLeaderboardError()) {
+                <div class="alert-box error" style="margin-top: 1.5rem; text-align: center; padding: 1.25rem;">
+                  <p style="margin: 0 0 0.75rem 0; font-size: 0.9rem;">{{ globalLeaderboardError() }}</p>
+                  <button type="button" class="btn-primary" (click)="loadGlobalLeaderboard()" style="display: inline-flex; align-items: center; gap: 0.5rem; margin: 0 auto; padding: 0.45rem 1.1rem; font-size: 0.85rem; cursor: pointer;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="23 4 23 10 17 10"></polyline>
+                      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    Reintentar conexión
+                  </button>
+                </div>
+              } @else {
+                <p class="dim" style="padding: 2.5rem 0; text-align: center;">Aún no hay puntuaciones registradas en el campeonato global.</p>
+              }
+            </div>
+          }
+
+          <!-- 2. PILOTOS F1 (WDC) -->
+          @if (posicionesSubTab() === 'pilotos') {
+            <div class="spotlight-card">
+              <div class="card-title-row">
+                <div>
+                  <h3>Campeonato Mundial de Pilotos (WDC)</h3>
+                  <p class="dim" style="margin-top: 4px;">Tabla oficial de posiciones de pilotos F1 2026 suministrada por Jolpica F1 API.</p>
+                </div>
+                <span class="mono-pts">{{ driverStandings().length }} Pilotos F1</span>
+              </div>
+
+              @if (driverStandings().length > 0) {
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Piloto</th>
+                        <th>Escudería</th>
+                        <th>Nacionalidad</th>
+                        <th>Victorias</th>
+                        <th>Puntos Totales</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (d of driverStandings(); track d.driverId || d.position) {
+                        <tr>
+                          <td><strong>#{{ d.position }}</strong></td>
+                          <td style="color: #fff; font-weight: 700;">
+                            {{ d.name }}
+                            @if (d.code) {
+                              <span class="dtc-code" style="margin-left: 6px;">{{ d.code }}</span>
+                            }
+                          </td>
+                          <td style="color: var(--text-muted);">{{ d.team }}</td>
+                          <td class="dim">{{ d.nationality }}</td>
+                          <td style="font-family: var(--font-mono); font-weight: 600;">{{ d.wins }}</td>
+                          <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 800;">{{ d.points }} pts</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <p class="dim" style="padding: 2rem 0; text-align: center;">Cargando posiciones oficiales de pilotos de F1…</p>
+              }
+            </div>
+          }
+
+          <!-- 3. EQUIPOS F1 (WCC) -->
+          @if (posicionesSubTab() === 'equipos') {
+            <div class="spotlight-card">
+              <div class="card-title-row">
+                <div>
+                  <h3>Campeonato Mundial de Constructores (WCC)</h3>
+                  <p class="dim" style="margin-top: 4px;">Tabla oficial de posiciones de escuderías F1 2026 suministrada por Jolpica F1 API.</p>
+                </div>
+                <span class="mono-pts">{{ constructorStandings().length }} Escuderías</span>
+              </div>
+
+              @if (constructorStandings().length > 0) {
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Pos</th>
+                        <th>Escudería</th>
+                        <th>País / Origen</th>
+                        <th>Victorias</th>
+                        <th>Puntos Totales</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (c of constructorStandings(); track c.constructorId || c.position) {
+                        <tr>
+                          <td><strong>#{{ c.position }}</strong></td>
+                          <td style="color: #fff; font-weight: 700; font-size: 1rem;">{{ c.name }}</td>
+                          <td class="dim">{{ c.nationality }}</td>
+                          <td style="font-family: var(--font-mono); font-weight: 600;">{{ c.wins }}</td>
+                          <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 800;">{{ c.points }} pts</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              } @else {
+                <p class="dim" style="padding: 2rem 0; text-align: center;">Cargando posiciones oficiales de constructores de F1…</p>
+              }
+            </div>
+          }
+        </section>
+      }
+
+      <!-- ========================================== -->
+      <!-- TAB 4: HISTORIAL                           -->
+      <!-- ========================================== -->
+      @if (activeTab() === 'historial') {
+        <section class="tab-content">
+          <div class="spotlight-card">
+            <div class="card-title-row">
+              <div>
+                <h3>Historial & Pronósticos del Usuario</h3>
+                <p class="dim" style="margin-top: 4px;">Detalle de tus pronósticos guardados y puntos asignados por fecha.</p>
+              </div>
+            </div>
+
+            <!-- AVISO TEMPORADA 2026 -->
+            <div class="alert-box info" style="margin: 1rem 0; display: flex; align-items: flex-start; gap: 10px;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              <div>
+                <strong>Temporada F1 2026 en curso:</strong>
+                A medida que se disputen los Grandes Premios y la FIA homologue las clasificaciones oficiales finales, tus resultados se puntuarán automáticamente.
+                Hacé clic en cualquiera de las tarjetas de GP para comparar tus pronósticos contra los resultados oficiales de la FIA y ver tus aciertos y errores.
+              </div>
+            </div>
+
+            @if (historyItems().length > 0) {
+              <div class="history-grid">
+                @for (h of historyItems(); track h.sessionId) {
+                  <div class="history-card clickable-history-card" (click)="selectedHistoryItem.set(h)">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                      <div>
+                        @if (h.score != null) {
+                          <span class="badge-round" style="font-size: 0.7rem; background: var(--green);">CARRERA PUNTUADA</span>
+                        } @else {
+                          <span class="badge-round" style="font-size: 0.7rem; background: var(--gold); color: #000;">PRONÓSTICO REGISTRADO — EN ESPERA</span>
+                        }
+                        <h4 style="margin: 6px 0 2px; font-size: 1.15rem;">{{ h.sessionName }}</h4>
+                        <p class="dim" style="font-size: 0.85rem; margin: 0;">{{ h.circuit }}</p>
+                      </div>
+                      <div style="text-align: right;">
+                        <span style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 800; color: var(--gold);">
+                          {{ h.score != null ? h.score : '--' }} pts
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- DETALLE DE PICKS GUARDADOS (VALOR PUESTO) -->
+                    @if (h.podium && h.podium.length > 0) {
+                      <div class="history-card-picks-box">
+                        <div class="picks-box-header">
+                          <span class="picks-box-badge">TU PRONÓSTICO (VALOR PUESTO)</span>
+                          @if (h.submittedAt) {
+                            <span class="dim" style="font-size: 0.72rem;">
+                              {{ h.submittedAt | date:'d/MM HH:mm':'America/Argentina/Buenos_Aires' }} hs Arg
+                            </span>
+                          }
+                        </div>
+                        <div class="picks-content">
+                          <div class="pick-line">
+                            <span class="dim">Podio:</span>
+                            <strong>P1:</strong> {{ getDriverName(h.podium[0]) }} • 
+                            <strong>P2:</strong> {{ getDriverName(h.podium[1]) }} • 
+                            <strong>P3:</strong> {{ getDriverName(h.podium[2]) }}
+                          </div>
+                          <div class="pick-line dim">
+                            Pole: <strong style="color: var(--cyan);">{{ getDriverName(h.polePositionDriverId) }}</strong> • 
+                            Duelo: <strong style="color: #fff;">{{ getDriverName(h.duelDriverPick) }}</strong> • 
+                            SC: <strong style="color: #fff;">{{ h.safetyCarCount != null ? h.safetyCarCount : '--' }}</strong> • 
+                            DNFs: <strong style="color: #fff;">{{ h.dnfCount != null ? h.dnfCount : '--' }}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- DETALLE DE RESULTADO OFICIAL FIA (RESULTADO FINAL) -->
+                    @if (h.officialResults) {
+                      <div class="history-card-official-box">
+                        <div class="official-box-header">
+                          <span class="official-box-badge">RESULTADO OFICIAL FIA (RESULTADO FINAL)</span>
+                          <span class="dim" style="font-size: 0.72rem;">Homologado</span>
+                        </div>
+                        <div class="picks-content">
+                          <div class="pick-line">
+                            <span class="dim">Podio Real:</span>
+                            <strong style="color: var(--gold);">P1:</strong> {{ getDriverName(h.officialResults.podium?.[0]) }} • 
+                            <strong style="color: var(--silver);">P2:</strong> {{ getDriverName(h.officialResults.podium?.[1]) }} • 
+                            <strong style="color: var(--bronze);">P3:</strong> {{ getDriverName(h.officialResults.podium?.[2]) }}
+                          </div>
+                          <div class="pick-line dim">
+                            Pole Real: <strong style="color: var(--cyan);">{{ getDriverName(h.officialResults.polePositionDriverId) }}</strong> • 
+                            Duelo Ganador: <strong style="color: #fff;">{{ getDriverName(h.officialResults.duelWinnerId) }}</strong> • 
+                            SC Reales: <strong style="color: #fff;">{{ h.officialResults.safetyCarCount != null ? h.officialResults.safetyCarCount : '--' }}</strong> • 
+                            DNFs Reales: <strong style="color: #fff;">{{ h.officialResults.dnfCount != null ? h.officialResults.dnfCount : '--' }}</strong>
+                          </div>
+                        </div>
+                      </div>
+                    }
+
+                    @if (h.scoreBreakdown) {
+                      <div class="score-breakdown-tags" style="margin-top: 0.75rem; display: flex; flex-wrap: wrap; gap: 6px;">
+                        <span class="chip-score" [class.hit]="h.scoreBreakdown.podiumHits > 0">
+                          Podio: +{{ h.scoreBreakdown.podiumPoints }} pts ({{ h.scoreBreakdown.podiumHits }}/3)
+                        </span>
+                        <span class="chip-score" [class.hit]="h.scoreBreakdown.poleHit">
+                          Pole: {{ h.scoreBreakdown.poleHit ? '+' + (h.scoreBreakdown.polePoints || 4) + ' pts' : '0 pts' }}
+                        </span>
+                        <span class="chip-score" [class.hit]="h.scoreBreakdown.duelHit">
+                          Duelo: {{ h.scoreBreakdown.duelHit ? '+' + (h.scoreBreakdown.duelPoints || 3) + ' pts' : '0 pts' }}
+                        </span>
+                        <span class="chip-score" [class.hit]="h.scoreBreakdown.safetyCarHit">
+                          Safety Car: {{ h.scoreBreakdown.safetyCarHit ? '+' + (h.scoreBreakdown.safetyCarPoints || 6) + ' pts' : '0 pts' }}
+                        </span>
+                        <span class="chip-score" [class.hit]="h.scoreBreakdown.dnfHit">
+                          DNFs: {{ h.scoreBreakdown.dnfHit ? '+' + (h.scoreBreakdown.dnfPoints || 6) + ' pts' : '0 pts' }}
+                        </span>
+                      </div>
+                    }
+
+                    <div class="card-tap-hint">
+                      <span>Tocar para comparar con resultados oficiales FIA</span>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div style="text-align: center; padding: 3rem 1rem;">
+                <p class="dim" style="font-size: 1rem;">Aún no se han registrado pronósticos finalizados para tu usuario.</p>
+                <p class="dim" style="font-size: 0.85rem; margin-top: 4px;">Cuando cargues tu pronóstico para el próximo GP, acá podrás consultar tus selecciones y el desglose de puntos.</p>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- ========================================== -->
+      <!-- MODAL SELECTOR DE PILOTOS MODULAR          -->
+      <!-- ========================================== -->
+      <app-driver-picker-modal
+        [isOpen]="isPickerOpen()"
+        [currentSlot]="pickerSlot()"
+        [p1DriverId]="p1DriverId()"
+        [p2DriverId]="p2DriverId()"
+        [p3DriverId]="p3DriverId()"
+        [poleDriverId]="poleDriverId()"
+        (onClose)="closeDriverPicker()"
+        (onDriverSelected)="handleModalDriverSelected($event)" />
+
+
+      <!-- ========================================== -->
+      <!-- MODAL COMPARATIVO: RESULTADOS vs OFICIALES -->
+      <!-- ========================================== -->
+      @if (selectedHistoryItem(); as item) {
+        <div class="driver-picker-backdrop" (click)="selectedHistoryItem.set(null)">
+          <div class="driver-picker-modal comparison-modal" (click)="$event.stopPropagation()">
+            <div class="picker-header">
+              <div>
+                <div class="badge-round" style="margin-bottom: 4px;">ROUND COMPARATIVO // {{ item.circuit }}</div>
+                <h3 class="picker-title" style="margin: 0;">{{ item.sessionName }}</h3>
+                <p class="picker-subtitle">
+                  Comparación entre tus pronósticos registrados y los resultados oficiales homologados por la FIA.
+                </p>
+              </div>
+              <button type="button" class="picker-close-btn" (click)="selectedHistoryItem.set(null)" aria-label="Cerrar">✕</button>
+            </div>
+
+            <div class="comparison-modal-body custom-scrollbar" tabindex="0">
+              <!-- RESUMEN DE PUNTOS TOTALES -->
+              <div class="comparison-summary-bar">
+                <div>
+                  <span class="dim" style="font-size: 0.82rem;">PUNTAJE OBTENIDO EN ESTE GP:</span>
+                  <div class="comp-total-pts">{{ item.score != null ? item.score : 0 }} <span style="font-size: 1rem; color: #fff;">/ 42 PTS</span></div>
+                </div>
+                <div class="comp-status-badge" [class.scored]="item.score != null">
+                  {{ item.score != null ? 'CARRERA HOMOLOGADA Y PUNTUADA' : 'RESULTADOS OFICIALES EN ESPERA' }}
+                </div>
+              </div>
+
+              @if (item.score == null) {
+                <div class="alert-box info" style="margin: 0.4rem 0;">
+                  <strong>Carrera pendiente de homologación:</strong> Esta sesión aún no ha finalizado o los comisarios de la FIA no han emitido la clasificación final oficial. Debajo podés revisar tus pronósticos guardados.
+                </div>
+              }
+
+              <!-- RESUMEN EN CHIPS -->
+              @if (item.scoreBreakdown) {
+                <div class="score-breakdown-tags" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                  <span class="chip-score" [class.hit]="item.scoreBreakdown.podiumHits > 0">
+                    Podio: +{{ item.scoreBreakdown.podiumPoints }} pts ({{ item.scoreBreakdown.podiumHits }}/3 aciertos)
+                  </span>
+                  <span class="chip-score" [class.hit]="item.scoreBreakdown.poleHit">
+                    Pole: {{ item.scoreBreakdown.poleHit ? '+4 pts' : '0 pts' }}
+                  </span>
+                  <span class="chip-score" [class.hit]="item.scoreBreakdown.duelHit">
+                    Duelo: {{ item.scoreBreakdown.duelHit ? '+3 pts' : '0 pts' }}
+                  </span>
+                  <span class="chip-score" [class.hit]="item.scoreBreakdown.safetyCarHit">
+                    Safety Car: {{ item.scoreBreakdown.safetyCarHit ? '+' + (item.scoreBreakdown.safetyCarPoints || 6) + ' pts' : '0 pts' }}
+                  </span>
+                  <span class="chip-score" [class.hit]="item.scoreBreakdown.dnfHit">
+                    Abandonos: {{ item.scoreBreakdown.dnfHit ? '+' + (item.scoreBreakdown.dnfPoints || 6) + ' pts' : '0 pts' }}
+                  </span>
+                </div>
+              }
+
+              <!-- TABLA COMPARATIVA ITEM POR ITEM -->
+              <div class="comparison-table">
+                <div class="comp-header-row">
+                  <span class="c-col cat">Categoría</span>
+                  <span class="c-col pick">Tu Pronóstico (Puesto)</span>
+                  <span class="c-col official">Resultado FIA (Final)</span>
+                  <span class="c-col pts">Puntos</span>
+                  <span class="c-col status">Evaluación</span>
+                </div>
+
+                <!-- SECCIÓN 1: PODIO DE CARRERA -->
+                <div class="comp-section-row">
+                  <span class="sec-title">🏎️ PODIO OFICIAL DE CARRERA</span>
+                  <span class="sec-badge">1 acierto = 3 pts · 2 aciertos = 7 pts · 3 aciertos = 10 pts</span>
+                </div>
+
+                <!-- P1 WINNER -->
+                <div class="comp-data-row">
+                  <span class="c-col cat">
+                    <strong class="cat-name">P1 (Ganador GP)</strong>
+                    <span class="c-col-sub">1º Puesto de Carrera</span>
+                  </span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.podium[0]) }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.podium?.[0] ? getDriverName(item.officialResults?.podium?.[0]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts gold" data-label="Puntos">Top 3</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.officialResults?.podium?.[0] || item.score != null) {
+                      @if (isPodiumHit(item, 0)) {
+                        <span class="status-tag hit">ACERTADO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- P2 SEGUNDO -->
+                <div class="comp-data-row">
+                  <span class="c-col cat">
+                    <strong class="cat-name">P2 (Segundo Puesto)</strong>
+                    <span class="c-col-sub">2º Puesto de Carrera</span>
+                  </span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.podium[1]) }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.podium?.[1] ? getDriverName(item.officialResults?.podium?.[1]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts silver" data-label="Puntos">Top 3</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.officialResults?.podium?.[1] || item.score != null) {
+                      @if (isPodiumHit(item, 1)) {
+                        <span class="status-tag hit">ACERTADO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- P3 TERCERO -->
+                <div class="comp-data-row">
+                  <span class="c-col cat">
+                    <strong class="cat-name">P3 (Tercer Puesto)</strong>
+                    <span class="c-col-sub">3º Puesto de Carrera</span>
+                  </span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.podium[2]) }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.podium?.[2] ? getDriverName(item.officialResults?.podium?.[2]) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts bronze" data-label="Puntos">Top 3</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.officialResults?.podium?.[2] || item.score != null) {
+                      @if (isPodiumHit(item, 2)) {
+                        <span class="status-tag hit">ACERTADO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- SECCIÓN 2: CLASIFICACIÓN Y DUELO -->
+                <div class="comp-section-row">
+                  <span class="sec-title">⚡ CLASIFICACIÓN Y DUELO DIRECTO</span>
+                  <span class="sec-badge">Pole = 4 pts · Duelo = 3 pts</span>
+                </div>
+
+                <!-- POLE POSITION -->
+                <div class="comp-data-row">
+                  <span class="c-col cat">
+                    <strong class="cat-name">Pole Position (Q3)</strong>
+                    <span class="c-col-sub">1º en Clasificación Sábado</span>
+                  </span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.polePositionDriverId) }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.polePositionDriverId ? getDriverName(item.officialResults?.polePositionDriverId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts cyan" data-label="Puntos">+4 pts</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.officialResults?.polePositionDriverId || item.score != null) {
+                      @if (isPoleHit(item)) {
+                        <span class="status-tag hit">ACERTADO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- DUELO DE LA FECHA -->
+                <div class="comp-data-row">
+                  <span class="c-col cat">
+                    <strong class="cat-name">Duelo de la Fecha</strong>
+                    @if (item.matchupDriver1 && item.matchupDriver2) {
+                      <span class="c-col-sub">{{ getDriverName(item.matchupDriver1) }} vs {{ getDriverName(item.matchupDriver2) }}</span>
+                    } @else {
+                      <span class="c-col-sub">Piloto con mejor posición en carrera</span>
+                    }
+                  </span>
+                  <span class="c-col pick" data-label="Tu Elección">{{ getDriverName(item.duelDriverPick) }}</span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.duelWinnerId ? getDriverName(item.officialResults?.duelWinnerId) : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts" data-label="Puntos">+3 pts</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.officialResults?.duelWinnerId || item.score != null) {
+                      @if (isDuelHit(item)) {
+                        <span class="status-tag hit">ACERTADO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- SECCIÓN 3: INCIDENCIAS -->
+                <div class="comp-section-row">
+                  <span class="sec-title">🚨 TELEMETRÍA E INCIDENCIAS EN PISTA</span>
+                  <span class="sec-badge">Safety Car = 6 pts · Abandonos = 6 pts</span>
+                </div>
+
+                <!-- SAFETY CAR -->
+                <div class="comp-data-row">
+                  <span class="c-col cat">
+                    <strong class="cat-name">Autos de Seguridad</strong>
+                    <span class="c-col-sub">Safety Car / Virtual SC desplegados</span>
+                  </span>
+                  <span class="c-col pick" data-label="Tu Elección">
+                    {{ item.safetyCarCount != null ? item.safetyCarCount + (item.safetyCarCount === 1 ? ' Auto' : ' Autos') : '--' }}
+                  </span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.safetyCarCount != null ? item.officialResults?.safetyCarCount + (item.officialResults?.safetyCarCount === 1 ? ' Auto' : ' Autos') : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts" data-label="Puntos">+6 pts</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.officialResults?.safetyCarCount != null || item.score != null) {
+                      @if (isSafetyCarHit(item)) {
+                        <span class="status-tag hit">EXACTO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+
+                <!-- ABANDONOS DNFS -->
+                <div class="comp-data-row">
+                  <span class="c-col cat">
+                    <strong class="cat-name">Abandonos (DNFs)</strong>
+                    <span class="c-col-sub">Retiros y pilotos no clasificados</span>
+                  </span>
+                  <span class="c-col pick" data-label="Tu Elección">
+                    {{ item.dnfCount != null ? item.dnfCount + (item.dnfCount === 1 ? ' Piloto' : ' Pilotos') : '--' }}
+                  </span>
+                  <span class="c-col official dim" data-label="Resultado FIA">
+                    {{ item.officialResults?.dnfCount != null ? item.officialResults?.dnfCount + (item.officialResults?.dnfCount === 1 ? ' Piloto' : ' Pilotos') : (item.score != null ? 'Oficial' : 'Pendiente FIA') }}
+                  </span>
+                  <span class="c-col pts" data-label="Puntos">+6 pts</span>
+                  <span class="c-col status" data-label="Evaluación">
+                    @if (item.officialResults?.dnfCount != null || item.score != null) {
+                      @if (isDnfHit(item)) {
+                        <span class="status-tag hit">EXACTO</span>
+                      } @else {
+                        <span class="status-tag miss">NO ACERTÓ</span>
+                      }
+                    } @else {
+                      <span class="status-tag pending">PENDIENTE</span>
+                    }
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- FOOTER CON BOTÓN DE CIERRE -->
+            <div class="comparison-modal-footer">
+              <span class="dim comp-footer-note">Puntuación homologada según el reglamento oficial de ApexPredict (máx 42 pts).</span>
+              <button type="button" class="button primary" (click)="selectedHistoryItem.set(null)">Entendido / Cerrar</button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
