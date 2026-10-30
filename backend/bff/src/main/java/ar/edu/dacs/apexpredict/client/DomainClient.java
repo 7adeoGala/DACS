@@ -26,6 +26,9 @@ public interface DomainClient {
     @PutMapping("/me/profile")
     Profile updateProfile(@RequestBody UpdateProfileRequest request);
 
+    @GetMapping("/users/check-display-name")
+    Map<String, Object> checkDisplayName(@RequestParam("name") String name);
+
 
     @GetMapping("/leagues")
     List<LeagueView> leagues();

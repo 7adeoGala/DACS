@@ -65,6 +65,16 @@ public class DomainController {
         return players.updateProfile(jwt.getIssuer().toString(), jwt.getSubject(), request);
     }
 
+    @GetMapping("/users/check-display-name")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public Map<String, Object> checkDisplayName(
+        @AuthenticationPrincipal Jwt jwt,
+        @RequestParam("name") String name
+    ) {
+        boolean available = players.isDisplayNameAvailable(jwt.getIssuer().toString(), jwt.getSubject(), name);
+        return Map.of("available", available, "name", name != null ? name : "");
+    }
+
 
     @GetMapping("/leagues")
     @PreAuthorize("hasAnyRole('player', 'admin')")

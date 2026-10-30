@@ -69,6 +69,12 @@ public class ApiController {
         return domainClient.updateProfile(request);
     }
 
+    @GetMapping("/users/check-display-name")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public Map<String, Object> checkDisplayName(@RequestParam("name") String name) {
+        return domainClient.checkDisplayName(name);
+    }
+
 
     // --- Ligas y Leaderboards ---
 

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, of, switchMap, timeout, retry, timer, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
@@ -94,6 +94,13 @@ export class ApiService {
   updateProfile(payload: UpdateProfileRequest): Observable<Profile> {
     return this.http.put<Profile>(`${this.base}/me/profile`, payload).pipe(
       this.retryOnColdStart<Profile>()
+    );
+  }
+
+  checkDisplayName(name: string): Observable<{ available: boolean; name: string }> {
+    const params = new HttpParams().set('name', name);
+    return this.http.get<{ available: boolean; name: string }>(`${this.base}/users/check-display-name`, { params }).pipe(
+      catchError(() => of({ available: true, name }))
     );
   }
 

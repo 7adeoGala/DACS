@@ -224,7 +224,12 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                   <div class="form-field-group">
                     <div class="field-label-row">
                       <label class="field-label" for="displayNameInput">NOMBRE PÚBLICO</label>
-                      <span class="char-count">{{ formDisplayName().length }}/20</span>
+                      <div class="field-label-right">
+                        @if (isCheckingName()) {
+                          <span class="checking-indicator"><span class="spinner-mini-xs"></span> Verificando...</span>
+                        }
+                        <span class="char-count">{{ formDisplayName().length }}/20</span>
+                      </div>
                     </div>
                     <div class="input-with-icon">
                       <span class="input-icon">👤</span>
@@ -232,11 +237,28 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                         type="text" 
                         id="displayNameInput"
                         class="field-input" 
+                        [class.input-error]="isDuplicateName() || (isDisplayNameEmpty() && formDisplayName() !== '')"
                         [ngModel]="formDisplayName()" 
-                        (ngModelChange)="formDisplayName.set($event)"
+                        (ngModelChange)="onDisplayNameChange($event)"
                         placeholder="Tu nombre en la tabla"
                         maxlength="20" />
                     </div>
+                    @if (isDuplicateName()) {
+                      <div class="username-alert-box duplicate">
+                        <span class="alert-icon">⚠</span>
+                        <div class="alert-text">
+                          <strong>Nombre de usuario repetido</strong>
+                          <span>{{ duplicateErrorMessage() || 'Este nombre de usuario ya está en uso. Debes cambiarlo para poder guardar.' }}</span>
+                        </div>
+                      </div>
+                    } @else if (isDisplayNameEmpty() && formDisplayName() !== '') {
+                      <div class="username-alert-box empty">
+                        <span class="alert-icon">⚠</span>
+                        <div class="alert-text">
+                          <span>El nombre público no puede estar vacío.</span>
+                        </div>
+                      </div>
+                    }
                   </div>
 
                   <!-- CAMPO 2: ESCUDERÍA FAVORITA (CUSTOM DROPDOWN CON ESTILOS DE PICKER F1) -->
@@ -362,14 +384,21 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
                   <button 
                     type="button" 
                     class="btn-save-profile" 
-                    [disabled]="isSaving()" 
+                    [class.btn-blocked]="isSaveDisabled()"
+                    [disabled]="isSaveDisabled()" 
                     (click)="saveProfile()">
                     @if (isSaving()) {
                       <span class="spinner-mini"></span> Guardando...
+                    } @else if (isCheckingName()) {
+                      <span class="spinner-mini"></span> Comprobando disponibilidad...
+                    } @else if (isDuplicateName()) {
+                      <span>🚫 USUARIO REPETIDO (BLOQUEADO)</span>
+                    } @else if (isDisplayNameEmpty()) {
+                      <span>⚠ NOMBRE REQUERIDO</span>
                     } @else if (saveStatus() === 'success') {
                       <span>✓ Perfil Guardado</span>
                     } @else if (saveStatus() === 'error') {
-                      <span>⚠ Guardado sólo local</span>
+                      <span>⚠ Error al guardar</span>
                     } @else {
                       <span>💾 GUARDAR PERFIL</span>
                     }
@@ -732,6 +761,28 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       letter-spacing: 0.05em;
       text-transform: uppercase;
     }
+    .field-label-right {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .checking-indicator {
+      font-size: 0.68rem;
+      color: #38bdf8;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+    }
+    .spinner-mini-xs {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border: 2px solid rgba(56, 189, 248, 0.3);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
     .char-count {
       font-size: 0.68rem;
       font-family: var(--font-mono);
@@ -761,10 +812,50 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       padding: 0.55rem 0.75rem 0.55rem 2.15rem;
       box-sizing: border-box;
       outline: none;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
     }
     .field-input:focus {
       border-color: rgba(255, 255, 255, 0.35);
+    }
+    .field-input.input-error {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.08) !important;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.25) !important;
+    }
+    .username-alert-box {
+      margin-top: 0.45rem;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 0.74rem;
+      line-height: 1.35;
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+    }
+    .username-alert-box.duplicate {
+      background: rgba(239, 68, 68, 0.16);
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      color: #fca5a5;
+    }
+    .username-alert-box.empty {
+      background: rgba(245, 158, 11, 0.16);
+      border: 1px solid rgba(245, 158, 11, 0.45);
+      color: #fcd34d;
+    }
+    .username-alert-box .alert-icon {
+      font-size: 0.85rem;
+      line-height: 1;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+    .username-alert-box .alert-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .username-alert-box .alert-text strong {
+      font-weight: 800;
+      letter-spacing: 0.02em;
     }
 
     /* CUSTOM SELECT SYSTEM (COPIADO Y ALINEADO CON DRIVER-PICKER-MODAL) */
@@ -1088,9 +1179,13 @@ export const F1_TEAMS_OPTIONS: F1TeamOption[] = [
       transform: translateY(-1px);
       box-shadow: 0 6px 20px color-mix(in srgb, var(--team-color, var(--red)) 50%, transparent);
     }
+    .btn-save-profile.btn-blocked,
     .btn-save-profile:disabled {
-      opacity: 0.7;
-      cursor: not-allowed;
+      opacity: 0.6;
+      cursor: not-allowed !important;
+      filter: grayscale(0.5);
+      box-shadow: none !important;
+      transform: none !important;
     }
     .spinner-mini {
       display: inline-block;
@@ -1277,6 +1372,15 @@ export class NavbarComponent implements OnInit {
   readonly isSaving = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'success' | 'error'>('idle');
 
+  // Estado de validación de unicidad de nombre de usuario
+  readonly isCheckingName = signal<boolean>(false);
+  readonly isDuplicateName = signal<boolean>(false);
+  readonly duplicateErrorMessage = signal<string | null>(null);
+  private nameCheckTimeout: any = null;
+
+  readonly isDisplayNameEmpty = computed(() => (this.formDisplayName() || '').trim().length === 0);
+  readonly isSaveDisabled = computed(() => this.isSaving() || this.isCheckingName() || this.isDuplicateName() || this.isDisplayNameEmpty());
+
   // Estado de los dropdowns personalizados dentro del menú
   readonly isTeamSelectOpen = signal<boolean>(false);
   readonly isDriverSelectOpen = signal<boolean>(false);
@@ -1436,6 +1540,48 @@ export class NavbarComponent implements OnInit {
     }
   }
 
+  onDisplayNameChange(value: string) {
+    this.formDisplayName.set(value);
+    this.saveStatus.set('idle');
+    this.duplicateErrorMessage.set(null);
+
+    const trimmed = (value || '').trim();
+    if (trimmed.length === 0) {
+      this.isDuplicateName.set(false);
+      return;
+    }
+
+    const currentConfirmed = (this.savedDisplayName() || '').trim().toLowerCase();
+    const currentUsername = (this.auth.username() || '').trim().toLowerCase();
+    if (trimmed.toLowerCase() === currentConfirmed || trimmed.toLowerCase() === currentUsername) {
+      this.isDuplicateName.set(false);
+      return;
+    }
+
+    if (this.nameCheckTimeout) {
+      clearTimeout(this.nameCheckTimeout);
+    }
+
+    this.isCheckingName.set(true);
+    this.nameCheckTimeout = setTimeout(() => {
+      this.api.checkDisplayName(trimmed).subscribe({
+        next: (res) => {
+          this.isCheckingName.set(false);
+          if (!res.available) {
+            this.isDuplicateName.set(true);
+            this.duplicateErrorMessage.set(`El nombre de usuario "${trimmed}" ya está en uso por otro piloto.`);
+          } else {
+            this.isDuplicateName.set(false);
+            this.duplicateErrorMessage.set(null);
+          }
+        },
+        error: () => {
+          this.isCheckingName.set(false);
+        }
+      });
+    }, 250);
+  }
+
   openProfileMenu() {
     this.closeMobileNav();
     // Al abrir, sincronizar el borrador con los últimos datos guardados
@@ -1446,6 +1592,8 @@ export class NavbarComponent implements OnInit {
     this.formDriverId.set(this.savedDriverId());
     this.formNotifications.set(this.savedNotifications());
     this.saveStatus.set('idle');
+    this.isDuplicateName.set(false);
+    this.duplicateErrorMessage.set(null);
     this.isProfileOpen.set(true);
   }
 
@@ -1458,6 +1606,8 @@ export class NavbarComponent implements OnInit {
     this.formDriverId.set(this.savedDriverId());
     this.formNotifications.set(this.savedNotifications());
     this.saveStatus.set('idle');
+    this.isDuplicateName.set(false);
+    this.duplicateErrorMessage.set(null);
     this.isProfileOpen.set(false);
   }
 
@@ -1576,8 +1726,11 @@ export class NavbarComponent implements OnInit {
   saveProfile() {
     const raw = this.formDisplayName() || '';
     const trimmed = raw.trim();
-    // Limitar a 20 caracteres y fallback al username si está vacío
-    const finalName = trimmed.length > 0 ? trimmed.slice(0, 20) : (this.auth.username() || 'Piloto');
+    if (trimmed.length === 0 || this.isDuplicateName() || this.isCheckingName()) {
+      return;
+    }
+
+    const finalName = trimmed.slice(0, 20);
     this.formDisplayName.set(finalName);
 
     const teamId = this.formTeamId();
@@ -1585,24 +1738,10 @@ export class NavbarComponent implements OnInit {
     const notifications = this.formNotifications();
     const username = this.auth.username();
 
-    // 1. Actualización optimista inmediata en UI
-    this.savedDisplayName.set(finalName);
-    this.savedTeamId.set(teamId);
-    this.savedDriverId.set(driverId);
-    this.savedNotifications.set(notifications);
-
-    // 2. Guardar inmediatamente en localStorage para garantizar persistencia continua
-    this.api.setCachedProfile({
-      displayName: finalName,
-      favoriteTeamId: teamId,
-      favoriteDriverId: driverId,
-      notificationsEnabled: notifications
-    }, username);
-
     this.isSaving.set(true);
     this.saveStatus.set('idle');
 
-    // 3. Sincronizar con el backend
+    // Sincronizar con el backend
     this.api.updateProfile({
       displayName: finalName,
       favoriteTeamId: teamId,
@@ -1616,6 +1755,8 @@ export class NavbarComponent implements OnInit {
         const confirmedName = profile.displayName || finalName;
         this.savedDisplayName.set(confirmedName);
         this.formDisplayName.set(confirmedName);
+        this.isDuplicateName.set(false);
+        this.duplicateErrorMessage.set(null);
 
         if (profile.favoriteTeamId) {
           this.savedTeamId.set(profile.favoriteTeamId);
@@ -1636,10 +1777,18 @@ export class NavbarComponent implements OnInit {
         setTimeout(() => this.saveStatus.set('idle'), 2500);
       },
       error: (err) => {
-        console.warn('Backend update failed, profile saved in local storage only:', err);
         this.isSaving.set(false);
-        this.saveStatus.set('error');
-        setTimeout(() => this.saveStatus.set('idle'), 3500);
+        const errDetail = (err?.error?.message || err?.error?.detail || err?.message || '').toLowerCase();
+        if (err.status === 409 || errDetail.includes('en uso') || errDetail.includes('conflict') || errDetail.includes('duplicad')) {
+          this.isDuplicateName.set(true);
+          const msg = err?.error?.message || `El nombre de usuario "${finalName}" ya está registrado por otro piloto.`;
+          this.duplicateErrorMessage.set(msg);
+          this.saveStatus.set('error');
+        } else {
+          console.warn('Backend update failed:', err);
+          this.saveStatus.set('error');
+          setTimeout(() => this.saveStatus.set('idle'), 3500);
+        }
       }
     });
   }

@@ -84,3 +84,4 @@ BEGIN
         WHERE id = r.pred_id;
     END LOOP;
 END $$;
+

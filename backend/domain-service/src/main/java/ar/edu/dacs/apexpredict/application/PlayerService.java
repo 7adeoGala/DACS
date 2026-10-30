@@ -3,8 +3,10 @@ package ar.edu.dacs.apexpredict.application;
 import ar.edu.dacs.apexpredict.domain.*;
 import ar.edu.dacs.apexpredict.infrastructure.persistence.*;
 import java.util.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class PlayerService {
@@ -91,8 +93,15 @@ public class PlayerService {
     @Transactional
     public Profile updateProfile(String issuer, String subject, UpdateProfileRequest request) {
         User user = getOrCreateUser(issuer, subject);
+        String requestedName = request.displayName() != null ? request.displayName().trim() : null;
+        if (requestedName != null && !requestedName.isBlank()) {
+            boolean isTaken = users.existsByDisplayNameIgnoreCaseAndIdNot(requestedName, user.getId());
+            if (isTaken) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "El nombre de usuario '" + requestedName + "' ya está en uso por otro piloto.");
+            }
+        }
         user.updateProfile(
-            request.displayName(),
+            requestedName,
             request.favoriteDriverId(),
             request.favoriteTeamId(),
             request.notificationsEnabled()
@@ -110,6 +119,23 @@ public class PlayerService {
             totalScore,
             count
         );
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isDisplayNameAvailable(String issuer, String subject, String name) {
+        if (name == null || name.isBlank()) {
+            return false;
+        }
+        String trimmed = name.trim();
+        Optional<User> currentUserOpt = users.findByIssuerAndSubject(issuer, subject);
+        if (currentUserOpt.isPresent()) {
+            User currentUser = currentUserOpt.get();
+            if (currentUser.getDisplayName() != null && currentUser.getDisplayName().trim().equalsIgnoreCase(trimmed)) {
+                return true;
+            }
+            return !users.existsByDisplayNameIgnoreCaseAndIdNot(trimmed, currentUser.getId());
+        }
+        return !users.existsByDisplayNameIgnoreCase(trimmed);
     }
 
     @Transactional(readOnly = true)
