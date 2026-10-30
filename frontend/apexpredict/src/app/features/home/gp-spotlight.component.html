@@ -134,20 +134,20 @@
           <div class="circuit-card-header">
             <div>
               <h3>{{ circuit().name.toUpperCase() }} // TRAZADO OFICIAL FIA</h3>
-              <p>{{ circuit().drsZones }} Zonas DRS Activas • Longitud Oficial {{ circuit().lengthKm }}</p>
+              <p>{{ circuit().overrideZones ?? circuit().drsZones }} Zonas de Deploy (Overtake Mode) • Longitud Oficial {{ circuit().lengthKm }}</p>
             </div>
             <div class="circuit-tags">
-              <span class="tag-drs">{{ circuit().drsZones }} ZONAS DRS</span>
+              <span class="tag-drs">{{ circuit().overrideZones ?? circuit().drsZones }} ZONAS OVERTAKE</span>
               <span class="tag-sector">OFICIAL FIA</span>
             </div>
           </div>
 
           <div class="circuit-svg-wrapper">
-            <svg viewBox="0 0 420 300" class="track-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg [attr.viewBox]="circuit().viewBox || '0 0 500 500'" class="track-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
               <!-- Trazado de base ancho -->
-              <path [attr.d]="circuit().svgPath" stroke="rgba(255,255,255,0.18)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+              <path [attr.d]="circuit().svgPath" stroke="rgba(255,255,255,0.18)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
               <!-- Trazado principal blanco nítido -->
-              <path [attr.d]="circuit().svgPath" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+              <path [attr.d]="circuit().svgPath" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
               <!-- Resplandor en cyan de telemetría -->
               <path [attr.d]="circuit().svgPath" class="track-glow" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
             </svg>
@@ -157,7 +157,7 @@
           <div class="circuit-stats-grid">
             <div class="stat"><span class="lbl">LONGITUD TOTAL</span><span class="val">{{ circuit().lengthKm }}</span><span class="sub">Distancia por vuelta</span></div>
             <div class="stat"><span class="lbl">VUELTAS DE CARRERA</span><span class="val">{{ circuit().laps }}</span><span class="sub">Distancia total oficial</span></div>
-            <div class="stat"><span class="lbl">NÚMERO DE CURVAS</span><span class="val">20</span><span class="sub">11 Izq • 9 Der</span></div>
+            <div class="stat"><span class="lbl">NÚMERO DE CURVAS</span><span class="val">{{ circuit().turns || 20 }}</span><span class="sub">Curvas FIA</span></div>
             <div class="stat"><span class="lbl">RÉCORD DE PISTA</span><span class="val gold">{{ circuit().lapRecord }}</span><span class="sub">{{ circuit().lapRecordHolder }}</span></div>
           </div>
         </div>
@@ -298,20 +298,20 @@
           <div class="circuit-card-header">
             <div>
               <h3>{{ circuit().name.toUpperCase() }} // TRAZADO OFICIAL FIA</h3>
-              <p>{{ circuit().drsZones }} Zonas DRS Activas • Longitud Oficial {{ circuit().lengthKm }}</p>
+              <p>{{ circuit().overrideZones ?? circuit().drsZones }} Zonas de Deploy (Overtake Mode) • Longitud Oficial {{ circuit().lengthKm }}</p>
             </div>
             <div class="circuit-tags">
-              <span class="tag-drs">{{ circuit().drsZones }} ZONAS DRS</span>
+              <span class="tag-drs">{{ circuit().overrideZones ?? circuit().drsZones }} ZONAS OVERTAKE</span>
               <span class="tag-sector">OFICIAL FIA</span>
             </div>
           </div>
 
           <div class="circuit-svg-wrapper">
-            <svg viewBox="0 0 420 300" class="track-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg [attr.viewBox]="circuit().viewBox || '0 0 500 500'" class="track-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
               <!-- Trazado de base ancho -->
-              <path [attr.d]="circuit().svgPath" stroke="rgba(255,255,255,0.18)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+              <path [attr.d]="circuit().svgPath" stroke="rgba(255,255,255,0.18)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
               <!-- Trazado principal blanco nítido -->
-              <path [attr.d]="circuit().svgPath" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+              <path [attr.d]="circuit().svgPath" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
               <!-- Resplandor en cyan de telemetría -->
               <path [attr.d]="circuit().svgPath" class="track-glow" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
             </svg>
@@ -321,7 +321,7 @@
           <div class="circuit-stats-grid">
             <div class="stat"><span class="lbl">LONGITUD TOTAL</span><span class="val">{{ circuit().lengthKm }}</span><span class="sub">Distancia por vuelta</span></div>
             <div class="stat"><span class="lbl">VUELTAS DE CARRERA</span><span class="val">{{ circuit().laps }}</span><span class="sub">Distancia total oficial</span></div>
-            <div class="stat"><span class="lbl">NÚMERO DE CURVAS</span><span class="val">20</span><span class="sub">11 Izq • 9 Der</span></div>
+            <div class="stat"><span class="lbl">NÚMERO DE CURVAS</span><span class="val">{{ circuit().turns || 20 }}</span><span class="sub">Curvas FIA</span></div>
             <div class="stat"><span class="lbl">RÉCORD DE PISTA</span><span class="val gold">{{ circuit().lapRecord }}</span><span class="sub">{{ circuit().lapRecordHolder }}</span></div>
           </div>
         </div>

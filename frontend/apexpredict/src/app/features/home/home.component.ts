@@ -54,10 +54,9 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
 
         <!-- SVG CIRCUITO REAL / ESTILIZADO -->
         <div class="circuit-svg-box">
-          <svg viewBox="0 0 420 300">
+          <svg [attr.viewBox]="currentCircuit().viewBox || '0 0 500 500'">
             <path [attr.d]="currentCircuit().svgPath" />
             <path class="track-glow" [attr.d]="currentCircuit().svgPath" />
-            <circle cx="100" cy="230" r="6" fill="#fff" stroke="var(--red)" stroke-width="4" />
           </svg>
         </div>
 
@@ -76,8 +75,8 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
             <span class="spec-val">{{ currentCircuit().lapRecord }}</span>
           </div>
           <div class="spec-item">
-            <span class="spec-label">Zonas DRS</span>
-            <span class="spec-val">{{ currentCircuit().drsZones }}</span>
+            <span class="spec-label">Zonas Overtake</span>
+            <span class="spec-val">{{ currentCircuit().overrideZones ?? currentCircuit().drsZones }}</span>
           </div>
         </div>
 
@@ -267,41 +266,22 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private resolveCircuit(gpName?: string, circuitName?: string, circuitId?: string) {
-    const search = `${circuitId || ''} ${gpName || ''} ${circuitName || ''}`.toLowerCase();
-    if (search.includes('americas') || search.includes('cota') || search.includes('austin') || search.includes('united states') || search.includes('estados unidos')) {
-      this.currentCircuit.set(F1_CIRCUITS['americas']);
-    } else if (search.includes('rodriguez') || search.includes('mexic') || search.includes('hermanos')) {
-      this.currentCircuit.set(F1_CIRCUITS['rodriguez']);
-    } else if (search.includes('interlagos') || search.includes('brasil') || search.includes('brazil') || search.includes('pace') || search.includes('sao paulo')) {
-      this.currentCircuit.set(F1_CIRCUITS['interlagos']);
-    } else if (search.includes('vegas') || search.includes('strip')) {
-      this.currentCircuit.set(F1_CIRCUITS['vegas']);
-    } else if (search.includes('losail') || search.includes('lusail') || search.includes('qatar') || search.includes('catar')) {
-      this.currentCircuit.set(F1_CIRCUITS['losail']);
-    } else if (search.includes('yas') || search.includes('marina') || search.includes('abu dhabi') || search.includes('dabi')) {
-      this.currentCircuit.set(F1_CIRCUITS['yas_marina']);
-    } else if (search.includes('albert') || search.includes('melbourne') || search.includes('australia')) {
-      this.currentCircuit.set(F1_CIRCUITS['albert_park']);
-    } else if (search.includes('bahrain') || search.includes('sakhir') || search.includes('barein')) {
-      this.currentCircuit.set(F1_CIRCUITS['bahrain']);
-    } else if (search.includes('jeddah') || search.includes('yeda') || search.includes('saudi')) {
-      this.currentCircuit.set(F1_CIRCUITS['jeddah']);
-    } else if (search.includes('suzuka') || search.includes('japon') || search.includes('japan')) {
-      this.currentCircuit.set(F1_CIRCUITS['suzuka']);
-    } else if (search.includes('shanghai') || search.includes('china')) {
-      this.currentCircuit.set(F1_CIRCUITS['shanghai']);
-    } else if (search.includes('miami')) {
-      this.currentCircuit.set(F1_CIRCUITS['miami']);
-    } else if (search.includes('monaco') || search.includes('monte carlo')) {
-      this.currentCircuit.set(F1_CIRCUITS['monaco']);
-    } else if (search.includes('silverstone') || search.includes('brit') || search.includes('reino')) {
-      this.currentCircuit.set(F1_CIRCUITS['silverstone']);
-    } else if (search.includes('spa') || search.includes('francorchamps') || search.includes('belg')) {
-      this.currentCircuit.set(F1_CIRCUITS['spa']);
-    } else if (search.includes('monza') || search.includes('italia') || search.includes('italy')) {
-      this.currentCircuit.set(F1_CIRCUITS['monza']);
-    } else {
-      this.currentCircuit.set(F1_CIRCUITS['rodriguez'] || DEFAULT_CIRCUIT);
+    if (circuitId && F1_CIRCUITS[circuitId]) {
+      this.currentCircuit.set(F1_CIRCUITS[circuitId]);
+      return;
     }
+    const search = `${circuitId || ''} ${gpName || ''} ${circuitName || ''}`.toLowerCase();
+    for (const [key, c] of Object.entries(F1_CIRCUITS)) {
+      if (
+        (key && search.includes(key)) ||
+        (c.name && search.includes(c.name.toLowerCase())) ||
+        (c.shortName && search.includes(c.shortName.toLowerCase())) ||
+        (c.city && search.includes(c.city.toLowerCase()))
+      ) {
+        this.currentCircuit.set(c);
+        return;
+      }
+    }
+    this.currentCircuit.set(F1_CIRCUITS['rodriguez'] || DEFAULT_CIRCUIT);
   }
 }
