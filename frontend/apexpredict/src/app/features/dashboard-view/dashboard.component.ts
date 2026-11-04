@@ -15,7 +15,8 @@ import {
   PredictionHistoryItem,
   JolpicaDriverStanding,
   JolpicaConstructorStanding,
-  resolveCircuitShortName
+  resolveCircuitShortName,
+  getTeammateDuoForRound
 } from '../../core/models/api.models';
 import { PodiumPickerComponent, PodiumSelection } from './components/podium-picker/podium-picker.component';
 import { DriverPickerModalComponent } from '../../shared/components/driver-picker-modal/driver-picker-modal.component';
@@ -58,8 +59,8 @@ export class DashboardComponent implements OnInit {
   // Sesión F1 activa
   readonly session = signal<NextSession | null>(null);
   readonly isLocked = computed(() => this.session()?.isLocked ?? false);
-  readonly matchupDriver1 = computed(() => this.session()?.matchupDriver1 || 'norris');
-  readonly matchupDriver2 = computed(() => this.session()?.matchupDriver2 || 'verstappen');
+  readonly matchupDriver1 = computed(() => this.session()?.matchupDriver1 || getTeammateDuoForRound(this.session()?.round || 20).driver1);
+  readonly matchupDriver2 = computed(() => this.session()?.matchupDriver2 || getTeammateDuoForRound(this.session()?.round || 20).driver2);
   readonly circuitShortName = computed<string>(() => {
     return resolveCircuitShortName(null, this.session());
   });
@@ -167,15 +168,10 @@ export class DashboardComponent implements OnInit {
       } else if (tabParam === 'posiciones' || tabParam === 'global') {
         this.activeTab.set('posiciones');
         this.posicionesSubTab.set('jugadores');
-        this.loadGlobalLeaderboard();
-        this.loadF1Standings();
       } else if (tabParam === 'historial') {
         this.activeTab.set('historial');
-        this.loadHistory();
       } else {
         this.activeTab.set('pronostico');
-        this.loadNextSession();
-        this.loadCurrentPrediction();
       }
     });
   }

@@ -15,7 +15,8 @@ import {
   F1_DRIVERS,
   DriverOption,
   JolpicaDriverStanding,
-  resolveCircuitShortName
+  resolveCircuitShortName,
+  getTeammateDuoForRound
 } from '../../core/models/api.models';
 
 export interface SessionSchedule {
@@ -118,8 +119,8 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   readonly driverStandings = signal<JolpicaDriverStanding[]>([]);
 
   // Duelo dinámico de la fecha actual (según sesión activa)
-  readonly duelDriver1Id = computed(() => this.session()?.matchupDriver1 || 'norris');
-  readonly duelDriver2Id = computed(() => this.session()?.matchupDriver2 || 'leclerc');
+  readonly duelDriver1Id = computed(() => this.session()?.matchupDriver1 || getTeammateDuoForRound(this.session()?.round || 20).driver1);
+  readonly duelDriver2Id = computed(() => this.session()?.matchupDriver2 || getTeammateDuoForRound(this.session()?.round || 20).driver2);
 
   readonly duelDriver1 = computed<DriverOption>(() => this.getDriverById(this.duelDriver1Id()));
   readonly duelDriver2 = computed<DriverOption>(() => this.getDriverById(this.duelDriver2Id()));
@@ -372,8 +373,9 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         this.updateCountdownFromDate(sessionData.startsAt);
         this.fetchRealWeather(sessionData.lat, sessionData.long);
 
-        const d1 = sessionData.matchupDriver1 || 'norris';
-        const d2 = sessionData.matchupDriver2 || 'leclerc';
+        const duo = getTeammateDuoForRound(sessionData.round || 20);
+        const d1 = sessionData.matchupDriver1 || duo.driver1;
+        const d2 = sessionData.matchupDriver2 || duo.driver2;
         this.loadDuelHeadToHead(d1, d2);
 
         // Al cambiar de carrera, reestablecer el estado del pronóstico
@@ -393,7 +395,8 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         this.session.set(fallback);
         this.updateCountdownFromDate(fallback.startsAt);
         this.fetchRealWeather(fallback.lat, fallback.long);
-        this.loadDuelHeadToHead(fallback.matchupDriver1 || 'norris', fallback.matchupDriver2 || 'leclerc');
+        const fallbackDuo = getTeammateDuoForRound(fallback.round || 20);
+        this.loadDuelHeadToHead(fallback.matchupDriver1 || fallbackDuo.driver1, fallback.matchupDriver2 || fallbackDuo.driver2);
       }
     });
   }

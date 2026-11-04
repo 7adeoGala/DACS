@@ -17,16 +17,28 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class WeekendMatchupService {
 
-    // Parrilla de 22 pilotos titulares confirmados y activos para la temporada 2026.
-    // Excluye expresamente pilotos de reserva o pruebas (ej: Yuki Tsunoda, Jack Doohan).
-    public static final List<String> DEFAULT_DRIVER_POOL = List.of(
-        "verstappen", "norris", "leclerc", "piastri", "hamilton",
-        "russell", "sainz", "alonso", "gasly", "albon", "hulkenberg",
-        "hadjar", "lawson", "colapinto", "bortoleto", "bearman", "ocon",
-        "perez", "bottas", "antonelli", "stroll", "lindblad"
+    public record TeamDuo(String teamName, String driver1, String driver2) {}
+
+    // Catálogo oficial de las 11 escuderías F1 2026 y sus duplas de pilotos titulares activos.
+    // Todos son pilotos confirmados que van a correr, garantizando duelos directos intra-equipo.
+    public static final List<TeamDuo> OFFICIAL_2026_TEAM_DUOS = List.of(
+        new TeamDuo("McLaren", "norris", "piastri"),
+        new TeamDuo("Ferrari", "leclerc", "hamilton"),
+        new TeamDuo("Red Bull Racing", "verstappen", "hadjar"),
+        new TeamDuo("Mercedes", "russell", "antonelli"),
+        new TeamDuo("Aston Martin", "alonso", "stroll"),
+        new TeamDuo("Alpine", "gasly", "colapinto"),
+        new TeamDuo("Williams", "sainz", "albon"),
+        new TeamDuo("Racing Bulls", "lawson", "lindblad"),
+        new TeamDuo("Audi", "hulkenberg", "bortoleto"),
+        new TeamDuo("Haas GR", "bearman", "ocon"),
+        new TeamDuo("Cadillac", "perez", "bottas")
     );
 
-    private static final Set<String> INACTIVE_RESERVE_DRIVERS = Set.of("tsunoda", "doohan");
+    // Parrilla de los 22 pilotos titulares
+    public static final List<String> DEFAULT_DRIVER_POOL = OFFICIAL_2026_TEAM_DUOS.stream()
+        .flatMap(d -> java.util.stream.Stream.of(d.driver1(), d.driver2()))
+        .toList();
 
     private final WeekendMatchupRepository matchups;
 
@@ -35,46 +47,45 @@ public class WeekendMatchupService {
     }
 
     /**
-     * Obtiene el duelo existente para la sesión o genera uno nuevo aleatorio y consistente.
-     * Sanitiza duelos previamente persistidos que contengan pilotos de reserva o inactivos.
+     * Selecciona determinística y dinámicamente la dupla de compañeros de equipo para la fecha/round.
+     */
+    public static TeamDuo selectDuoForSession(int season, int round) {
+        int index = Math.abs((season * 1000) + round) % OFFICIAL_2026_TEAM_DUOS.size();
+        return OFFICIAL_2026_TEAM_DUOS.get(index);
+    }
+
+    /**
+     * Valida si dos pilotos son compañeros titulares activos de la misma escudería en 2026.
+     */
+    public static boolean areTeammates(String d1, String d2) {
+        if (d1 == null || d2 == null || d1.equalsIgnoreCase(d2)) return false;
+        for (TeamDuo duo : OFFICIAL_2026_TEAM_DUOS) {
+            if ((duo.driver1().equalsIgnoreCase(d1) && duo.driver2().equalsIgnoreCase(d2)) ||
+                (duo.driver1().equalsIgnoreCase(d2) && duo.driver2().equalsIgnoreCase(d1))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Obtiene el duelo existente para la sesión o genera uno nuevo dinámico de compañeros de equipo.
+     * Si el duelo previamente persistido no pertenecía al mismo equipo activo, se auto-corrige.
      */
     @Transactional
     public WeekendMatchup getOrGenerateMatchup(Session session) {
         return matchups.findBySession(session)
             .map(existing -> {
-                if (isInactive(existing.getDriver1Id()) || isInactive(existing.getDriver2Id())) {
-                    String d1 = sanitize(existing.getDriver1Id(), session, 0);
-                    String d2 = sanitize(existing.getDriver2Id(), session, 1);
-                    if (d1.equalsIgnoreCase(d2)) {
-                        d2 = pickAlternative(d1);
-                    }
-                    existing.updateDrivers(d1, d2);
+                if (!areTeammates(existing.getDriver1Id(), existing.getDriver2Id())) {
+                    TeamDuo duo = selectDuoForSession(session.getSeason(), session.getRound());
+                    existing.updateDrivers(duo.driver1(), duo.driver2());
                     return matchups.save(existing);
                 }
                 return existing;
             })
             .orElseGet(() -> {
-                String driver1;
-                String driver2;
-
-                if (session.getRound() == 18) {
-                    driver1 = "norris";
-                    driver2 = "verstappen";
-                } else if (session.getRound() == 19) {
-                    driver1 = "norris";
-                    driver2 = "leclerc";
-                } else {
-                    long seed = ((long) session.getSeason() * 1000L) + session.getRound();
-                    Random rng = new Random(seed);
-
-                    List<String> pool = new ArrayList<>(DEFAULT_DRIVER_POOL);
-                    Collections.shuffle(pool, rng);
-
-                    driver1 = pool.get(0);
-                    driver2 = pool.get(1);
-                }
-
-                WeekendMatchup newMatchup = new WeekendMatchup(session, driver1, driver2);
+                TeamDuo duo = selectDuoForSession(session.getSeason(), session.getRound());
+                WeekendMatchup newMatchup = new WeekendMatchup(session, duo.driver1(), duo.driver2());
                 return matchups.save(newMatchup);
             });
     }
@@ -82,29 +93,5 @@ public class WeekendMatchupService {
     @Transactional(readOnly = true)
     public Optional<WeekendMatchup> findForSession(UUID sessionId) {
         return matchups.findBySessionId(sessionId);
-    }
-
-    private boolean isInactive(String driverId) {
-        return driverId == null || INACTIVE_RESERVE_DRIVERS.contains(driverId.trim().toLowerCase());
-    }
-
-    private String sanitize(String currentDriverId, Session session, int index) {
-        if (!isInactive(currentDriverId)) {
-            return currentDriverId.trim().toLowerCase();
-        }
-        long seed = ((long) session.getSeason() * 1000L) + session.getRound() + (index * 7L);
-        Random rng = new Random(seed);
-        List<String> pool = new ArrayList<>(DEFAULT_DRIVER_POOL);
-        Collections.shuffle(pool, rng);
-        return pool.get(0);
-    }
-
-    private String pickAlternative(String current) {
-        for (String candidate : DEFAULT_DRIVER_POOL) {
-            if (!candidate.equalsIgnoreCase(current)) {
-                return candidate;
-            }
-        }
-        return "verstappen";
     }
 }

@@ -15,7 +15,8 @@ import {
   PredictionHistoryItem,
   JolpicaDriverStanding,
   JolpicaConstructorStanding,
-  JolpicaRaceResult
+  JolpicaRaceResult,
+  getTeammateDuoForRound
 } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -122,7 +123,12 @@ export class ApiService {
     return retry<T>({
       count: 4,
       delay: (error, retryCount) => {
-        if (error.status === 502 || error.status === 503 || error.status === 504 || error.status === 429 || error.status === 0) {
+        // En 429 (Too Many Requests), no reintentar en ráfaga para evitar penalización de rate limit
+        if (error.status === 429) {
+          console.warn('[ApexPredict] Rate limit alcanzado (HTTP 429). Se preserva la cuota del servidor.');
+          throw error;
+        }
+        if (error.status === 502 || error.status === 503 || error.status === 504 || error.status === 0) {
           console.warn(`[ApexPredict] Reintentando conexión con servidor (${retryCount}/4, status: ${error.status})...`);
           return timer(Math.min(retryCount * 2500, 10000));
         }
@@ -137,9 +143,8 @@ export class ApiService {
 
   wakeServices(): void {
     if (typeof window === 'undefined') return;
-    // 1. Despertar BFF y Domain Service en cadena
+    // 1. Despertar BFF y Domain Service en cadena (backendping despierta ambos)
     this.http.get(`${this.base}/backendping`).pipe(catchError(() => of(null))).subscribe();
-    this.http.get(`${this.base}/ping`).pipe(catchError(() => of(null))).subscribe();
 
     // 2. Despertar Keycloak inmediatamente en segundo plano con endpoints JSON
     fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}/.well-known/openid-configuration`).catch(() => {});
@@ -303,27 +308,28 @@ export class ApiService {
   }
 
   getFallbackNextSession(): NextSession {
+    const duo = getTeammateDuoForRound(20, 2026);
     return {
-      id: this.ROUND_19_UUID,
+      id: 'f0c23d70-f7ca-411d-b827-7a9d45037102',
       season: 2026,
-      round: 19,
-      name: 'Mexico City Grand Prix',
-      circuit: 'Autódromo Hermanos Rodríguez',
-      circuitId: 'rodriguez',
+      round: 20,
+      name: 'São Paulo Grand Prix',
+      circuit: 'Autódromo José Carlos Pace (Interlagos)',
+      circuitId: 'interlagos',
       type: 'RACE',
-      raceDate: '2026-11-01',
-      startsAt: '2026-11-01T20:00:00Z',
+      raceDate: '2026-11-08',
+      startsAt: '2026-11-08T17:00:00Z',
       isLocked: false,
-      matchupDriver1: 'norris',
-      matchupDriver2: 'leclerc',
-      locality: 'Mexico City',
-      country: 'Mexico',
-      fp1: '2026-10-30T18:30:00Z',
-      fp2: '2026-10-30T22:00:00Z',
-      fp3: '2026-10-31T17:30:00Z',
-      qualifying: '2026-10-31T21:00:00Z',
-      lat: '19.4042',
-      long: '-99.0907'
+      matchupDriver1: duo.driver1,
+      matchupDriver2: duo.driver2,
+      locality: 'São Paulo',
+      country: 'Brazil',
+      fp1: '2026-11-06T15:30:00Z',
+      fp2: '2026-11-06T19:00:00Z',
+      fp3: '2026-11-07T14:30:00Z',
+      qualifying: '2026-11-07T18:00:00Z',
+      lat: '-23.7036',
+      long: '-46.6997'
     };
   }
 
@@ -337,11 +343,12 @@ export class ApiService {
     return this.http.get<NextSession>(`${this.base}/sessions/next`).pipe(
       timeout(1500),
       switchMap(backendSession => {
-        // Si la sesión del backend ya caducó o es del pasado, avanzar a la siguiente sesión
         const isBackendExpired = backendSession?.startsAt && (new Date(backendSession.startsAt).getTime() <= Date.now());
         if (isBackendExpired) {
           return jolpica$;
         }
+        const roundNum = backendSession.round || 20;
+        const duo = getTeammateDuoForRound(roundNum, backendSession.season || 2026);
         return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/next.json').pipe(
           timeout(2000),
           map(jolpicaData => {
@@ -351,14 +358,18 @@ export class ApiService {
               id: backendSession.id || jolpicaMapped.id,
               name: backendSession.name || jolpicaMapped.name,
               circuit: backendSession.circuit || jolpicaMapped.circuit,
-              matchupDriver1: backendSession.matchupDriver1 || 'norris',
-              matchupDriver2: backendSession.matchupDriver2 || 'leclerc',
+              startsAt: backendSession.startsAt || jolpicaMapped.startsAt,
+              isLocked: backendSession.isLocked ?? jolpicaMapped.isLocked,
+              matchupDriver1: backendSession.matchupDriver1 || duo.driver1,
+              matchupDriver2: backendSession.matchupDriver2 || duo.driver2,
             };
           }),
           catchError(() => of({
             ...this.getFallbackNextSession(),
             ...backendSession,
-            startsAt: backendSession.startsAt || '2026-11-01T20:00:00Z'
+            matchupDriver1: backendSession.matchupDriver1 || duo.driver1,
+            matchupDriver2: backendSession.matchupDriver2 || duo.driver2,
+            startsAt: backendSession.startsAt || '2026-11-08T17:00:00Z'
           }))
         );
       }),
@@ -391,8 +402,8 @@ export class ApiService {
       raceDate: race.date,
       startsAt,
       isLocked: new Date() > new Date(startsAt),
-      matchupDriver1: 'norris',
-      matchupDriver2: 'leclerc',
+      matchupDriver1: getTeammateDuoForRound(roundNum, parseInt(race.season, 10)).driver1,
+      matchupDriver2: getTeammateDuoForRound(roundNum, parseInt(race.season, 10)).driver2,
       circuitId: race.Circuit?.circuitId || 'rodriguez',
       locality: race.Circuit?.Location?.locality || 'Mexico City',
       country: race.Circuit?.Location?.country || 'Mexico',
