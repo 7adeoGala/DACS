@@ -1,6 +1,5 @@
 package ar.edu.dacs.apexpredict.connector;
 
-import ar.edu.dacs.apexpredict.connector.dto.Finish;
 import ar.edu.dacs.apexpredict.connector.dto.Race;
 import ar.edu.dacs.apexpredict.connector.service.F1Service;
 import ar.edu.dacs.apexpredict.connector.web.ConnectorController;

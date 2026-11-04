@@ -74,20 +74,19 @@ public class WeekendMatchupService {
      */
     @Transactional
     public WeekendMatchup getOrGenerateMatchup(Session session) {
-        return matchups.findBySession(session)
-            .map(existing -> {
-                if (!areTeammates(existing.getDriver1Id(), existing.getDriver2Id())) {
-                    TeamDuo duo = selectDuoForSession(session.getSeason(), session.getRound());
-                    existing.updateDrivers(duo.driver1(), duo.driver2());
-                    return matchups.save(existing);
-                }
-                return existing;
-            })
-            .orElseGet(() -> {
+        Optional<WeekendMatchup> existingOpt = matchups.findBySession(session);
+        if (existingOpt.isPresent()) {
+            WeekendMatchup existing = existingOpt.get();
+            if (!areTeammates(existing.getDriver1Id(), existing.getDriver2Id())) {
                 TeamDuo duo = selectDuoForSession(session.getSeason(), session.getRound());
-                WeekendMatchup newMatchup = new WeekendMatchup(session, duo.driver1(), duo.driver2());
-                return matchups.save(newMatchup);
-            });
+                existing.updateDrivers(duo.driver1(), duo.driver2());
+                return matchups.save(existing);
+            }
+            return existing;
+        }
+        TeamDuo duo = selectDuoForSession(session.getSeason(), session.getRound());
+        WeekendMatchup newMatchup = new WeekendMatchup(session, duo.driver1(), duo.driver2());
+        return matchups.save(newMatchup);
     }
 
     @Transactional(readOnly = true)

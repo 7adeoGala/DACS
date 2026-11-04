@@ -4,7 +4,6 @@ import ar.edu.dacs.apexpredict.application.PredictionService;
 import ar.edu.dacs.apexpredict.application.ScoringService;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;

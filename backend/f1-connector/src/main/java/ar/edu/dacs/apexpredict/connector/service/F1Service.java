@@ -70,7 +70,7 @@ public class F1Service {
                     r.constructor().name(),
                     r.status()
                 ))
-                .sorted(Comparator.comparingInt(Finish::position))
+                .sorted((f1, f2) -> Integer.compare(f1.position(), f2.position()))
                 .toList();
         } catch (IllegalArgumentException ex) {
             throw ex;
