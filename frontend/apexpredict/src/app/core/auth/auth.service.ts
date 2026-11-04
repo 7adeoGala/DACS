@@ -10,6 +10,9 @@ export class AuthService {
   private readonly router = inject(Router);
   readonly authenticated = signal(false);
   readonly isAuthenticated = this.authenticated;
+  isLoggedIn(): boolean {
+    return this.authenticated();
+  }
   readonly available = signal(true);
   readonly username = signal('');
   readonly userPoints = signal(0);
@@ -500,7 +503,11 @@ export class AuthService {
 
   logout(): Promise<void> {
     this.clearLocalSession();
-    return this.keycloak.logout({ redirectUri: new URL('.', document.baseURI).href });
+    const base = typeof document !== 'undefined' ? (document.baseURI || window.location.origin) : '';
+    const redirectUri = base.includes('/DACS/')
+      ? new URL('/DACS/', window.location.origin).href
+      : new URL('.', document.baseURI).href;
+    return this.keycloak.logout({ redirectUri });
   }
 
   private reloadHandled = false;

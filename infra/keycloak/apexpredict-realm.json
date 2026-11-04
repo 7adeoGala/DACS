@@ -12,6 +12,19 @@
   "defaultLocale": "es",
   "passwordPolicy": "length(6)",
   "resetPasswordAllowed": true,
+  "registrationEmailAsUsername": true,
+  "verifyEmail": true,
+  "smtpServer": {
+    "host": "smtp.gmail.com",
+    "port": "587",
+    "from": "noreply@apexpredict.com",
+    "fromDisplayName": "ApexPredict F1",
+    "auth": "true",
+    "ssl": "false",
+    "starttls": "true",
+    "user": "apexpredict.notifications@gmail.com",
+    "password": ""
+  },
   "loginTheme": "apexpredict",
   "defaultRole": { "name": "default-roles-apexpredict" },
   "roles": {
@@ -37,11 +50,23 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": false,
-      "redirectUris": ["https://dacs-nine.vercel.app/*", "https://dacs2026.local/apexpredict/*", "http://localhost:4200/*", "https://localhost:4200/*"],
-      "webOrigins": ["https://dacs-nine.vercel.app", "https://dacs2026.local", "http://localhost:4200", "https://localhost:4200"],
+      "redirectUris": [
+        "https://dacs-nine.vercel.app/*",
+        "https://dacs2026.local/apexpredict/*",
+        "https://dacs2026.local/DACS/*",
+        "http://localhost:4200/*",
+        "http://localhost:4200/DACS/*",
+        "https://localhost:4200/*"
+      ],
+      "webOrigins": [
+        "https://dacs-nine.vercel.app",
+        "https://dacs2026.local",
+        "http://localhost:4200",
+        "https://localhost:4200"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
-        "post.logout.redirect.uris": "https://dacs-nine.vercel.app/*##https://dacs2026.local/apexpredict/*##http://localhost:4200/*##https://localhost:4200/*"
+        "post.logout.redirect.uris": "https://dacs-nine.vercel.app/*##https://dacs2026.local/apexpredict/*##https://dacs2026.local/DACS/*##http://localhost:4200/*##http://localhost:4200/DACS/*##https://localhost:4200/*"
       },
       "protocolMappers": [
         {

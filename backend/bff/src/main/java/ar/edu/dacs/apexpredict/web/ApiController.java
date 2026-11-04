@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+@CrossOrigin(origins = {"https://dacs-nine.vercel.app", "http://localhost:4200", "https://localhost:4200", "https://dacs2026.local"})
 @RestController
 public class ApiController {
     private final DomainClient domainClient;

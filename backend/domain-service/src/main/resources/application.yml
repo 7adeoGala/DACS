@@ -24,6 +24,6 @@ server:
     include-stacktrace: never
 apexpredict:
   security:
-    issuer: ${KEYCLOAK_ISSUER:https://dacs-3-dswy.onrender.com/auth/realms/apexpredict}
+    issuer: ${KEYCLOAK_ISSUER_URI:${KEYCLOAK_ISSUER:https://dacs-3-dswy.onrender.com/auth/realms/apexpredict}}
     jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:https://dacs-3-dswy.onrender.com/auth/realms/apexpredict/protocol/openid-connect/certs}
     audience: apexpredict-backend

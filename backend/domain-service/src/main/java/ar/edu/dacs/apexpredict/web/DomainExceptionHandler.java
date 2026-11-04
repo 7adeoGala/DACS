@@ -64,6 +64,16 @@ public class DomainExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+            "status", 403,
+            "code", "backend_403",
+            "description", "No tienes permisos suficientes para realizar esta accion.",
+            "message", "Forbidden"
+        ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         String detail = ex.getMessage() != null ? ex.getMessage() : "Ocurrio un error interno en el servidor de dominio.";

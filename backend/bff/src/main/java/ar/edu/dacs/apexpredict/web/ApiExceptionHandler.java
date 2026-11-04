@@ -99,6 +99,16 @@ public class ApiExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+            "status", 403,
+            "code", "bff_403",
+            "description", "No tienes permisos suficientes para realizar esta accion.",
+            "message", "Forbidden"
+        ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
