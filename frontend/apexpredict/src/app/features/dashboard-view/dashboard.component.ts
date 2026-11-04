@@ -171,8 +171,11 @@ export class DashboardComponent implements OnInit {
         this.loadF1Standings();
       } else if (tabParam === 'historial') {
         this.activeTab.set('historial');
+        this.loadHistory();
       } else {
         this.activeTab.set('pronostico');
+        this.loadNextSession();
+        this.loadCurrentPrediction();
       }
     });
   }

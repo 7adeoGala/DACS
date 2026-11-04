@@ -33,3 +33,4 @@ BEGIN
       AND s.starts_at > CURRENT_TIMESTAMP;
 
 END $$;
+

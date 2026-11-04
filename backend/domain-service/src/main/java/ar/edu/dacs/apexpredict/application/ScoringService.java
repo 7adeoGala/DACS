@@ -183,19 +183,19 @@ public class ScoringService {
             var matchup = matchups.findBySessionId(session.getId()).orElse(null);
             var sessionPredictions = predictions.findBySessionId(session.getId());
             for (var prediction : sessionPredictions) {
-                if (prediction.getScore() == null) {
-                    try {
-                        var breakdown = calculateScore(prediction, result, matchup);
+                try {
+                    var breakdown = calculateScore(prediction, result, matchup);
+                    if (prediction.getScore() == null || !prediction.getScore().equals(breakdown.totalPoints())) {
                         prediction.applyScore(breakdown.totalPoints(), now);
                         predictions.save(prediction);
-                        log.info("Auto-score asignado a usuario {} en sesión {}: {} pts",
+                        log.info("Auto-score asignado/actualizado a usuario {} en sesión {}: {} pts",
                             prediction.getUser() != null ? prediction.getUser().getDisplayName() : "anon",
                             session.getName(),
                             breakdown.totalPoints()
                         );
-                    } catch (Exception e) {
-                        log.error("Error al auto-puntuar predicción {}: {}", prediction.getId(), e.getMessage());
                     }
+                } catch (Exception e) {
+                    log.error("Error al auto-puntuar predicción {}: {}", prediction.getId(), e.getMessage());
                 }
             }
         }
