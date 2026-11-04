@@ -2,7 +2,7 @@ import { Component, signal, computed, output, model } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { F1Driver, F1_DRIVERS, PodiumSlot } from '../../../../core/models/f1-drivers.model';
+import { F1Driver, F1_DRIVERS, ACTIVE_F1_DRIVERS, PodiumSlot } from '../../../../core/models/f1-drivers.model';
 import { DriverPickerModalComponent } from '../../../../shared/components/driver-picker-modal/driver-picker-modal.component';
 
 export type { F1Driver };
@@ -23,8 +23,8 @@ export interface PodiumSelection {
   styleUrls: ['./podium-picker.component.css']
 })
 export class PodiumPickerComponent {
-  // Lista de pilotos F1
-  readonly drivers = F1_DRIVERS;
+  // Lista de pilotos F1 activos
+  readonly drivers = ACTIVE_F1_DRIVERS;
 
   // Estado del podio (Signals / Models para permitir binding bidireccional)
   readonly p1DriverId = model<string>('');

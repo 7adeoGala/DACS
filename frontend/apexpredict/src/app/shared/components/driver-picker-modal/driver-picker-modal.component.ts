@@ -1,7 +1,7 @@
 import { Component, signal, computed, input, output, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { F1Driver, F1_DRIVERS, PodiumSlot } from '../../../core/models/f1-drivers.model';
+import { F1Driver, F1_DRIVERS, ACTIVE_F1_DRIVERS, PodiumSlot } from '../../../core/models/f1-drivers.model';
 
 @Component({
   selector: 'app-driver-picker-modal',
@@ -24,7 +24,7 @@ export class DriverPickerModalComponent {
   readonly onDriverSelected = output<{ slot: PodiumSlot; driverId: string }>();
 
   // Lista base de pilotos
-  readonly drivers: F1Driver[] = F1_DRIVERS;
+  readonly drivers: F1Driver[] = ACTIVE_F1_DRIVERS;
 
   // Filtros interactivos
   readonly searchQuery = signal<string>('');

@@ -63,3 +63,4 @@ export class AppHeaderComponent {
     this.auth.logout();
   }
 }
+

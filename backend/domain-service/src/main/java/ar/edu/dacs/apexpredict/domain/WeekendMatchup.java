@@ -42,6 +42,14 @@ public class WeekendMatchup extends BaseEntity {
     public String getDriver2Id() { return driver2Id; }
     public Instant getCreatedAt() { return createdAt; }
 
+    public void updateDrivers(String driver1Id, String driver2Id) {
+        if (Objects.equals(driver1Id, driver2Id)) {
+            throw new IllegalArgumentException("El duelo de pilotos debe componerse de dos pilotos distintos.");
+        }
+        this.driver1Id = Objects.requireNonNull(driver1Id, "El piloto 1 es obligatorio.");
+        this.driver2Id = Objects.requireNonNull(driver2Id, "El piloto 2 es obligatorio.");
+    }
+
     public boolean involvesDriver(String driverId) {
         return driver1Id.equalsIgnoreCase(driverId) || driver2Id.equalsIgnoreCase(driverId);
     }

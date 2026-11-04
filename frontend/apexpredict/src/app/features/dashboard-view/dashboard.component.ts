@@ -5,6 +5,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { 
+  ACTIVE_F1_DRIVERS,
   F1_DRIVERS, 
   F1Driver, 
   League, 
@@ -32,7 +33,7 @@ export class DashboardComponent implements OnInit {
   public readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
 
-  readonly drivers: F1Driver[] = F1_DRIVERS;
+  readonly drivers: F1Driver[] = ACTIVE_F1_DRIVERS;
   readonly activeTab = signal<'pronostico' | 'ligas' | 'posiciones' | 'historial'>('pronostico');
   readonly leagueSubTab = signal<'list' | 'create' | 'join'>('list');
   readonly posicionesSubTab = signal<'jugadores' | 'pilotos' | 'equipos'>('jugadores');
@@ -433,7 +434,8 @@ export class DashboardComponent implements OnInit {
 
   getDriver(id?: string | null): F1Driver | undefined {
     if (!id) return undefined;
-    return this.drivers.find(d => d.id === id);
+    const clean = id.trim().toLowerCase();
+    return F1_DRIVERS.find(d => d.id.toLowerCase() === clean || d.code.toLowerCase() === clean);
   }
 
   openDriverPicker(slot: 'p1' | 'p2' | 'p3' | 'pole') {
@@ -546,7 +548,7 @@ export class DashboardComponent implements OnInit {
     }
     const cleanId = String(id).trim();
     if (!cleanId || cleanId === 'undefined' || cleanId === 'null') return 'Sin selección';
-    const found = this.drivers.find(d => d.id.toLowerCase() === cleanId.toLowerCase() || d.code.toLowerCase() === cleanId.toLowerCase());
+    const found = F1_DRIVERS.find(d => d.id.toLowerCase() === cleanId.toLowerCase() || d.code.toLowerCase() === cleanId.toLowerCase());
     return found ? `${found.name} (${found.team})` : cleanId;
   }
 

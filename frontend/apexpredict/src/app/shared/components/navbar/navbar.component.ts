@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ApiService } from '../../../core/services/api.service';
-import { F1_DRIVERS, F1Driver } from '../../../core/models/f1-drivers.model';
+import { F1_DRIVERS, ACTIVE_F1_DRIVERS, F1Driver } from '../../../core/models/f1-drivers.model';
 import { environment } from '../../../../environments/environment';
 
 export interface F1TeamOption {
@@ -156,7 +156,7 @@ export class NavbarComponent implements OnInit {
 
   // Opciones de configuración de F1
   readonly teams = F1_TEAMS_OPTIONS;
-  readonly drivers: F1Driver[] = F1_DRIVERS;
+  readonly drivers: F1Driver[] = ACTIVE_F1_DRIVERS;
 
   // Estado del dropdown del perfil y navegación móvil
   readonly isProfileOpen = signal<boolean>(false);
