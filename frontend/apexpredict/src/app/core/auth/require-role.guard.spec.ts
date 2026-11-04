@@ -14,11 +14,15 @@ describe('requireRole', () => {
     authenticated: vi.fn(),
     hasRole: vi.fn(),
     login: vi.fn().mockResolvedValue(undefined),
+    isPageReload: vi.fn().mockReturnValue(false),
+    clearLocalSession: vi.fn(),
   };
   beforeEach(() => {
     auth.authenticated.mockReturnValue(true);
     auth.hasRole.mockReturnValue(false);
+    auth.isPageReload.mockReturnValue(false);
     auth.login.mockClear();
+    auth.clearLocalSession.mockClear();
     TestBed.configureTestingModule({
       providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
     });
@@ -34,9 +38,17 @@ describe('requireRole', () => {
     auth.hasRole.mockReturnValue(true);
     expect(await run()).toBe(true);
   });
-  it('inicia login y no activa la pantalla sin autenticar', async () => {
+  it('redirige a login si no esta autenticado', async () => {
     auth.authenticated.mockReturnValue(false);
-    expect(await run()).toBe(false);
-    expect(auth.login).toHaveBeenCalledWith('/admin');
+    expect(await run()).toEqual(
+      TestBed.inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: '/admin' } })
+    );
+  });
+  it('redirige a login y limpia sesion local si se refresca la pantalla', async () => {
+    auth.isPageReload.mockReturnValue(true);
+    expect(await run()).toEqual(
+      TestBed.inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: '/admin', reason: 'reload' } })
+    );
+    expect(auth.clearLocalSession).toHaveBeenCalled();
   });
 });

@@ -499,12 +499,39 @@ export class AuthService {
   }
 
   logout(): Promise<void> {
-    sessionStorage.removeItem('apex_token');
-    sessionStorage.removeItem('apex_refresh_token');
-    localStorage.removeItem('apex_token');
-    localStorage.removeItem('apex_refresh_token');
-    localStorage.removeItem('apex_username');
+    this.clearLocalSession();
     return this.keycloak.logout({ redirectUri: new URL('.', document.baseURI).href });
+  }
+
+  private reloadHandled = false;
+
+  isPageReload(): boolean {
+    if (this.reloadHandled) return false;
+
+    if (typeof window === 'undefined' || typeof performance === 'undefined') {
+      return false;
+    }
+
+    // Si viene de un callback de autenticación externa OAuth, no tratarlo como recarga manual
+    if (window.location.search.includes('code=') || window.location.hash.includes('code=')) {
+      return false;
+    }
+
+    let isReload = false;
+    const navEntries = performance.getEntriesByType?.('navigation');
+    if (navEntries && navEntries.length > 0) {
+      const nav = navEntries[0] as PerformanceNavigationTiming;
+      isReload = nav.type === 'reload';
+    } else if ((performance as any).navigation) {
+      isReload = (performance as any).navigation.type === 1;
+    }
+
+    if (isReload) {
+      this.reloadHandled = true;
+      return true;
+    }
+
+    return false;
   }
 
   register(route = 'dashboard'): Promise<void> {

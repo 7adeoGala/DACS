@@ -200,9 +200,11 @@ export class LoginComponent implements OnInit {
 
   ngOnInit() {
     this.prewarm();
-    const reset = this.route.snapshot.queryParams['reset'];
-    if (reset === 'success') {
+    const qp = this.route.snapshot.queryParams;
+    if (qp['reset'] === 'success') {
       this.successMessage.set('¡Tu contraseña fue restablecida con éxito! Ya podés iniciar sesión con tu nueva clave.');
+    } else if (qp['reason'] === 'reload') {
+      this.errorMessage.set('Por motivos de seguridad, la sesión se cerró al actualizar la página. Por favor, iniciá sesión nuevamente.');
     }
   }
 
@@ -231,7 +233,8 @@ export class LoginComponent implements OnInit {
           localStorage.removeItem('apex_remembered_username');
           localStorage.removeItem('apex_username');
         }
-        this.router.navigate(['/dashboard']);
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+        this.router.navigateByUrl(returnUrl);
       } else {
         this.errorMessage.set('Credenciales no válidas. Revisá tu usuario/correo y contraseña.');
       }
