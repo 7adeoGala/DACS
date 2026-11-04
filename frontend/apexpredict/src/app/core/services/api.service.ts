@@ -122,9 +122,9 @@ export class ApiService {
     return retry<T>({
       count: 4,
       delay: (error, retryCount) => {
-        if (error.status === 502 || error.status === 503 || error.status === 504 || error.status === 0) {
-          console.warn(`[ApexPredict] Reintentando conexión con servidor (${retryCount}/4)...`);
-          return timer(Math.min(retryCount * 3000, 10000));
+        if (error.status === 502 || error.status === 503 || error.status === 504 || error.status === 429 || error.status === 0) {
+          console.warn(`[ApexPredict] Reintentando conexión con servidor (${retryCount}/4, status: ${error.status})...`);
+          return timer(Math.min(retryCount * 2500, 10000));
         }
         throw error;
       }

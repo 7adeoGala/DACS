@@ -90,7 +90,6 @@ export class AuthService {
         }
         this.available.set(true);
         sync();
-        this.provisionUserInBackend(savedToken);
       } catch (e) {
         console.warn('Error restaurando token de sesión:', e);
       }
@@ -332,10 +331,19 @@ export class AuthService {
     throw lastError || new Error('Tiempo de espera agotado al conectar con el servidor de autenticación. Intentá nuevamente.');
   }
 
+  private lastProvisionedToken: string | null = null;
+  private isProvisioning = false;
+
   async provisionUserInBackend(token?: string): Promise<void> {
     try {
-      const authToken = token || (this.keycloak as any).token || localStorage.getItem('apex_token') || sessionStorage.getItem('apex_token');
+      const authToken = token || (this.keycloak as any).token || 
+        (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('apex_token') : null) ||
+        (typeof localStorage !== 'undefined' ? localStorage.getItem('apex_token') : null);
       if (!authToken) return;
+      if (this.lastProvisionedToken === authToken || this.isProvisioning) {
+        return;
+      }
+      this.isProvisioning = true;
       await fetch(`${environment.apiUrl}/me`, {
         method: 'PUT',
         headers: {
@@ -344,8 +352,11 @@ export class AuthService {
         },
         body: JSON.stringify({})
       });
+      this.lastProvisionedToken = authToken;
     } catch (e) {
       console.warn('Registro de usuario en backend diferido:', e);
+    } finally {
+      this.isProvisioning = false;
     }
   }
 

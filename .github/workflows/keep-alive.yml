@@ -14,20 +14,21 @@ jobs:
     steps:
       - name: Ping Servicios Render
         run: |
-          echo "Pinging BFF & Domain Service (Chain)..."
-          curl -s -o /dev/null -w "BFF-to-Domain: %{http_code}\n" --max-time 60 https://dacs-2-crv9.onrender.com/bff/backendping || true
-
-          echo "Pinging BFF & F1 Connector (Chain)..."
-          curl -s -o /dev/null -w "BFF-to-Connector: %{http_code}\n" --max-time 60 https://dacs-2-crv9.onrender.com/bff/conectorping || true
-
           echo "Pinging BFF Health..."
           curl -s -o /dev/null -w "BFF: %{http_code}\n" --max-time 45 https://dacs-2-crv9.onrender.com/bff/ping || true
+          sleep 2
 
           echo "Pinging Domain Service Direct..."
           curl -s -o /dev/null -w "Domain Service: %{http_code}\n" --max-time 60 https://dacs-pmkx.onrender.com/backend/ping || true
+          sleep 2
+
+          echo "Pinging BFF-to-Domain Chain..."
+          curl -s -o /dev/null -w "BFF-to-Domain: %{http_code}\n" --max-time 60 https://dacs-2-crv9.onrender.com/bff/backendping || true
+          sleep 2
 
           echo "Pinging F1 Connector Direct..."
           curl -s -o /dev/null -w "F1 Connector: %{http_code}\n" --max-time 60 https://dacs-1-v4ik.onrender.com/conector/ping || true
+          sleep 2
 
           echo "Pinging Keycloak Auth..."
           curl -s -o /dev/null -w "Keycloak: %{http_code}\n" --max-time 60 https://dacs-3-dswy.onrender.com/auth/realms/apexpredict || true
