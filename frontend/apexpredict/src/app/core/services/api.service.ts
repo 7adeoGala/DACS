@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, catchError, map, of, switchMap, timeout, retry, timer, tap } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, timeout, retry, timer, tap, forkJoin } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Finish,
@@ -16,7 +16,9 @@ import {
   JolpicaDriverStanding,
   JolpicaConstructorStanding,
   JolpicaRaceResult,
-  getTeammateDuoForRound
+  getTeammateDuoForRound,
+  DynamicDriverStats,
+  F1_DRIVERS
 } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -480,13 +482,145 @@ export class ApiService {
     );
   }
 
+  private readonly dynamicDriverStatsCache = new Map<string, DynamicDriverStats>();
+
   jolpicaDriverSeasonResults(driverId: string): Observable<any[]> {
     const cleanId = (driverId || '').toLowerCase().trim();
-    const jId = cleanId === 'verstappen' ? 'max_verstappen' : cleanId;
+    const jId = cleanId === 'verstappen' ? 'max_verstappen' : (cleanId === 'lindblad' ? 'arvid_lindblad' : cleanId);
     return this.http.get<any>(`https://api.jolpi.ca/ergast/f1/current/drivers/${jId}/results.json`).pipe(
       timeout(3500),
       map(data => data?.MRData?.RaceTable?.Races || []),
       catchError(() => of([]))
+    );
+  }
+
+  getDynamicDriverStats(driverId: string): Observable<DynamicDriverStats> {
+    const cleanId = (driverId || '').toLowerCase().trim();
+    if (this.dynamicDriverStatsCache.has(cleanId)) {
+      return of(this.dynamicDriverStatsCache.get(cleanId)!);
+    }
+
+    const jId = cleanId === 'verstappen' ? 'max_verstappen' : (cleanId === 'lindblad' ? 'arvid_lindblad' : cleanId);
+    const driverOpt = F1_DRIVERS.find(d => d.id.toLowerCase() === cleanId) || {
+      id: cleanId,
+      name: cleanId.toUpperCase(),
+      code: cleanId.slice(0, 3).toUpperCase(),
+      number: 0,
+      team: 'F1 Team',
+      teamColor: '#E10600'
+    };
+
+    return forkJoin({
+      standings: this.jolpicaDriverStandings(),
+      seasonResults: this.jolpicaDriverSeasonResults(cleanId),
+      careerWinsData: this.http.get<any>(`https://api.jolpi.ca/ergast/f1/drivers/${jId}/results/1.json?limit=1`).pipe(timeout(2500), catchError(() => of(null))),
+      careerPolesData: this.http.get<any>(`https://api.jolpi.ca/ergast/f1/drivers/${jId}/qualifying/1.json?limit=1`).pipe(timeout(2500), catchError(() => of(null))),
+      careerStartsData: this.http.get<any>(`https://api.jolpi.ca/ergast/f1/drivers/${jId}/results.json?limit=1`).pipe(timeout(2500), catchError(() => of(null)))
+    }).pipe(
+      map(({ standings, seasonResults, careerWinsData, careerPolesData, careerStartsData }) => {
+        const targetClean = cleanId.replace(/[^a-z0-9]/g, '');
+        const standing = (standings || []).find(s => {
+          const sId = (s.driverId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          const sCode = (s.code || '').toLowerCase();
+          const sName = (s.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          return sId === targetClean ||
+            (sId === 'maxverstappen' && targetClean === 'verstappen') ||
+            (targetClean === 'maxverstappen' && sId === 'verstappen') ||
+            (sId === 'arvidlindblad' && targetClean === 'lindblad') ||
+            (targetClean === 'arvidlindblad' && sId === 'lindblad') ||
+            sCode === targetClean ||
+            sName.includes(targetClean);
+        });
+
+        const points = standing ? parseInt(standing.points, 10) || 0 : 0;
+        const standingPosition = standing?.position ? `P${standing.position}` : '-';
+        const standingWins = standing ? parseInt(standing.wins, 10) || 0 : 0;
+
+        const races = seasonResults || [];
+        let seasonWins = 0;
+        let podiums = 0;
+        let poles = 0;
+        let fastestLaps = 0;
+        let dnfs = 0;
+        let bestPos = 99;
+
+        for (const race of races) {
+          const res = race?.Results?.[0];
+          if (!res) continue;
+          const pos = parseInt(res.position, 10);
+          const grid = parseInt(res.grid, 10);
+
+          if (pos === 1) seasonWins++;
+          if (pos >= 1 && pos <= 3) podiums++;
+          if (grid === 1) poles++;
+          if (res.FastestLap?.rank === '1') fastestLaps++;
+
+          const status = (res.status || '').toLowerCase();
+          if (status.includes('ret') || status.includes('acc') || status.includes('coll') || 
+              status.includes('eng') || status.includes('punc') || status.includes('gear') ||
+              status.includes('elect') || status.includes('hydr') || status.includes('susp')) {
+            dnfs++;
+          }
+          if (pos > 0 && pos < bestPos) {
+            bestPos = pos;
+          }
+        }
+
+        const wins = Math.max(standingWins, seasonWins);
+        const bestFinish = bestPos < 99 ? `P${bestPos}` : (standingPosition !== '-' ? standingPosition : '-');
+
+        const careerWins = careerWinsData?.MRData?.total != null ? parseInt(careerWinsData.MRData.total, 10) : wins;
+        const careerPoles = careerPolesData?.MRData?.total != null ? parseInt(careerPolesData.MRData.total, 10) : poles;
+        const careerStarts = careerStartsData?.MRData?.total != null ? parseInt(careerStartsData.MRData.total, 10) : races.length;
+
+        const stats: DynamicDriverStats = {
+          driverId: cleanId,
+          name: driverOpt.name,
+          code: driverOpt.code,
+          number: driverOpt.number,
+          team: driverOpt.team,
+          teamColor: driverOpt.teamColor,
+          nationality: standing?.nationality,
+          points,
+          standingPosition,
+          wins,
+          podiums,
+          poles,
+          fastestLaps,
+          dnfs,
+          racesCount: races.length,
+          bestFinish,
+          careerWins,
+          careerPoles,
+          careerStarts
+        };
+
+        this.dynamicDriverStatsCache.set(cleanId, stats);
+        return stats;
+      }),
+      catchError(() => {
+        const fallback: DynamicDriverStats = {
+          driverId: cleanId,
+          name: driverOpt.name,
+          code: driverOpt.code,
+          number: driverOpt.number,
+          team: driverOpt.team,
+          teamColor: driverOpt.teamColor,
+          points: 0,
+          standingPosition: '-',
+          wins: 0,
+          podiums: 0,
+          poles: 0,
+          fastestLaps: 0,
+          dnfs: 0,
+          racesCount: 0,
+          bestFinish: '-',
+          careerWins: 0,
+          careerPoles: 0,
+          careerStarts: 0
+        };
+        return of(fallback);
+      })
     );
   }
 

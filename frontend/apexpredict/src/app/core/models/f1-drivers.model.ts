@@ -46,6 +46,41 @@ export interface TeamDuo {
   driver2: string;
 }
 
+export interface TeamDuoOption {
+  id: string;
+  name: string;
+  shortName: string;
+  tag: string;
+  color: string;
+  gradient: string;
+  driver1Id: string;
+  driver2Id: string;
+}
+
+export interface DynamicDriverStats {
+  driverId: string;
+  name: string;
+  code: string;
+  number: number;
+  team: string;
+  teamColor: string;
+  nationality?: string;
+  // Métricas oficiales temporada 2026
+  points: number;
+  standingPosition: string;
+  wins: number;
+  podiums: number;
+  poles: number;
+  fastestLaps: number;
+  dnfs: number;
+  racesCount: number;
+  bestFinish: string;
+  // Métricas históricas de trayectoria F1
+  careerWins: number;
+  careerPoles: number;
+  careerStarts: number;
+}
+
 export const OFFICIAL_2026_TEAM_DUOS: TeamDuo[] = [
   { team: 'McLaren', driver1: 'norris', driver2: 'piastri' },
   { team: 'Ferrari', driver1: 'leclerc', driver2: 'hamilton' },
@@ -60,7 +95,41 @@ export const OFFICIAL_2026_TEAM_DUOS: TeamDuo[] = [
   { team: 'Cadillac', driver1: 'perez', driver2: 'bottas' },
 ];
 
+export const TEAM_DUOS_CATALOG: TeamDuoOption[] = [
+  { id: 'mclaren', name: 'McLaren F1 Team', shortName: 'McLaren', tag: 'PAPAYA', color: '#FF8000', gradient: 'linear-gradient(135deg, #FF8000 0%, #D85600 100%)', driver1Id: 'norris', driver2Id: 'piastri' },
+  { id: 'ferrari', name: 'Scuderia Ferrari', shortName: 'Ferrari', tag: 'SCUDERIA', color: '#E8002D', gradient: 'linear-gradient(135deg, #EF1A2D 0%, #8A000E 100%)', driver1Id: 'leclerc', driver2Id: 'hamilton' },
+  { id: 'redbull', name: 'Red Bull Racing', shortName: 'Red Bull', tag: 'RED BULL', color: '#1E41FF', gradient: 'linear-gradient(135deg, #1E3D7B 0%, #061026 100%)', driver1Id: 'verstappen', driver2Id: 'hadjar' },
+  { id: 'mercedes', name: 'Mercedes-AMG PETRONAS', shortName: 'Mercedes', tag: 'PETRONAS', color: '#00A19C', gradient: 'linear-gradient(135deg, #27F4D2 0%, #007A6C 100%)', driver1Id: 'russell', driver2Id: 'antonelli' },
+  { id: 'astonmartin', name: 'Aston Martin Aramco', shortName: 'Aston Martin', tag: 'AMR', color: '#00594F', gradient: 'linear-gradient(135deg, #00665E 0%, #002B26 100%)', driver1Id: 'alonso', driver2Id: 'stroll' },
+  { id: 'alpine', name: 'BWT Alpine F1 Team', shortName: 'Alpine', tag: 'ALPINE', color: '#0093CC', gradient: 'linear-gradient(135deg, #0093CC 0%, #FD4BC7 100%)', driver1Id: 'gasly', driver2Id: 'colapinto' },
+  { id: 'williams', name: 'Williams Racing', shortName: 'Williams', tag: 'WILLIAMS', color: '#00A0DE', gradient: 'linear-gradient(135deg, #00A0DE 0%, #041E42 100%)', driver1Id: 'sainz', driver2Id: 'albon' },
+  { id: 'rb', name: 'Visa Cash App RB', shortName: 'Racing Bulls', tag: 'VCARB', color: '#3858EC', gradient: 'linear-gradient(135deg, #4E71FF 0%, #10217D 100%)', driver1Id: 'lawson', driver2Id: 'lindblad' },
+  { id: 'audi', name: 'Audi F1 Team', shortName: 'Audi', tag: 'AUDI', color: '#C0C6CE', gradient: 'linear-gradient(135deg, #E6E8EC 0%, #C0C6CE 50%, #7E8590 100%)', driver1Id: 'hulkenberg', driver2Id: 'bortoleto' },
+  { id: 'haas', name: 'TGR Haas F1 Team', shortName: 'Haas GR', tag: 'HAAS GR', color: '#ED1A3B', gradient: 'linear-gradient(135deg, #FFFFFF 0%, #ED1A3B 100%)', driver1Id: 'bearman', driver2Id: 'ocon' },
+  { id: 'cadillac', name: 'Cadillac Formula 1 Team', shortName: 'Cadillac', tag: 'CADILLAC', color: '#A1A1AA', gradient: 'linear-gradient(135deg, #FFFFFF 0%, #3F3F46 100%)', driver1Id: 'perez', driver2Id: 'bottas' },
+];
+
 export function getTeammateDuoForRound(round = 20, season = 2026): TeamDuo {
   const index = Math.abs((season * 1000) + round) % OFFICIAL_2026_TEAM_DUOS.length;
   return OFFICIAL_2026_TEAM_DUOS[index];
+}
+
+export function getTeamDuoById(teamId: string): TeamDuoOption | undefined {
+  if (!teamId) return undefined;
+  const clean = teamId.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return TEAM_DUOS_CATALOG.find(t => 
+    t.id.toLowerCase() === clean || 
+    t.shortName.toLowerCase().replace(/[^a-z0-9]/g, '') === clean ||
+    clean.includes(t.id.toLowerCase())
+  );
+}
+
+export function findTeamDuoByDrivers(d1: string, d2: string): TeamDuoOption | undefined {
+  if (!d1 || !d2) return undefined;
+  const clean1 = d1.toLowerCase().trim();
+  const clean2 = d2.toLowerCase().trim();
+  return TEAM_DUOS_CATALOG.find(t => 
+    (t.driver1Id.toLowerCase() === clean1 && t.driver2Id.toLowerCase() === clean2) ||
+    (t.driver1Id.toLowerCase() === clean2 && t.driver2Id.toLowerCase() === clean1)
+  );
 }

@@ -344,18 +344,85 @@
     }
   </div>
 
-  <!-- Sección Head-to-Head: Duelo Dinámico Oficial de la Fecha -->
+  <!-- Sección Head-to-Head: Duelo Dinámico Oficial de la Fecha y Selector de Duplas -->
   <section class="duel-section">
-    <div class="duel-header">
-      <div class="duel-badge">DUELO DE LA FECHA // HEAD-TO-HEAD OFICIAL</div>
+    <!-- SELECTOR DE ESCUDERÍAS / DUPLAS F1 2026 -->
+    <div class="team-selector-card">
+      <div class="team-selector-header">
+        <div class="ts-badge-row">
+          <span class="ts-badge">ESCUDERÍAS OFICIALES F1 2026</span>
+          <span class="ts-badge-live">● TELEMETRÍA EN VIVO</span>
+        </div>
+        <h3 class="ts-title">DUELOS ENTRE COMPAÑEROS DE EQUIPO</h3>
+        <p class="ts-desc">
+          Elegí cualquiera de las 11 escuderías oficiales para comparar en vivo las estadísticas y telemetría de sus pilotos titulares con datos dinámicos homologados.
+        </p>
+      </div>
+
+      <!-- Barra horizontal scrolleable de pills por escudería -->
+      <div class="teams-filter-bar custom-scrollbar" role="tablist" aria-label="Seleccionar escudería">
+        @for (team of teamOptions; track team.id) {
+          <button 
+            type="button" 
+            class="team-filter-pill"
+            role="tab"
+            [attr.aria-selected]="selectedTeamId() === team.id"
+            [class.active]="selectedTeamId() === team.id"
+            [style.--team-color]="team.color"
+            (click)="selectTeamDuo(team.id)">
+            <span class="team-dot" [style.background]="team.gradient || team.color"></span>
+            <span class="team-name">{{ team.shortName }}</span>
+            <span class="team-tag-pill" [style.--team-color]="team.color">{{ team.tag }}</span>
+            @if (isCurrentRoundMatchupTeam(team.id)) {
+              <span class="gp-date-badge">FECHA ACTUAL</span>
+            }
+          </button>
+        }
+      </div>
+
+      <!-- Conmutador de modo de estadísticas (Temporada actual vs Trayectoria histórica) -->
+      <div class="stats-mode-bar">
+        <div class="mode-toggles">
+          <button 
+            type="button" 
+            class="mode-btn"
+            [class.active]="statsMode() === 'season'"
+            (click)="statsMode.set('season')">
+            TEMPORADA 2026 (EN VIVO)
+          </button>
+          <button 
+            type="button" 
+            class="mode-btn"
+            [class.active]="statsMode() === 'career'"
+            (click)="statsMode.set('career')">
+            TRAYECTORIA HISTÓRICA F1
+          </button>
+        </div>
+        @if (isLoadingStats()) {
+          <span class="syncing-indicator">
+            <span class="sync-spinner"></span> Sincronizando con Jolpica F1 API...
+          </span>
+        }
+      </div>
+    </div>
+
+    <!-- CABECERA DEL DUELO SELECCIONADO -->
+    <div class="duel-header" [style.--team-accent]="activeTeam().color">
+      <div class="duel-badge">
+        {{ isCurrentRoundMatchupTeam(activeTeam().id) ? 'DUELO OFICIAL DE LA FECHA' : 'COMPARATIVA INTRA-EQUIPO' }} // {{ activeTeam().name | uppercase }}
+      </div>
       <h2>{{ duelDriver1().name | uppercase }} <span class="vs">VS</span> {{ duelDriver2().name | uppercase }}</h2>
       <p class="duel-desc">
         Diferencia en el Campeonato WDC: {{ pointsDelta() }} puntos. ¿Quién saldrá de {{ circuitCity() }} con ventaja?
       </p>
       <div class="champ-pts-strip">
-        <span class="d1-pts" [style.color]="duelDriver1().teamColor">{{ duelDriver1().code }}: {{ driver1Points() }} PTS</span>
+        <span class="d1-pts" [style.color]="duelDriver1().teamColor">
+          {{ duelDriver1().code }}: {{ driver1Points() }} PTS {{ driver1Stats()?.standingPosition ? '(' + driver1Stats()!.standingPosition + ')' : '' }}
+        </span>
         <span class="delta-pts">{{ deltaLabel() }}</span>
-        <span class="d2-pts" [style.color]="duelDriver2().teamColor">{{ duelDriver2().code }}: {{ driver2Points() }} PTS</span>
+        <span class="d2-pts" [style.color]="duelDriver2().teamColor">
+          {{ duelDriver2().code }}: {{ driver2Points() }} PTS {{ driver2Stats()?.standingPosition ? '(' + driver2Stats()!.standingPosition + ')' : '' }}
+        </span>
       </div>
     </div>
 
@@ -367,29 +434,69 @@
           <h3>{{ duelDriver1().name }}</h3>
           <span class="car-number">CAR #{{ duelDriver1().number }} • {{ driver1TeamDetails().carModel }}</span>
         </div>
-        <div class="driver-stats-column">
-          <div class="stat-line">
-            <span class="val" [style.color]="duelDriver1().teamColor">{{ driver1Wins() }}</span>
-            <span class="lbl">Victorias {{ seasonYear() }}</span>
-          </div>
-          <div class="stat-line">
-            <span class="val">{{ driver1Podiums() }}</span>
-            <span class="lbl">Podios Totales</span>
-          </div>
-          <div class="stat-line">
-            <span class="val">{{ driver1Poles() }}</span>
-            <span class="lbl">Pole Positions</span>
-          </div>
-          <div class="stat-line highlight">
-            <span class="val gold">{{ driver1CircuitStat().val }}</span>
-            <span class="lbl">{{ driver1CircuitStat().lbl }}</span>
-          </div>
+
+        <div class="driver-stats-column" [class.loading-fade]="isLoadingStats()">
+          @if (statsMode() === 'season') {
+            <div class="stat-line">
+              <span class="val" [style.color]="duelDriver1().teamColor">{{ driver1Stats()?.wins ?? 0 }}</span>
+              <span class="lbl">Victorias {{ seasonYear() }}</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver1Stats()?.poles ?? 0 }}</span>
+              <span class="lbl">Pole Positions {{ seasonYear() }}</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver1Stats()?.podiums ?? 0 }}</span>
+              <span class="lbl">Podios Totales {{ seasonYear() }}</span>
+            </div>
+            <div class="stat-line">
+              <span class="val gold">{{ driver1Stats()?.points ?? 0 }} pts</span>
+              <span class="lbl">Puntos WDC ({{ driver1Stats()?.standingPosition || '-' }})</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver1Stats()?.fastestLaps ?? 0 }}</span>
+              <span class="lbl">Vueltas Rápidas</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver1Stats()?.bestFinish ?? '-' }}</span>
+              <span class="lbl">Mejor Posición Carrera</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver1Stats()?.dnfs ?? 0 }}</span>
+              <span class="lbl">Abandonos (DNFs)</span>
+            </div>
+          } @else {
+            <div class="stat-line">
+              <span class="val" [style.color]="duelDriver1().teamColor">{{ driver1Stats()?.careerWins ?? 0 }}</span>
+              <span class="lbl">Victorias Totales F1</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver1Stats()?.careerPoles ?? 0 }}</span>
+              <span class="lbl">Pole Positions F1</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver1Stats()?.careerStarts ?? 0 }}</span>
+              <span class="lbl">GPs Disputados F1</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver1Stats()?.podiums ?? 0 }}</span>
+              <span class="lbl">Podios {{ seasonYear() }}</span>
+            </div>
+            <div class="stat-line">
+              <span class="val gold">{{ driver1Stats()?.points ?? 0 }} pts</span>
+              <span class="lbl">Puntos WDC {{ seasonYear() }}</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver1Stats()?.bestFinish ?? '-' }}</span>
+              <span class="lbl">Mejor Puesto 2026</span>
+            </div>
+          }
         </div>
       </div>
 
       <!-- Centro: Barras de Comparativa y Votos -->
       <div class="battle-center-metrics">
-        <div class="metric-title">TELEMETRÍA COMPARADA</div>
+        <div class="metric-title">TELEMETRÍA COMPARADA INTRA-EQUIPO</div>
         <div class="compare-bar-group">
           <div class="compare-labels">
             <span [style.color]="duelDriver1().teamColor">{{ qualiD1() }}</span>
@@ -451,27 +558,65 @@
           <h3>{{ duelDriver2().name }}</h3>
           <span class="car-number">CAR #{{ duelDriver2().number }} • {{ driver2TeamDetails().carModel }}</span>
         </div>
-        <div class="driver-stats-column">
-          <div class="stat-line">
-            <span class="val" [style.color]="duelDriver2().teamColor">{{ driver2Wins() }}</span>
-            <span class="lbl">Victorias {{ seasonYear() }}</span>
-          </div>
-          <div class="stat-line">
-            <span class="val">{{ driver2Podiums() }}</span>
-            <span class="lbl">Podios Totales</span>
-          </div>
-          <div class="stat-line">
-            <span class="val">{{ driver2Poles() }}</span>
-            <span class="lbl">Pole Positions</span>
-          </div>
-          <div class="stat-line highlight">
-            <span class="val gold">{{ driver2CircuitStat().val }}</span>
-            <span class="lbl">{{ driver2CircuitStat().lbl }}</span>
-          </div>
+
+        <div class="driver-stats-column" [class.loading-fade]="isLoadingStats()">
+          @if (statsMode() === 'season') {
+            <div class="stat-line">
+              <span class="val" [style.color]="duelDriver2().teamColor">{{ driver2Stats()?.wins ?? 0 }}</span>
+              <span class="lbl">Victorias {{ seasonYear() }}</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver2Stats()?.poles ?? 0 }}</span>
+              <span class="lbl">Pole Positions {{ seasonYear() }}</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver2Stats()?.podiums ?? 0 }}</span>
+              <span class="lbl">Podios Totales {{ seasonYear() }}</span>
+            </div>
+            <div class="stat-line">
+              <span class="val gold">{{ driver2Stats()?.points ?? 0 }} pts</span>
+              <span class="lbl">Puntos WDC ({{ driver2Stats()?.standingPosition || '-' }})</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver2Stats()?.fastestLaps ?? 0 }}</span>
+              <span class="lbl">Vueltas Rápidas</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver2Stats()?.bestFinish ?? '-' }}</span>
+              <span class="lbl">Mejor Posición Carrera</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver2Stats()?.dnfs ?? 0 }}</span>
+              <span class="lbl">Abandonos (DNFs)</span>
+            </div>
+          } @else {
+            <div class="stat-line">
+              <span class="val" [style.color]="duelDriver2().teamColor">{{ driver2Stats()?.careerWins ?? 0 }}</span>
+              <span class="lbl">Victorias Totales F1</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver2Stats()?.careerPoles ?? 0 }}</span>
+              <span class="lbl">Pole Positions F1</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver2Stats()?.careerStarts ?? 0 }}</span>
+              <span class="lbl">GPs Disputados F1</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver2Stats()?.podiums ?? 0 }}</span>
+              <span class="lbl">Podios {{ seasonYear() }}</span>
+            </div>
+            <div class="stat-line">
+              <span class="val gold">{{ driver2Stats()?.points ?? 0 }} pts</span>
+              <span class="lbl">Puntos WDC {{ seasonYear() }}</span>
+            </div>
+            <div class="stat-line">
+              <span class="val">{{ driver2Stats()?.bestFinish ?? '-' }}</span>
+              <span class="lbl">Mejor Puesto 2026</span>
+            </div>
+          }
         </div>
       </div>
     </div>
   </section>
-
 </div>
-

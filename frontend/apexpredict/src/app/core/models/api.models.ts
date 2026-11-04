@@ -240,30 +240,19 @@ export const F1_DRIVERS: DriverOption[] = [
 
 export const ACTIVE_F1_DRIVERS: DriverOption[] = F1_DRIVERS.filter(d => !d.isReserve);
 
-export interface TeamDuo {
-  team: string;
-  driver1: string;
-  driver2: string;
-}
+export type {
+  TeamDuo,
+  TeamDuoOption,
+  DynamicDriverStats
+} from './f1-drivers.model';
 
-export const OFFICIAL_2026_TEAM_DUOS: TeamDuo[] = [
-  { team: 'McLaren', driver1: 'norris', driver2: 'piastri' },
-  { team: 'Ferrari', driver1: 'leclerc', driver2: 'hamilton' },
-  { team: 'Red Bull Racing', driver1: 'verstappen', driver2: 'hadjar' },
-  { team: 'Mercedes', driver1: 'russell', driver2: 'antonelli' },
-  { team: 'Aston Martin', driver1: 'alonso', driver2: 'stroll' },
-  { team: 'Alpine', driver1: 'gasly', driver2: 'colapinto' },
-  { team: 'Williams', driver1: 'sainz', driver2: 'albon' },
-  { team: 'Racing Bulls', driver1: 'lawson', driver2: 'lindblad' },
-  { team: 'Audi', driver1: 'hulkenberg', driver2: 'bortoleto' },
-  { team: 'Haas GR', driver1: 'bearman', driver2: 'ocon' },
-  { team: 'Cadillac', driver1: 'perez', driver2: 'bottas' },
-];
-
-export function getTeammateDuoForRound(round = 20, season = 2026): TeamDuo {
-  const index = Math.abs((season * 1000) + round) % OFFICIAL_2026_TEAM_DUOS.length;
-  return OFFICIAL_2026_TEAM_DUOS[index];
-}
+export {
+  OFFICIAL_2026_TEAM_DUOS,
+  TEAM_DUOS_CATALOG,
+  getTeammateDuoForRound,
+  getTeamDuoById,
+  findTeamDuoByDrivers
+} from './f1-drivers.model';
 
 export interface CircuitInfo {
   name: string;
