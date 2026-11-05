@@ -6,7 +6,9 @@ import ar.edu.dacs.apexpredict.connector.dto.JolpicaDto;
 import ar.edu.dacs.apexpredict.connector.dto.Race;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
 
 @Service
