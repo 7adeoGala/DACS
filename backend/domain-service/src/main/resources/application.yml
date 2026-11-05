@@ -15,6 +15,7 @@ spring:
           time_zone: UTC
   flyway:
     enabled: true
+    out-of-order: true
 server:
   port: ${PORT:9003}
   servlet:

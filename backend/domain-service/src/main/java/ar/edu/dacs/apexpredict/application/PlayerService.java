@@ -73,9 +73,12 @@ public class PlayerService {
         return getProfile(issuer, subject);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public Profile getProfile(String issuer, String subject) {
         User user = getOrCreateUser(issuer, subject);
+        try {
+            scoringService.autoScoreAllCompletedSessions();
+        } catch (Exception ignored) {}
         long totalScore = predictions.sumScoreByUserId(user.getId());
         long count = predictions.countByUserId(user.getId());
         return new Profile(

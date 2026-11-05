@@ -339,6 +339,10 @@ public class PredictionService {
      */
     @Transactional
     public List<PredictionHistoryItem> getUserPredictionHistory(String issuer, String subject) {
+        try {
+            scoringService.autoScoreAllCompletedSessions();
+        } catch (Exception ignored) {}
+
         User user = users.findByIssuerAndSubject(issuer, subject).orElse(null);
         if (user == null) {
             return List.of();
