@@ -1,1 +1,2 @@
+org.springframework.boot.EnvironmentPostProcessor=ar.edu.dacs.apexpredict.client.RenderUrlSanitizerEnvironmentPostProcessor
 org.springframework.boot.env.EnvironmentPostProcessor=ar.edu.dacs.apexpredict.client.RenderUrlSanitizerEnvironmentPostProcessor

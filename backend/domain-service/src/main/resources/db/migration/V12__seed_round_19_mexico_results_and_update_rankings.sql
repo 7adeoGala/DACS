@@ -68,11 +68,11 @@ BEGIN
             VALUES (v_new_pred_id, rec_user.user_id, v_session_19_id, 'norris', 'norris', 1, 2, '2026-11-01 18:30:00+00');
 
             -- Picks de podio para Round 19: P1 Norris, P2 Leclerc, P3 Hamilton
-            INSERT INTO prediction_picks (id, prediction_id, position, driver_id)
+            INSERT INTO prediction_picks (prediction_id, position, driver_id)
             VALUES 
-                (gen_random_uuid(), v_new_pred_id, 0, 'norris'),
-                (gen_random_uuid(), v_new_pred_id, 1, 'leclerc'),
-                (gen_random_uuid(), v_new_pred_id, 2, 'hamilton');
+                (v_new_pred_id, 0, 'norris'),
+                (v_new_pred_id, 1, 'leclerc'),
+                (v_new_pred_id, 2, 'hamilton');
         END LOOP;
     END IF;
 

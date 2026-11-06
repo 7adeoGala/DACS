@@ -20,20 +20,23 @@ DECLARE
     v_total_pts INT;
     v_user_count INT;
 BEGIN
-    -- 1. Asegurar sesiones 18 y 19 en el calendario 2026
-    INSERT INTO racing_sessions (id, season, round, type, name, circuit, race_date, starts_at)
-    VALUES 
-        ('f0c23d70-f7ca-411d-b827-7a9d45037100', 2026, 18, 'RACE', 'United States Grand Prix', 'Circuit of the Americas', '2026-10-25', '2026-10-25 20:00:00+00'),
-        ('f0c23d70-f7ca-411d-b827-7a9d45037101', 2026, 19, 'RACE', 'Mexico City Grand Prix', 'Autódromo Hermanos Rodríguez', '2026-11-01', '2026-11-01 20:00:00+00')
-    ON CONFLICT (season, round, type) 
-    DO UPDATE SET 
-        name = EXCLUDED.name,
-        circuit = EXCLUDED.circuit,
-        race_date = EXCLUDED.race_date,
-        starts_at = EXCLUDED.starts_at;
-
+    -- 1. Resolver o asegurar sesiones 18 y 19 en el calendario 2026
     SELECT id INTO v_session_18_id FROM racing_sessions WHERE season = 2026 AND round = 18 AND type = 'RACE';
     SELECT id INTO v_session_19_id FROM racing_sessions WHERE season = 2026 AND round = 19 AND type = 'RACE';
+
+    IF v_session_18_id IS NULL THEN
+        v_session_18_id := 'f0c23d70-f7ca-411d-b827-7a9d45037100';
+        INSERT INTO racing_sessions (id, season, round, type, name, circuit, race_date, starts_at)
+        VALUES (v_session_18_id, 2026, 18, 'RACE', 'United States Grand Prix', 'Circuit of the Americas', '2026-10-25', '2026-10-25 20:00:00+00')
+        ON CONFLICT (season, round, type) DO NOTHING;
+    END IF;
+
+    IF v_session_19_id IS NULL THEN
+        v_session_19_id := 'f0c23d70-f7ca-411d-b827-7a9d45037101';
+        INSERT INTO racing_sessions (id, season, round, type, name, circuit, race_date, starts_at)
+        VALUES (v_session_19_id, 2026, 19, 'RACE', 'Mexico City Grand Prix', 'Autódromo Hermanos Rodríguez', '2026-11-01', '2026-11-01 20:00:00+00')
+        ON CONFLICT (season, round, type) DO NOTHING;
+    END IF;
 
     -- 2. Asegurar duelos oficiales de fin de semana para Round 18 y Round 19
     IF v_session_18_id IS NOT NULL THEN
@@ -113,10 +116,10 @@ BEGIN
     IF v_user_count < 4 THEN
         INSERT INTO app_users (id, issuer, subject, display_name, email)
         VALUES 
-            ('a1b2c3d4-0001-4000-8000-000000000001', 'https://dacs-3-dswy.onrender.com/auth/realms/apexpredict', 'demo-sub-maxfan', 'MaxFan33', 'maxfan@apexpredict.com'),
-            ('a1b2c3d4-0002-4000-8000-000000000002', 'https://dacs-3-dswy.onrender.com/auth/realms/apexpredict', 'demo-sub-charles16', 'Charles16_Tifosi', 'charles16@apexpredict.com'),
-            ('a1b2c3d4-0003-4000-8000-000000000003', 'https://dacs-3-dswy.onrender.com/auth/realms/apexpredict', 'demo-sub-colapinto', 'FrancoColapintoArg', 'colapinto@apexpredict.com'),
-            ('a1b2c3d4-0004-4000-8000-000000000004', 'https://dacs-3-dswy.onrender.com/auth/realms/apexpredict', 'demo-sub-lewischamp', 'SirLewis44', 'lewis44@apexpredict.com')
+            (gen_random_uuid(), 'https://dacs-3-dswy.onrender.com/auth/realms/apexpredict', 'demo-sub-maxfan', 'MaxFan33', 'maxfan@apexpredict.com'),
+            (gen_random_uuid(), 'https://dacs-3-dswy.onrender.com/auth/realms/apexpredict', 'demo-sub-charles16', 'Charles16_Tifosi', 'charles16@apexpredict.com'),
+            (gen_random_uuid(), 'https://dacs-3-dswy.onrender.com/auth/realms/apexpredict', 'demo-sub-colapinto', 'FrancoColapintoArg', 'colapinto@apexpredict.com'),
+            (gen_random_uuid(), 'https://dacs-3-dswy.onrender.com/auth/realms/apexpredict', 'demo-sub-lewischamp', 'SirLewis44', 'lewis44@apexpredict.com')
         ON CONFLICT (issuer, subject) DO NOTHING;
     END IF;
 
