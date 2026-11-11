@@ -123,5 +123,48 @@ describe('Formulario de ligas', () => {
       'player'
     );
   });
+
+  it('muestra en el historial carreras finalizadas como Brasil aunque no tengan pronostico cargado', () => {
+    const { fixture } = setup();
+    const comp = fixture.componentInstance;
+    comp.activeTab.set('historial');
+    comp.historyItems.set([
+      {
+        predictionId: null,
+        sessionId: 'f0c23d70-f7ca-411d-b827-7a9d45037102',
+        sessionName: 'São Paulo Grand Prix',
+        circuit: 'Autódromo José Carlos Pace (Interlagos)',
+        raceDate: '2026-11-08',
+        startsAt: '2026-11-08T17:00:00Z',
+        podium: [],
+        polePositionDriverId: null,
+        duelDriverPick: null,
+        safetyCarCount: null,
+        dnfCount: null,
+        score: null,
+        submittedAt: null,
+        matchupDriver1: 'lawson',
+        matchupDriver2: 'lindblad',
+        scoreBreakdown: null,
+        officialResults: {
+          podium: ['norris', 'verstappen', 'hadjar'],
+          polePositionDriverId: 'norris',
+          duelWinnerId: 'lawson',
+          safetyCarCount: 0,
+          dnfCount: 2,
+        },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain('São Paulo Grand Prix');
+    expect(text).toContain('SIN PRONÓSTICO — RESULTADO OFICIAL');
+    expect(text).toContain('RESULTADO OFICIAL FIA');
+
+    comp.selectedHistoryItem.set(comp.historyItems()[0]);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).toContain('CARRERA FINALIZADA — SIN PRONÓSTICO');
+  });
 });
 

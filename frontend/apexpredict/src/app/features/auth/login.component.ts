@@ -185,7 +185,7 @@ export class LoginComponent implements OnInit {
   private readonly api = inject(ApiService);
 
   readonly rememberMe = signal<boolean>(
-    typeof localStorage !== 'undefined' ? !!localStorage.getItem('apex_remembered_username') : false
+    typeof localStorage !== 'undefined' ? localStorage.getItem('apex_remember_me') !== 'false' : true
   );
   readonly username = signal<string>(
     typeof localStorage !== 'undefined'
@@ -203,8 +203,8 @@ export class LoginComponent implements OnInit {
     const qp = this.route.snapshot.queryParams;
     if (qp['reset'] === 'success') {
       this.successMessage.set('¡Tu contraseña fue restablecida con éxito! Ya podés iniciar sesión con tu nueva clave.');
-    } else if (qp['reason'] === 'reload') {
-      this.errorMessage.set('Por motivos de seguridad, la sesión se cerró al actualizar la página. Por favor, iniciá sesión nuevamente.');
+    } else if (qp['reason'] === 'expired') {
+      this.errorMessage.set('Tu sesión superó los 7 días de vigencia o caducó. Por favor, iniciá sesión nuevamente.');
     }
   }
 
@@ -228,8 +228,10 @@ export class LoginComponent implements OnInit {
       const ok = await this.auth.loginWithCredentials(user, pwd, this.rememberMe());
       if (ok) {
         if (this.rememberMe()) {
+          localStorage.setItem('apex_remember_me', 'true');
           localStorage.setItem('apex_remembered_username', user);
         } else {
+          localStorage.setItem('apex_remember_me', 'false');
           localStorage.removeItem('apex_remembered_username');
           localStorage.removeItem('apex_username');
         }

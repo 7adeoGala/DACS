@@ -335,7 +335,8 @@ public class PredictionService {
     }
 
     /**
-     * Consulta el historial completo de predicciones y puntuaciones del usuario.
+     * Consulta el historial completo de carreras desde el inicio de la plataforma
+     * junto con los pronósticos, desgloses y puntuaciones del usuario (haya o no cargado pronóstico).
      */
     @Transactional
     public List<PredictionHistoryItem> getUserPredictionHistory(String issuer, String subject) {
@@ -344,78 +345,125 @@ public class PredictionService {
         } catch (Exception ignored) {}
 
         User user = users.findByIssuerAndSubject(issuer, subject).orElse(null);
-        if (user == null) {
-            return List.of();
+        Map<UUID, Prediction> predictionsBySessionId = new HashMap<>();
+        if (user != null) {
+            for (Prediction p : predictions.findByUserOrderBySubmittedAtDesc(user)) {
+                UUID sid = p.getSession() != null ? p.getSession().getId() : null;
+                if (sid != null) {
+                    predictionsBySessionId.putIfAbsent(sid, p);
+                }
+            }
         }
 
-        return predictions.findByUserOrderBySubmittedAtDesc(user).stream()
-            .map(p -> {
-                Session s = p.getSession();
-                WeekendMatchup matchup = matchupService.findForSession(s.getId()).orElse(null);
-                SessionResult result = results.findBySessionId(s.getId()).orElse(null);
-                ScoringService.ScoreBreakdown breakdown = null;
-                if (result != null) {
-                    try {
-                        breakdown = scoringService.calculateScore(p, result, matchup);
-                        if (p.getScore() == null || !p.getScore().equals(breakdown.totalPoints())) {
-                            p.applyScore(breakdown.totalPoints(), Instant.now());
-                            predictions.save(p);
-                        }
-                    } catch (Exception ignored) {}
-                }
-                String d1 = matchup != null ? matchup.getDriver1Id() : null;
-                String d2 = matchup != null ? matchup.getDriver2Id() : null;
-
-                OfficialResultSummary officialSummary = null;
-                if (result != null) {
-                    List<String> podium = result.getClassification() != null
-                        ? result.getClassification().stream().limit(3).toList()
-                        : List.of();
-                    String duelWinner = scoringService.resolveDuelWinner(result, matchup);
-                    officialSummary = new OfficialResultSummary(
-                        podium,
-                        result.getPolePositionDriverId(),
-                        duelWinner,
-                        result.getSafetyCarCount(),
-                        result.getDnfCount()
-                    );
-                }
-
-                Integer finalScore = p.getScore() != null ? p.getScore() : (breakdown != null ? breakdown.totalPoints() : null);
-
-                return new PredictionHistoryItem(
-                    p.getId(),
-                    s.getId(),
-                    s.getName(),
-                    s.getCircuit(),
-                    s.getRaceDate() != null ? s.getRaceDate().toString() : null,
-                    s.getStartsAt(),
-                    p.getPodium(),
-                    p.getPolePositionDriverId(),
-                    p.getDuelDriverPick(),
-                    p.getSafetyCarCount(),
-                    p.getDnfCount(),
-                    finalScore,
-                    p.getSubmittedAt(),
-                    d1,
-                    d2,
-                    breakdown != null ? new ScoreBreakdownDto(
-                        breakdown.podiumHits(),
-                        breakdown.podiumPoints(),
-                        breakdown.poleHit(),
-                        breakdown.polePoints(),
-                        breakdown.duelHit(),
-                        breakdown.duelPoints(),
-                        breakdown.safetyCarHit(),
-                        breakdown.safetyCarPoints(),
-                        breakdown.dnfHit(),
-                        breakdown.dnfPoints(),
-                        breakdown.totalPoints()
-                    ) : null,
-                    officialSummary
-                );
-            })
+        Instant now = Instant.now();
+        List<Session> raceSessions = sessions.findAll().stream()
+            .filter(s -> s.getType() == Session.Type.RACE)
+            .sorted(Comparator
+                .comparing(Session::getStartsAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(Comparator.comparingInt(Session::getSeason).reversed())
+                .thenComparing(Comparator.comparingInt(Session::getRound).reversed()))
             .toList();
+
+        List<PredictionHistoryItem> history = new ArrayList<>();
+        for (Session s : raceSessions) {
+            UUID sid = s.getId();
+            Prediction p = sid != null ? predictionsBySessionId.get(sid) : null;
+            SessionResult result = sid != null ? results.findBySessionId(sid).orElse(null) : null;
+            boolean hasStarted = s.getStartsAt() != null && !s.getStartsAt().isAfter(now);
+
+            if (p == null && result == null && !hasStarted) {
+                continue;
+            }
+            history.add(toHistoryItem(s, p, result));
+        }
+
+        // Respaldo defensivo en caso de pronósticos asociados a sesiones no devueltas arriba
+        if (user != null) {
+            Set<UUID> includedIds = new HashSet<>();
+            for (PredictionHistoryItem item : history) {
+                if (item.sessionId() != null) includedIds.add(item.sessionId());
+            }
+            for (Prediction p : predictions.findByUserOrderBySubmittedAtDesc(user)) {
+                Session s = p.getSession();
+                if (s != null && s.getId() != null && !includedIds.contains(s.getId())) {
+                    SessionResult result = results.findBySessionId(s.getId()).orElse(null);
+                    history.add(toHistoryItem(s, p, result));
+                }
+            }
+        }
+
+        return history;
+    }
+
+    private PredictionHistoryItem toHistoryItem(Session s, Prediction p, SessionResult result) {
+        UUID sid = s.getId();
+        WeekendMatchup matchup = sid != null ? matchupService.findForSession(sid).orElse(null) : null;
+        String d1 = matchup != null ? matchup.getDriver1Id() : null;
+        String d2 = matchup != null ? matchup.getDriver2Id() : null;
+
+        ScoringService.ScoreBreakdown breakdown = null;
+        if (p != null && result != null) {
+            try {
+                breakdown = scoringService.calculateScore(p, result, matchup);
+                if (p.getScore() == null || !p.getScore().equals(breakdown.totalPoints())) {
+                    p.applyScore(breakdown.totalPoints(), Instant.now());
+                    predictions.save(p);
+                }
+            } catch (Exception ignored) {}
+        }
+
+        OfficialResultSummary officialSummary = null;
+        if (result != null) {
+            List<String> officialPodium = result.getClassification() != null
+                ? result.getClassification().stream().limit(3).toList()
+                : List.of();
+            String duelWinner = scoringService.resolveDuelWinner(result, matchup);
+            officialSummary = new OfficialResultSummary(
+                officialPodium,
+                result.getPolePositionDriverId(),
+                duelWinner,
+                result.getSafetyCarCount(),
+                result.getDnfCount()
+            );
+        }
+
+        Integer finalScore = p != null
+            ? (p.getScore() != null ? p.getScore() : (breakdown != null ? breakdown.totalPoints() : null))
+            : null;
+
+        ScoreBreakdownDto breakdownDto = breakdown != null ? new ScoreBreakdownDto(
+            breakdown.podiumHits(),
+            breakdown.podiumPoints(),
+            breakdown.poleHit(),
+            breakdown.polePoints(),
+            breakdown.duelHit(),
+            breakdown.duelPoints(),
+            breakdown.safetyCarHit(),
+            breakdown.safetyCarPoints(),
+            breakdown.dnfHit(),
+            breakdown.dnfPoints(),
+            breakdown.totalPoints()
+        ) : null;
+
+        return new PredictionHistoryItem(
+            p != null ? p.getId() : null,
+            sid,
+            s.getName(),
+            s.getCircuit(),
+            s.getRaceDate() != null ? s.getRaceDate().toString() : null,
+            s.getStartsAt(),
+            p != null && p.getPodium() != null ? p.getPodium() : List.of(),
+            p != null ? p.getPolePositionDriverId() : null,
+            p != null ? p.getDuelDriverPick() : null,
+            p != null ? p.getSafetyCarCount() : null,
+            p != null ? p.getDnfCount() : null,
+            finalScore,
+            p != null ? p.getSubmittedAt() : null,
+            d1,
+            d2,
+            breakdownDto,
+            officialSummary
+        );
     }
 
     public record OfficialResultSummary(

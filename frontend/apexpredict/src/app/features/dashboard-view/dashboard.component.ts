@@ -118,6 +118,7 @@ export class DashboardComponent implements OnInit {
   readonly isLoadingGlobalLeaderboard = signal<boolean>(false);
   readonly globalLeaderboardError = signal<string | null>(null);
   readonly historyItems = signal<PredictionHistoryItem[]>([]);
+  readonly isLoadingHistory = signal<boolean>(false);
 
   // Estados de feedback de la UI
   readonly isSaving = signal(false);
@@ -170,6 +171,7 @@ export class DashboardComponent implements OnInit {
         this.posicionesSubTab.set('jugadores');
       } else if (tabParam === 'historial') {
         this.activeTab.set('historial');
+        this.loadHistory();
       } else {
         this.activeTab.set('pronostico');
       }
@@ -403,12 +405,14 @@ export class DashboardComponent implements OnInit {
     if (!this.auth.authenticated()) {
       return;
     }
+    this.isLoadingHistory.set(true);
     this.api.predictionHistory(this.auth.username()).subscribe({
       next: (items) => {
         this.historyItems.set(items || []);
+        this.isLoadingHistory.set(false);
       },
       error: () => {
-        this.historyItems.set([]);
+        this.isLoadingHistory.set(false);
       }
     });
   }
@@ -547,10 +551,19 @@ export class DashboardComponent implements OnInit {
     if (typeof id === 'object' && id !== null) {
       id = id.id || id.name || id.code || '';
     }
-    const cleanId = String(id).trim();
-    if (!cleanId || cleanId === 'undefined' || cleanId === 'null') return 'Sin selección';
+    const rawId = String(id).trim();
+    if (!rawId || rawId === 'undefined' || rawId === 'null') return 'Sin selección';
+    const aliasMap: Record<string, string> = {
+      max_verstappen: 'verstappen',
+      arvid_lindblad: 'lindblad',
+      sergio_perez: 'perez',
+      carlos_sainz: 'sainz',
+      nico_hulkenberg: 'hulkenberg',
+      kimi_antonelli: 'antonelli',
+    };
+    const cleanId = aliasMap[rawId.toLowerCase()] || rawId;
     const found = F1_DRIVERS.find(d => d.id.toLowerCase() === cleanId.toLowerCase() || d.code.toLowerCase() === cleanId.toLowerCase());
-    return found ? `${found.name} (${found.team})` : cleanId;
+    return found ? `${found.name} (${found.team})` : rawId;
   }
 
   isPodiumHit(item: PredictionHistoryItem, index: number): boolean {

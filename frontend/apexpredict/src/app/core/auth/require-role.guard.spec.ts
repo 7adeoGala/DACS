@@ -14,15 +14,13 @@ describe('requireRole', () => {
     authenticated: vi.fn(),
     hasRole: vi.fn(),
     login: vi.fn().mockResolvedValue(undefined),
-    isPageReload: vi.fn().mockReturnValue(false),
-    clearLocalSession: vi.fn(),
+    sessionExpired: vi.fn().mockReturnValue(false),
   };
   beforeEach(() => {
     auth.authenticated.mockReturnValue(true);
     auth.hasRole.mockReturnValue(false);
-    auth.isPageReload.mockReturnValue(false);
+    auth.sessionExpired.mockReturnValue(false);
     auth.login.mockClear();
-    auth.clearLocalSession.mockClear();
     TestBed.configureTestingModule({
       providers: [provideRouter([]), { provide: AuthService, useValue: auth }],
     });
@@ -34,7 +32,7 @@ describe('requireRole', () => {
   it('manda un usuario sin rol a acceso restringido', async () => {
     expect(await run()).toEqual(TestBed.inject(Router).createUrlTree(['/forbidden']));
   });
-  it('permite el rol requerido', async () => {
+  it('permite el rol requerido y mantiene la sesion activa al recargar', async () => {
     auth.hasRole.mockReturnValue(true);
     expect(await run()).toBe(true);
   });
@@ -44,11 +42,11 @@ describe('requireRole', () => {
       TestBed.inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: '/admin' } })
     );
   });
-  it('redirige a login y limpia sesion local si se refresca la pantalla', async () => {
-    auth.isPageReload.mockReturnValue(true);
+  it('indica reason=expired si la sesion de 7 dias caduco', async () => {
+    auth.authenticated.mockReturnValue(false);
+    auth.sessionExpired.mockReturnValue(true);
     expect(await run()).toEqual(
-      TestBed.inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: '/admin', reason: 'reload' } })
+      TestBed.inject(Router).createUrlTree(['/login'], { queryParams: { returnUrl: '/admin', reason: 'expired' } })
     );
-    expect(auth.clearLocalSession).toHaveBeenCalled();
   });
 });

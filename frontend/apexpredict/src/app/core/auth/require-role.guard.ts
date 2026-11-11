@@ -7,20 +7,16 @@ export function requireRole(...roles: AppRole[]): CanActivateFn {
   return async (_route, state) => {
     const auth = inject(AuthService);
     const router = inject(Router);
-    // Al refrescar o actualizar cualquier página protegida, se redirige automáticamente al login por seguridad
-    if (auth.isPageReload()) {
-      auth.clearLocalSession();
-      return router.createUrlTree(['/login'], {
-        queryParams: { returnUrl: state.url, reason: 'reload' },
-      });
-    }
 
-    if (!auth.available())
-      return router.createUrlTree(['/'], { queryParams: { auth: 'unavailable' } });
     if (!auth.authenticated()) {
-      return router.createUrlTree(['/login'], {
-        queryParams: { returnUrl: state.url },
-      });
+      if (!auth.available()) {
+        return router.createUrlTree(['/'], { queryParams: { auth: 'unavailable' } });
+      }
+      const queryParams: Record<string, string> = { returnUrl: state.url };
+      if (auth.sessionExpired?.()) {
+        queryParams['reason'] = 'expired';
+      }
+      return router.createUrlTree(['/login'], { queryParams });
     }
     return auth.hasRole(...roles) ? true : router.createUrlTree(['/forbidden']);
   };

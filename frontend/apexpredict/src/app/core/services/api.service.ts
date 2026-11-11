@@ -584,7 +584,7 @@ export class ApiService {
         const list = items || [];
         return list.map(item => {
           const isRound18 = item.sessionId === this.ROUND_18_UUID || (item.sessionName && item.sessionName.toLowerCase().includes('united states'));
-          if (isRound18 && (item.score == null || !item.scoreBreakdown || !item.officialResults)) {
+          if (item.predictionId && isRound18 && (item.score == null || !item.scoreBreakdown || !item.officialResults)) {
             const official = this.OFFICIAL_ROUND_18_RESULTS;
             const breakdown = this.evaluateScoreForPrediction(item, official);
             return {

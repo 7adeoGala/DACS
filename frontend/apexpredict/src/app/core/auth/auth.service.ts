@@ -6,6 +6,12 @@ import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+  static readonly SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 días
+  private static readonly TOKEN_KEY = 'apex_token';
+  private static readonly REFRESH_TOKEN_KEY = 'apex_refresh_token';
+  private static readonly USERNAME_KEY = 'apex_username';
+  private static readonly SESSION_EXPIRES_AT_KEY = 'apex_session_expires_at';
+
   private readonly keycloak = inject(Keycloak);
   private readonly router = inject(Router);
   readonly authenticated = signal(false);
@@ -14,6 +20,7 @@ export class AuthService {
     return this.authenticated();
   }
   readonly available = signal(true);
+  readonly sessionExpired = signal(false);
   readonly username = signal('');
   readonly userPoints = signal(0);
   readonly roles = signal<readonly string[]>([]);
@@ -34,96 +41,198 @@ export class AuthService {
     }
   }
 
+  private safeGetItem(key: string): string | null {
+    try {
+      const fromLocal = typeof localStorage !== 'undefined' ? localStorage.getItem(key) : null;
+      if (fromLocal !== null) return fromLocal;
+      return typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private hasLocalSession(): boolean {
+    try {
+      return typeof localStorage !== 'undefined' && !!localStorage.getItem(AuthService.TOKEN_KEY);
+    } catch {
+      return false;
+    }
+  }
+
+  private isStoredSessionExpired(): boolean {
+    const rawExpires = this.safeGetItem(AuthService.SESSION_EXPIRES_AT_KEY);
+    if (rawExpires) {
+      const expiresAt = Number(rawExpires);
+      if (Number.isFinite(expiresAt) && expiresAt > 0 && Date.now() >= expiresAt) {
+        return true;
+      }
+    }
+
+    const savedRefresh = this.safeGetItem(AuthService.REFRESH_TOKEN_KEY);
+    if (savedRefresh && savedRefresh.split('.').length === 3) {
+      const decodedRefresh = this.decodeJwt(savedRefresh);
+      if (typeof decodedRefresh?.exp === 'number' && decodedRefresh.exp > 0 && Date.now() >= decodedRefresh.exp * 1000) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private applyKeycloakTokens(token: string, refreshToken?: string | null, idToken?: string | null): any {
+    const parsed = this.decodeJwt(token);
+    const tokenEndpoint = `${environment.keycloak.url}/realms/${environment.keycloak.realm}/protocol/openid-connect/token`;
+    (this.keycloak as any).token = token;
+    (this.keycloak as any).refreshToken = refreshToken || undefined;
+    if (idToken) {
+      (this.keycloak as any).idToken = idToken;
+    }
+    (this.keycloak as any).authenticated = true;
+    (this.keycloak as any).tokenParsed = parsed;
+    (this.keycloak as any).realmAccess = parsed?.realm_access;
+    (this.keycloak as any).timeSkew = 0;
+    (this.keycloak as any).clientId = environment.keycloak.clientId;
+    (this.keycloak as any).realm = environment.keycloak.realm;
+    (this.keycloak as any).authServerUrl = environment.keycloak.url;
+    if (!(this.keycloak as any).endpoints || typeof (this.keycloak as any).endpoints?.token !== 'function') {
+      (this.keycloak as any).endpoints = { token: () => tokenEndpoint };
+    }
+    return parsed;
+  }
+
+  private persistSession(
+    token: string,
+    refreshToken: string | undefined,
+    username: string | undefined,
+    persistLocal: boolean,
+    resetExpiryWindow: boolean
+  ): void {
+    const existingExpiryRaw = this.safeGetItem(AuthService.SESSION_EXPIRES_AT_KEY);
+    const existingExpiry = existingExpiryRaw ? Number(existingExpiryRaw) : NaN;
+    const expiresAt = resetExpiryWindow || !Number.isFinite(existingExpiry) || existingExpiry <= 0
+      ? Date.now() + AuthService.SESSION_DURATION_MS
+      : existingExpiry;
+    const expiresAtStr = String(expiresAt);
+
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(AuthService.TOKEN_KEY, token);
+        if (refreshToken) {
+          sessionStorage.setItem(AuthService.REFRESH_TOKEN_KEY, refreshToken);
+        }
+        if (username) {
+          sessionStorage.setItem(AuthService.USERNAME_KEY, username);
+        }
+        sessionStorage.setItem(AuthService.SESSION_EXPIRES_AT_KEY, expiresAtStr);
+      }
+    } catch {}
+
+    try {
+      if (typeof localStorage !== 'undefined') {
+        if (persistLocal) {
+          localStorage.setItem(AuthService.TOKEN_KEY, token);
+          if (refreshToken) {
+            localStorage.setItem(AuthService.REFRESH_TOKEN_KEY, refreshToken);
+          }
+          if (username) {
+            localStorage.setItem(AuthService.USERNAME_KEY, username);
+          }
+          localStorage.setItem(AuthService.SESSION_EXPIRES_AT_KEY, expiresAtStr);
+        } else {
+          localStorage.removeItem(AuthService.TOKEN_KEY);
+          localStorage.removeItem(AuthService.REFRESH_TOKEN_KEY);
+          localStorage.removeItem(AuthService.USERNAME_KEY);
+          localStorage.removeItem(AuthService.SESSION_EXPIRES_AT_KEY);
+        }
+      }
+    } catch {}
+  }
+
   async initialize(): Promise<void> {
-    const sync = () => {
-      const hasToken = !!(this.keycloak.token || localStorage.getItem('apex_token') || sessionStorage.getItem('apex_token'));
+    const hasOAuthCallback = typeof window !== 'undefined' &&
+      (window.location.search.includes('code=') || window.location.hash.includes('code='));
+
+    const sync = (isFreshAuth = false) => {
+      const currentToken = this.keycloak.token || this.safeGetItem(AuthService.TOKEN_KEY);
+      const hasToken = !!currentToken;
       const isAuth = !!this.keycloak.authenticated || hasToken;
       this.authenticated.set(isAuth);
       if (isAuth) {
         this.available.set(true);
+        this.sessionExpired.set(false);
       }
-      const parsed = this.keycloak.tokenParsed || (this.keycloak.token ? this.decodeJwt(this.keycloak.token) : null);
+      const parsed = this.keycloak.tokenParsed || (currentToken ? this.decodeJwt(currentToken) : null);
       if (parsed) {
-        this.username.set(parsed['preferred_username'] || localStorage.getItem('apex_username') || sessionStorage.getItem('apex_username') || '');
+        const resolvedUsername = parsed['preferred_username'] || this.safeGetItem(AuthService.USERNAME_KEY) || '';
+        this.username.set(resolvedUsername);
         this.roles.set(parsed.realm_access?.roles ?? []);
       }
       if (this.keycloak.authenticated && this.keycloak.token) {
-        sessionStorage.setItem('apex_token', this.keycloak.token);
-        localStorage.setItem('apex_token', this.keycloak.token);
-        if (this.keycloak.refreshToken) {
-          sessionStorage.setItem('apex_refresh_token', this.keycloak.refreshToken);
-          localStorage.setItem('apex_refresh_token', this.keycloak.refreshToken);
-        }
-        const u = parsed?.['preferred_username'];
-        if (u) {
-          localStorage.setItem('apex_username', u);
-        }
+        const persistLocal = isFreshAuth || this.hasLocalSession();
+        const resolvedUsername = parsed?.['preferred_username'] || this.safeGetItem(AuthService.USERNAME_KEY) || undefined;
+        this.persistSession(this.keycloak.token, this.keycloak.refreshToken, resolvedUsername, persistLocal, isFreshAuth);
         this.provisionUserInBackend(this.keycloak.token);
       }
     };
-    this.keycloak.onAuthSuccess = sync;
-    this.keycloak.onAuthLogout = sync;
-    this.keycloak.onAuthRefreshSuccess = sync;
+
+    this.keycloak.onAuthSuccess = () => sync(hasOAuthCallback);
+    this.keycloak.onAuthLogout = () => {
+      if (!this.safeGetItem(AuthService.TOKEN_KEY)) {
+        sync(false);
+      }
+    };
+    this.keycloak.onAuthRefreshSuccess = () => sync(false);
     this.keycloak.onAuthRefreshError = () => {
-      this.keycloak.clearToken();
-      sessionStorage.removeItem('apex_token');
-      sessionStorage.removeItem('apex_refresh_token');
-      sessionStorage.removeItem('apex_username');
-      localStorage.removeItem('apex_token');
-      localStorage.removeItem('apex_refresh_token');
-      localStorage.removeItem('apex_username');
-      sync();
+      if (!this.keycloak.token || this.isStoredSessionExpired()) {
+        this.clearLocalSession();
+        this.sessionExpired.set(true);
+      }
     };
 
-    // Restaurar token si se inició sesión previamente (soporta localStorage y sessionStorage)
-    const savedToken = localStorage.getItem('apex_token') || sessionStorage.getItem('apex_token');
-    const savedRefresh = localStorage.getItem('apex_refresh_token') || sessionStorage.getItem('apex_refresh_token');
-    if (savedToken) {
-      try {
-        (this.keycloak as any).token = savedToken;
-        (this.keycloak as any).refreshToken = savedRefresh || undefined;
-        (this.keycloak as any).authenticated = true;
-        (this.keycloak as any).tokenParsed = this.decodeJwt(savedToken);
-        (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
-        (this.keycloak as any).timeSkew = 0;
-        if (!(this.keycloak as any).endpoints) {
-          (this.keycloak as any).endpoints = {
-            token: () => `${environment.keycloak.url}/realms/${environment.keycloak.realm}/protocol/openid-connect/token`
-          };
-        }
-        this.available.set(true);
-        sync();
-      } catch (e) {
-        console.warn('Error restaurando token de sesión:', e);
-      }
+    // Validar ventana máxima de 7 días antes de restaurar credenciales guardadas
+    if (!hasOAuthCallback && this.isStoredSessionExpired()) {
+      this.clearLocalSession();
+      this.sessionExpired.set(true);
     }
 
-    const hasOAuthCallback = typeof window !== 'undefined' && 
-      (window.location.search.includes('code=') || window.location.hash.includes('code='));
+    // Restaurar token si se inició sesión previamente (soporta localStorage y sessionStorage)
+    const restoreTokens = () => {
+      if (this.isStoredSessionExpired()) {
+        this.clearLocalSession();
+        this.sessionExpired.set(true);
+        return;
+      }
+      const savedToken = this.safeGetItem(AuthService.TOKEN_KEY);
+      const savedRefresh = this.safeGetItem(AuthService.REFRESH_TOKEN_KEY);
+      if (savedToken) {
+        try {
+          this.applyKeycloakTokens(savedToken, savedRefresh);
+          const parsed = this.keycloak.tokenParsed;
+          const resolvedUsername = parsed?.['preferred_username'] || this.safeGetItem(AuthService.USERNAME_KEY) || undefined;
+          this.persistSession(savedToken, savedRefresh || undefined, resolvedUsername, this.hasLocalSession(), false);
+          this.available.set(true);
+        } catch (e) {
+          console.warn('Error restaurando token de sesión:', e);
+        }
+      }
+    };
+
+    if (!hasOAuthCallback) {
+      restoreTokens();
+      sync(false);
+    }
 
     const initPromise = this.keycloak.init({
       pkceMethod: 'S256',
       checkLoginIframe: false,
     });
 
-    const restoreTokens = () => {
-      const currentSavedToken = localStorage.getItem('apex_token') || sessionStorage.getItem('apex_token');
-      const currentSavedRefresh = localStorage.getItem('apex_refresh_token') || sessionStorage.getItem('apex_refresh_token');
-      if (currentSavedToken) {
-        (this.keycloak as any).token = currentSavedToken;
-        (this.keycloak as any).refreshToken = currentSavedRefresh || undefined;
-        (this.keycloak as any).authenticated = true;
-        (this.keycloak as any).tokenParsed = this.decodeJwt(currentSavedToken);
-        (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
-      }
-    };
-
     if (hasOAuthCallback) {
       try {
         await initPromise;
         (this.keycloak as any).timeSkew = 0;
         this.available.set(true);
-        sync();
+        sync(true);
         if (typeof window !== 'undefined' && window.history && window.history.replaceState) {
           const cleanUrl = window.location.pathname;
           window.history.replaceState({}, document.title, cleanUrl);
@@ -134,7 +243,7 @@ export class AuthService {
         if (!this.authenticated()) {
           this.available.set(false);
         }
-        sync();
+        sync(false);
       }
     } else {
       try {
@@ -145,23 +254,26 @@ export class AuthService {
         (this.keycloak as any).timeSkew = 0;
         restoreTokens();
         this.available.set(true);
-        sync();
-      } catch (err) {
-        console.warn('Keycloak init continuará en segundo plano (arranque rápido):', err);
+        sync(false);
+      } catch {
+        console.warn('Keycloak init continuará en segundo plano (arranque rápido).');
         initPromise.then(() => {
           (this.keycloak as any).timeSkew = 0;
           restoreTokens();
           this.available.set(true);
-          sync();
+          sync(false);
         }).catch(() => {});
         restoreTokens();
-        sync();
+        sync(false);
       }
     }
 
-    // Si el token almacenado ya expiró, renovarlo proactivamente en segundo plano
-    if (this.authenticated() && this.isTokenExpired()) {
-      this.refreshAccessToken().catch(() => {});
+    // Si el access token ya expiró (ej. recarga dentro de los 7 días), renovarlo antes de habilitar la vista
+    if (this.authenticated() && this.isTokenExpired() && this.safeGetItem(AuthService.REFRESH_TOKEN_KEY)) {
+      await Promise.race([
+        this.refreshAccessToken().catch(() => null),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000))
+      ]);
     }
   }
 
@@ -225,39 +337,13 @@ export class AuthService {
 
         const handleSuccess = async (successRes: Response, identifierUsed: string): Promise<boolean> => {
           const data = await successRes.json();
-          (this.keycloak as any).token = data.access_token;
-          (this.keycloak as any).refreshToken = data.refresh_token;
-          (this.keycloak as any).idToken = data.id_token;
-          (this.keycloak as any).authenticated = true;
-          (this.keycloak as any).tokenParsed = this.decodeJwt(data.access_token);
-          (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
-          (this.keycloak as any).timeSkew = 0;
-          if (!(this.keycloak as any).endpoints) {
-            (this.keycloak as any).endpoints = {
-              token: () => tokenUrl
-            };
-          }
+          const parsed = this.applyKeycloakTokens(data.access_token, data.refresh_token, data.id_token);
+          const finalUsername = parsed?.['preferred_username'] || identifierUsed;
 
-          sessionStorage.setItem('apex_token', data.access_token);
-          if (data.refresh_token) {
-            sessionStorage.setItem('apex_refresh_token', data.refresh_token);
-          }
-
-          const finalUsername = (this.keycloak as any).tokenParsed?.['preferred_username'] || identifierUsed;
-
-          if (rememberMe) {
-            localStorage.setItem('apex_token', data.access_token);
-            if (data.refresh_token) {
-              localStorage.setItem('apex_refresh_token', data.refresh_token);
-            }
-            localStorage.setItem('apex_username', finalUsername);
-          } else {
-            localStorage.removeItem('apex_token');
-            localStorage.removeItem('apex_refresh_token');
-            localStorage.removeItem('apex_username');
-          }
+          this.persistSession(data.access_token, data.refresh_token, finalUsername, rememberMe, true);
 
           this.available.set(true);
+          this.sessionExpired.set(false);
           this.authenticated.set(true);
           this.username.set(finalUsername);
           this.roles.set((this.keycloak as any).realmAccess?.roles ?? []);
@@ -386,10 +472,15 @@ export class AuthService {
       return this.refreshPromise;
     }
 
+    if (this.isStoredSessionExpired()) {
+      this.clearLocalSession();
+      this.sessionExpired.set(true);
+      return null;
+    }
+
     const refreshToken =
       (this.keycloak as any).refreshToken ||
-      (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('apex_refresh_token') : null) ||
-      (typeof localStorage !== 'undefined' ? localStorage.getItem('apex_refresh_token') : null);
+      this.safeGetItem(AuthService.REFRESH_TOKEN_KEY);
 
     if (!refreshToken) {
       return null;
@@ -399,47 +490,48 @@ export class AuthService {
     this.refreshPromise = (async () => {
       try {
         const tokenUrl = `${environment.keycloak.url}/realms/${environment.keycloak.realm}/protocol/openid-connect/token`;
-        const res = await fetch(tokenUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            client_id: environment.keycloak.clientId,
-            grant_type: 'refresh_token',
-            refresh_token: refreshToken
-          }).toString()
-        });
+        let res: Response | null = null;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          res = await fetch(tokenUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              client_id: environment.keycloak.clientId,
+              grant_type: 'refresh_token',
+              refresh_token: refreshToken
+            }).toString()
+          });
+          if (res.ok || res.status === 400 || res.status === 401 || attempt === 2) {
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 1500));
+        }
 
-        if (!res.ok) {
-          if (res.status === 400 || res.status === 401) {
-            console.warn('El refresh token ha expirado. Limpiando credenciales caducadas.');
+        if (!res || !res.ok) {
+          if (res && (res.status === 400 || res.status === 401)) {
+            console.warn('El refresh token ha expirado o fue revocado. Limpiando credenciales caducadas.');
             this.clearLocalSession();
+            this.sessionExpired.set(true);
           }
           return null;
         }
 
         const data = await res.json();
         if (data.access_token) {
-          (this.keycloak as any).token = data.access_token;
-          if (data.refresh_token) {
-            (this.keycloak as any).refreshToken = data.refresh_token;
+          const parsed = this.applyKeycloakTokens(data.access_token, data.refresh_token || refreshToken, data.id_token);
+          const resolvedUsername = parsed?.['preferred_username'] || this.safeGetItem(AuthService.USERNAME_KEY) || undefined;
+          this.persistSession(
+            data.access_token,
+            data.refresh_token || refreshToken,
+            resolvedUsername,
+            this.hasLocalSession(),
+            false
+          );
+          if (resolvedUsername) {
+            this.username.set(resolvedUsername);
           }
-          (this.keycloak as any).authenticated = true;
-          (this.keycloak as any).tokenParsed = this.decodeJwt(data.access_token);
-          (this.keycloak as any).realmAccess = (this.keycloak as any).tokenParsed?.realm_access;
-          (this.keycloak as any).timeSkew = 0;
-
-          if (typeof sessionStorage !== 'undefined') {
-            sessionStorage.setItem('apex_token', data.access_token);
-            if (data.refresh_token) {
-              sessionStorage.setItem('apex_refresh_token', data.refresh_token);
-            }
-          }
-          if (typeof localStorage !== 'undefined' && localStorage.getItem('apex_token')) {
-            localStorage.setItem('apex_token', data.access_token);
-            if (data.refresh_token) {
-              localStorage.setItem('apex_refresh_token', data.refresh_token);
-            }
-          }
+          this.roles.set(parsed?.realm_access?.roles ?? []);
+          this.sessionExpired.set(false);
           this.authenticated.set(true);
           return data.access_token;
         }
@@ -457,6 +549,19 @@ export class AuthService {
   }
 
   clearLocalSession(): void {
+    this.lastProvisionedToken = null;
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.removeItem(AuthService.TOKEN_KEY);
+      sessionStorage.removeItem(AuthService.REFRESH_TOKEN_KEY);
+      sessionStorage.removeItem(AuthService.USERNAME_KEY);
+      sessionStorage.removeItem(AuthService.SESSION_EXPIRES_AT_KEY);
+    }
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(AuthService.TOKEN_KEY);
+      localStorage.removeItem(AuthService.REFRESH_TOKEN_KEY);
+      localStorage.removeItem(AuthService.USERNAME_KEY);
+      localStorage.removeItem(AuthService.SESSION_EXPIRES_AT_KEY);
+    }
     try {
       if (this.keycloak && typeof this.keycloak.clearToken === 'function') {
         this.keycloak.clearToken();
@@ -465,16 +570,8 @@ export class AuthService {
     (this.keycloak as any).token = undefined;
     (this.keycloak as any).refreshToken = undefined;
     (this.keycloak as any).authenticated = false;
-    if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.removeItem('apex_token');
-      sessionStorage.removeItem('apex_refresh_token');
-      sessionStorage.removeItem('apex_username');
-    }
-    if (typeof localStorage !== 'undefined') {
-      localStorage.removeItem('apex_token');
-      localStorage.removeItem('apex_refresh_token');
-      localStorage.removeItem('apex_username');
-    }
+    (this.keycloak as any).tokenParsed = undefined;
+    (this.keycloak as any).realmAccess = undefined;
     this.authenticated.set(false);
     this.username.set('');
     this.roles.set([]);
@@ -508,37 +605,6 @@ export class AuthService {
       ? new URL('/DACS/', window.location.origin).href
       : new URL('.', document.baseURI).href;
     return this.keycloak.logout({ redirectUri });
-  }
-
-  private reloadHandled = false;
-
-  isPageReload(): boolean {
-    if (this.reloadHandled) return false;
-
-    if (typeof window === 'undefined' || typeof performance === 'undefined') {
-      return false;
-    }
-
-    // Si viene de un callback de autenticación externa OAuth, no tratarlo como recarga manual
-    if (window.location.search.includes('code=') || window.location.hash.includes('code=')) {
-      return false;
-    }
-
-    let isReload = false;
-    const navEntries = performance.getEntriesByType?.('navigation');
-    if (navEntries && navEntries.length > 0) {
-      const nav = navEntries[0] as PerformanceNavigationTiming;
-      isReload = nav.type === 'reload';
-    } else if ((performance as any).navigation) {
-      isReload = (performance as any).navigation.type === 1;
-    }
-
-    if (isReload) {
-      this.reloadHandled = true;
-      return true;
-    }
-
-    return false;
   }
 
   register(route = 'dashboard'): Promise<void> {

@@ -1090,29 +1090,37 @@
               </div>
             </div>
 
-            @if (historyItems().length > 0) {
+            @if (isLoadingHistory() && historyItems().length === 0) {
+              <div style="text-align: center; padding: 3rem 1rem;">
+                <p class="dim" style="font-size: 1rem;">Cargando historial de carreras y pronósticos...</p>
+              </div>
+            } @else if (historyItems().length > 0) {
               <div class="history-grid">
                 @for (h of historyItems(); track h.sessionId) {
                   <div class="history-card clickable-history-card" (click)="selectedHistoryItem.set(h)">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
                       <div>
-                        @if (h.score != null) {
+                        @if (h.predictionId && h.score != null) {
                           <span class="badge-round" style="font-size: 0.7rem; background: var(--green);">CARRERA PUNTUADA</span>
-                        } @else {
+                        } @else if (h.predictionId) {
                           <span class="badge-round" style="font-size: 0.7rem; background: var(--gold); color: #000;">PRONÓSTICO REGISTRADO — EN ESPERA</span>
+                        } @else if (h.officialResults) {
+                          <span class="badge-round" style="font-size: 0.7rem; background: rgba(148, 163, 184, 0.28); color: #e2e8f0;">SIN PRONÓSTICO — RESULTADO OFICIAL</span>
+                        } @else {
+                          <span class="badge-round" style="font-size: 0.7rem; background: rgba(148, 163, 184, 0.2); color: #cbd5e1;">SIN PRONÓSTICO CARGADO</span>
                         }
                         <h4 style="margin: 6px 0 2px; font-size: 1.15rem;">{{ h.sessionName }}</h4>
                         <p class="dim" style="font-size: 0.85rem; margin: 0;">{{ h.circuit }}</p>
                       </div>
                       <div style="text-align: right;">
                         <span style="font-family: var(--font-mono); font-size: 1.4rem; font-weight: 800; color: var(--gold);">
-                          {{ h.score != null ? h.score : '--' }} pts
+                          {{ h.score != null ? h.score : (!h.predictionId && h.officialResults ? 0 : '--') }} pts
                         </span>
                       </div>
                     </div>
 
                     <!-- DETALLE DE PICKS GUARDADOS (VALOR PUESTO) -->
-                    @if (h.podium && h.podium.length > 0) {
+                    @if (h.predictionId) {
                       <div class="history-card-picks-box">
                         <div class="picks-box-header">
                           <span class="picks-box-badge">TU PRONÓSTICO (VALOR PUESTO)</span>
@@ -1135,6 +1143,20 @@
                             SC: <strong style="color: #fff;">{{ h.safetyCarCount != null ? h.safetyCarCount : '--' }}</strong> • 
                             DNFs: <strong style="color: #fff;">{{ h.dnfCount != null ? h.dnfCount : '--' }}</strong>
                           </div>
+                        </div>
+                      </div>
+                    } @else {
+                      <div class="history-card-picks-box">
+                        <div class="picks-box-header">
+                          <span class="picks-box-badge">TU PRONÓSTICO</span>
+                          @if (h.startsAt || h.raceDate) {
+                            <span class="dim" style="font-size: 0.72rem;">
+                              {{ (h.startsAt || h.raceDate) | date:'d/MM/yyyy':'America/Argentina/Buenos_Aires' }}
+                            </span>
+                          }
+                        </div>
+                        <div class="picks-content">
+                          <div class="pick-line dim">No se registraron predicciones para esta fecha.</div>
                         </div>
                       </div>
                     }
@@ -1191,8 +1213,8 @@
               </div>
             } @else {
               <div style="text-align: center; padding: 3rem 1rem;">
-                <p class="dim" style="font-size: 1rem;">Aún no se han registrado pronósticos finalizados para tu usuario.</p>
-                <p class="dim" style="font-size: 0.85rem; margin-top: 4px;">Cuando cargues tu pronóstico para el próximo GP, acá podrás consultar tus selecciones y el desglose de puntos.</p>
+                <p class="dim" style="font-size: 1rem;">Aún no hay carreras registradas en el historial.</p>
+                <p class="dim" style="font-size: 0.85rem; margin-top: 4px;">A medida que se disputen los Grandes Premios o cargues tus pronósticos, aparecerán acá junto con los resultados oficiales FIA.</p>
               </div>
             }
           </div>
@@ -1237,12 +1259,22 @@
                   <span class="dim" style="font-size: 0.82rem;">PUNTAJE OBTENIDO EN ESTE GP:</span>
                   <div class="comp-total-pts">{{ item.score != null ? item.score : 0 }} <span style="font-size: 1rem; color: #fff;">/ 42 PTS</span></div>
                 </div>
-                <div class="comp-status-badge" [class.scored]="item.score != null">
-                  {{ item.score != null ? 'CARRERA HOMOLOGADA Y PUNTUADA' : 'RESULTADOS OFICIALES EN ESPERA' }}
+                <div class="comp-status-badge" [class.scored]="item.score != null || item.officialResults != null">
+                  @if (!item.predictionId && item.officialResults) {
+                    CARRERA FINALIZADA — SIN PRONÓSTICO
+                  } @else if (item.score != null) {
+                    CARRERA HOMOLOGADA Y PUNTUADA
+                  } @else {
+                    RESULTADOS OFICIALES EN ESPERA
+                  }
                 </div>
               </div>
 
-              @if (item.score == null) {
+              @if (!item.predictionId && item.officialResults) {
+                <div class="alert-box info" style="margin: 0.4rem 0;">
+                  <strong>Sin pronóstico registrado:</strong> No enviaste predicciones para este Gran Premio antes del cierre oficial. Debajo podés consultar los resultados oficiales homologados por la FIA.
+                </div>
+              } @else if (!item.officialResults && item.score == null) {
                 <div class="alert-box info" style="margin: 0.4rem 0;">
                   <strong>Carrera pendiente de homologación:</strong> Esta sesión aún no ha finalizado o los comisarios de la FIA no han emitido la clasificación final oficial. Debajo podés revisar tus pronósticos guardados.
                 </div>
@@ -1296,7 +1328,9 @@
                   </span>
                   <span class="c-col pts gold" data-label="Puntos">Top 3</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.officialResults?.podium?.[0] || item.score != null) {
+                    @if (!item.predictionId) {
+                      <span class="status-tag pending">SIN PRONÓSTICO</span>
+                    } @else if (item.officialResults?.podium?.[0] || item.score != null) {
                       @if (isPodiumHit(item, 0)) {
                         <span class="status-tag hit">ACERTADO</span>
                       } @else {
@@ -1320,7 +1354,9 @@
                   </span>
                   <span class="c-col pts silver" data-label="Puntos">Top 3</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.officialResults?.podium?.[1] || item.score != null) {
+                    @if (!item.predictionId) {
+                      <span class="status-tag pending">SIN PRONÓSTICO</span>
+                    } @else if (item.officialResults?.podium?.[1] || item.score != null) {
                       @if (isPodiumHit(item, 1)) {
                         <span class="status-tag hit">ACERTADO</span>
                       } @else {
@@ -1344,7 +1380,9 @@
                   </span>
                   <span class="c-col pts bronze" data-label="Puntos">Top 3</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.officialResults?.podium?.[2] || item.score != null) {
+                    @if (!item.predictionId) {
+                      <span class="status-tag pending">SIN PRONÓSTICO</span>
+                    } @else if (item.officialResults?.podium?.[2] || item.score != null) {
                       @if (isPodiumHit(item, 2)) {
                         <span class="status-tag hit">ACERTADO</span>
                       } @else {
@@ -1373,7 +1411,9 @@
                   </span>
                   <span class="c-col pts cyan" data-label="Puntos">+4 pts</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.officialResults?.polePositionDriverId || item.score != null) {
+                    @if (!item.predictionId) {
+                      <span class="status-tag pending">SIN PRONÓSTICO</span>
+                    } @else if (item.officialResults?.polePositionDriverId || item.score != null) {
                       @if (isPoleHit(item)) {
                         <span class="status-tag hit">ACERTADO</span>
                       } @else {
@@ -1401,7 +1441,9 @@
                   </span>
                   <span class="c-col pts" data-label="Puntos">+3 pts</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.officialResults?.duelWinnerId || item.score != null) {
+                    @if (!item.predictionId) {
+                      <span class="status-tag pending">SIN PRONÓSTICO</span>
+                    } @else if (item.officialResults?.duelWinnerId || item.score != null) {
                       @if (isDuelHit(item)) {
                         <span class="status-tag hit">ACERTADO</span>
                       } @else {
@@ -1432,7 +1474,9 @@
                   </span>
                   <span class="c-col pts" data-label="Puntos">+6 pts</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.officialResults?.safetyCarCount != null || item.score != null) {
+                    @if (!item.predictionId) {
+                      <span class="status-tag pending">SIN PRONÓSTICO</span>
+                    } @else if (item.officialResults?.safetyCarCount != null || item.score != null) {
                       @if (isSafetyCarHit(item)) {
                         <span class="status-tag hit">EXACTO</span>
                       } @else {
@@ -1458,7 +1502,9 @@
                   </span>
                   <span class="c-col pts" data-label="Puntos">+6 pts</span>
                   <span class="c-col status" data-label="Evaluación">
-                    @if (item.officialResults?.dnfCount != null || item.score != null) {
+                    @if (!item.predictionId) {
+                      <span class="status-tag pending">SIN PRONÓSTICO</span>
+                    } @else if (item.officialResults?.dnfCount != null || item.score != null) {
                       @if (isDnfHit(item)) {
                         <span class="status-tag hit">EXACTO</span>
                       } @else {
