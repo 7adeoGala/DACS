@@ -1,5 +1,6 @@
 package ar.edu.dacs.apexpredict.web;
 
+import ar.edu.dacs.apexpredict.application.ProdeScoreService;
 import ar.edu.dacs.apexpredict.client.ConectorClient;
 import ar.edu.dacs.apexpredict.client.DomainClient;
 import ar.edu.dacs.apexpredict.web.dto.*;
@@ -7,6 +8,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -16,10 +18,23 @@ import org.springframework.web.bind.annotation.*;
 public class ApiController {
     private final DomainClient domainClient;
     private final ConectorClient conectorClient;
+    private final ProdeScoreService prodeScoreService;
 
-    public ApiController(DomainClient domainClient, ConectorClient conectorClient) {
+    @Autowired
+    public ApiController(
+        DomainClient domainClient,
+        ConectorClient conectorClient,
+        @Autowired(required = false) ProdeScoreService prodeScoreService
+    ) {
         this.domainClient = domainClient;
         this.conectorClient = conectorClient;
+        this.prodeScoreService = prodeScoreService != null
+            ? prodeScoreService
+            : new ProdeScoreService(domainClient, conectorClient);
+    }
+
+    public ApiController(DomainClient domainClient, ConectorClient conectorClient) {
+        this(domainClient, conectorClient, null);
     }
 
     @GetMapping("/ping")
@@ -50,6 +65,41 @@ public class ApiController {
     @GetMapping("/results/{season}/{round}")
     public List<Finish> results(@PathVariable int season, @PathVariable int round) {
         return conectorClient.results(season, round);
+    }
+
+    // --- Endpoints públicos de F1 aislados vía f1-connector (el Frontend nunca consulta Jolpica/OpenF1 directamente) ---
+
+    @GetMapping("/f1/next")
+    public NextRaceInfo nextF1Race() {
+        return conectorClient.nextRace();
+    }
+
+    @GetMapping("/f1/results/last")
+    public LastRaceInfo lastF1Results() {
+        return conectorClient.lastResults();
+    }
+
+    @GetMapping("/f1/standings/drivers")
+    public List<DriverStandingInfo> driverStandings() {
+        return conectorClient.driverStandings();
+    }
+
+    @GetMapping("/f1/standings/constructors")
+    public List<ConstructorStandingInfo> constructorStandings() {
+        return conectorClient.constructorStandings();
+    }
+
+    @GetMapping("/f1/drivers/{driverId}/stats")
+    public DriverDynamicStats driverStats(@PathVariable String driverId) {
+        return conectorClient.driverStats(driverId);
+    }
+
+    // --- Orquestación en BFF: cruce de pronósticos en Dominio + resultados reales del Conector ---
+
+    @GetMapping("/scores/me/{year}/{round}")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public ProdeScoreDto calculateMyScore(@PathVariable int year, @PathVariable int round) {
+        return prodeScoreService.calculateUserScore(year, round);
     }
 
     @PutMapping("/me")

@@ -101,6 +101,9 @@ services:
 
   f1-connector:
     build: ./backend/f1-connector
+    environment:
+      JOLPICA_API_URL: ${JOLPICA_API_URL:-https://api.jolpi.ca/ergast/f1}
+      OPENF1_API_URL: ${OPENF1_API_URL:-https://api.openf1.org/v1}
     networks: [internal]
     healthcheck:
       test: [CMD, curl, --fail, --silent, http://127.0.0.1:9002/conector/ping]

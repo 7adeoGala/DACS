@@ -79,6 +79,13 @@ export interface DynamicDriverStats {
   careerWins: number;
   careerPoles: number;
   careerStarts: number;
+  seasonResults?: {
+    round: number;
+    raceName: string;
+    position: number;
+    grid: number;
+    status: string;
+  }[];
 }
 
 export const OFFICIAL_2026_TEAM_DUOS: TeamDuo[] = [

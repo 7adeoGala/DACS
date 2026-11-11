@@ -1,7 +1,6 @@
 package ar.edu.dacs.apexpredict.client;
 
-import ar.edu.dacs.apexpredict.web.dto.Finish;
-import ar.edu.dacs.apexpredict.web.dto.Race;
+import ar.edu.dacs.apexpredict.web.dto.*;
 import java.util.List;
 import java.util.Map;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -22,4 +21,22 @@ public interface ConectorClient {
 
     @GetMapping("/results/{season}/{round}")
     List<Finish> results(@PathVariable("season") int season, @PathVariable("round") int round);
+
+    @GetMapping("/results/{season}/{round}/official-summary")
+    OfficialRaceSummary officialSummary(@PathVariable("season") int season, @PathVariable("round") int round);
+
+    @GetMapping("/next")
+    NextRaceInfo nextRace();
+
+    @GetMapping("/results/last")
+    LastRaceInfo lastResults();
+
+    @GetMapping("/standings/drivers")
+    List<DriverStandingInfo> driverStandings();
+
+    @GetMapping("/standings/constructors")
+    List<ConstructorStandingInfo> constructorStandings();
+
+    @GetMapping("/drivers/{driverId}/stats")
+    DriverDynamicStats driverStats(@PathVariable("driverId") String driverId);
 }

@@ -1,22 +1,19 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class JolpicaF1Service {
   private readonly http = inject(HttpClient);
-  private readonly baseUrl = 'https://api.jolpi.ca/ergast/f1';
+  private readonly bffUrl = environment.apiUrl;
 
   getNextRace(): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/current/next.json`).pipe(
-      map(res => res?.MRData?.RaceTable?.Races?.[0])
-    );
+    return this.http.get<any>(`${this.bffUrl}/f1/next`);
   }
 
   getDriverStandings(): Observable<any[]> {
-    return this.http.get<any>(`${this.baseUrl}/current/driverStandings.json`).pipe(
-      map(res => res?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [])
-    );
+    return this.http.get<any[]>(`${this.bffUrl}/f1/standings/drivers`);
   }
 
   /**

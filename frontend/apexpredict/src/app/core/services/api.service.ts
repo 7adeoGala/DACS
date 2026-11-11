@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, catchError, map, of, switchMap, timeout, retry, timer, tap, forkJoin } from 'rxjs';
+import { Observable, catchError, map, of, switchMap, timeout, retry, timer, tap, shareReplay } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   Finish,
@@ -13,6 +13,7 @@ import {
   SubmitPrediction,
   LeaderboardEntry,
   PredictionHistoryItem,
+  ProdeScore,
   JolpicaDriverStanding,
   JolpicaConstructorStanding,
   JolpicaRaceResult,
@@ -27,37 +28,14 @@ export class ApiService {
   private readonly base = environment.apiUrl;
 
   calendar(season: number): Observable<Race[]> {
-    const jolpica$ = this.fetchJolpicaCalendar(season);
-
-    // Intentar backend con timeout de 1500ms; si duerme o tarda, cae instantáneamente a Jolpica (150ms)
     return this.http.get<Race[]>(`${this.base}/calendar/${season}`).pipe(
-      timeout(1500),
+      this.retryOnColdStart(),
       map(races => {
-        if (!races || races.length === 0) {
-          throw new Error('Empty backend calendar, falling back to Jolpica');
+        if (races && races.length > 0) {
+          this.cacheCalendar(season, races);
+          return races;
         }
-        this.cacheCalendar(season, races);
-        return races;
-      }),
-      catchError(() => jolpica$)
-    );
-  }
-
-  private fetchJolpicaCalendar(season: number): Observable<Race[]> {
-    return this.http.get<any>(`https://api.jolpi.ca/ergast/f1/${season}.json`).pipe(
-      map(data => {
-        const list = data?.MRData?.RaceTable?.Races || [];
-        const races = list.map((r: any) => ({
-          season: parseInt(r.season, 10),
-          round: parseInt(r.round, 10),
-          name: r.raceName,
-          circuit: r.Circuit?.circuitName || 'Circuito Oficial',
-          country: r.Circuit?.Location?.country || 'Internacional',
-          date: r.date,
-          startsAt: r.time ? `${r.date}T${r.time}` : `${r.date}T20:00:00Z`
-        }));
-        this.cacheCalendar(season, races);
-        return races;
+        return this.getCachedCalendar(season) || [];
       }),
       catchError(() => of(this.getCachedCalendar(season) || []))
     );
@@ -152,8 +130,8 @@ export class ApiService {
     fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}/.well-known/openid-configuration`).catch(() => {});
     fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}`, { mode: 'no-cors' }).catch(() => {});
 
-    // 3. Despertar conector F1 en segundo plano
-    fetch('https://dacs-1-v4ik.onrender.com/conector/ping', { mode: 'no-cors' }).catch(() => {});
+    // 3. Despertar conector F1 a través del BFF (el frontend nunca accede directo al conector)
+    this.http.get(`${this.base}/conectorping`).pipe(catchError(() => of(null))).subscribe();
   }
 
   getCachedPrediction(username?: string, sessionId?: string): PredictionDetail | null {
@@ -336,32 +314,32 @@ export class ApiService {
   }
 
   nextSession(): Observable<NextSession> {
-    const jolpica$ = this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/next.json').pipe(
-      timeout(2500),
-      map(data => this.mapJolpicaNextSession(data)),
+    const bffNextF1$ = this.http.get<any>(`${this.base}/f1/next`).pipe(
+      timeout(3500),
+      map(data => this.mapConnectorNextSession(data)),
       catchError(() => of(this.getFallbackNextSession()))
     );
 
     return this.http.get<NextSession>(`${this.base}/sessions/next`).pipe(
-      timeout(1500),
+      timeout(2500),
       switchMap(backendSession => {
         const isBackendExpired = backendSession?.startsAt && (new Date(backendSession.startsAt).getTime() <= Date.now());
         if (isBackendExpired) {
-          return jolpica$;
+          return bffNextF1$;
         }
-        const roundNum = backendSession.round || 20;
+        const roundNum = backendSession.round || 21;
         const duo = getTeammateDuoForRound(roundNum, backendSession.season || 2026);
-        return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/next.json').pipe(
-          timeout(2000),
-          map(jolpicaData => {
-            const jolpicaMapped = this.mapJolpicaNextSession(jolpicaData);
+        return this.http.get<any>(`${this.base}/f1/next`).pipe(
+          timeout(2500),
+          map(f1Data => {
+            const mapped = this.mapConnectorNextSession(f1Data);
             return {
-              ...jolpicaMapped,
-              id: backendSession.id || jolpicaMapped.id,
-              name: backendSession.name || jolpicaMapped.name,
-              circuit: backendSession.circuit || jolpicaMapped.circuit,
-              startsAt: backendSession.startsAt || jolpicaMapped.startsAt,
-              isLocked: backendSession.isLocked ?? jolpicaMapped.isLocked,
+              ...mapped,
+              id: backendSession.id || mapped.id,
+              name: backendSession.name || mapped.name,
+              circuit: backendSession.circuit || mapped.circuit,
+              startsAt: backendSession.startsAt || mapped.startsAt,
+              isLocked: backendSession.isLocked ?? mapped.isLocked,
               matchupDriver1: backendSession.matchupDriver1 || duo.driver1,
               matchupDriver2: backendSession.matchupDriver2 || duo.driver2,
             };
@@ -371,136 +349,78 @@ export class ApiService {
             ...backendSession,
             matchupDriver1: backendSession.matchupDriver1 || duo.driver1,
             matchupDriver2: backendSession.matchupDriver2 || duo.driver2,
-            startsAt: backendSession.startsAt || '2026-11-08T17:00:00Z'
+            startsAt: backendSession.startsAt || '2026-11-22T04:00:00Z'
           }))
         );
       }),
-      catchError(() => jolpica$)
+      catchError(() => bffNextF1$)
     );
   }
 
-  private mapJolpicaNextSession(data: any): NextSession {
-    const race = data?.MRData?.RaceTable?.Races?.[0];
-    if (!race) {
+  private mapConnectorNextSession(data: any): NextSession {
+    if (!data || !data.name) {
       return this.getFallbackNextSession();
     }
-    const fp1 = race.FirstPractice ? `${race.FirstPractice.date}T${race.FirstPractice.time}` : '2026-10-30T18:30:00Z';
-    const fp2 = race.SecondPractice ? `${race.SecondPractice.date}T${race.SecondPractice.time}` : '2026-10-30T22:00:00Z';
-    const fp3 = race.ThirdPractice ? `${race.ThirdPractice.date}T${race.ThirdPractice.time}` : '2026-10-31T17:30:00Z';
-    const sprint = race.Sprint ? `${race.Sprint.date}T${race.Sprint.time}` : null;
-    const sprintQualifying = race.SprintQualifying ? `${race.SprintQualifying.date}T${race.SprintQualifying.time}` : null;
-    const qualifying = race.Qualifying ? `${race.Qualifying.date}T${race.Qualifying.time}` : '2026-10-31T21:00:00Z';
-    const startsAt = race.time ? `${race.date}T${race.time}` : `${race.date}T20:00:00Z`;
-    const roundNum = parseInt(race.round, 10);
-    const id = roundNum === 19 ? this.ROUND_19_UUID : (roundNum === 18 ? this.ROUND_18_UUID : `jolpica-${race.season}-${race.round}`);
+    const roundNum = Number(data.round) || 21;
+    const seasonNum = Number(data.season) || 2026;
+    const duo = getTeammateDuoForRound(roundNum, seasonNum);
+    const startsAt = data.startsAt || (data.raceDate ? `${data.raceDate}T20:00:00Z` : '2026-11-22T04:00:00Z');
+    const id = roundNum === 19 ? this.ROUND_19_UUID : (roundNum === 18 ? this.ROUND_18_UUID : `jolpica-${seasonNum}-${roundNum}`);
 
     return {
       id,
-      season: parseInt(race.season, 10),
+      season: seasonNum,
       round: roundNum,
-      name: race.raceName,
-      circuit: race.Circuit?.circuitName || 'Autódromo Hermanos Rodríguez',
+      name: data.name,
+      circuit: data.circuit || 'Circuito Oficial',
       type: 'RACE',
-      raceDate: race.date,
+      raceDate: data.raceDate || '',
       startsAt,
       isLocked: new Date() > new Date(startsAt),
-      matchupDriver1: getTeammateDuoForRound(roundNum, parseInt(race.season, 10)).driver1,
-      matchupDriver2: getTeammateDuoForRound(roundNum, parseInt(race.season, 10)).driver2,
-      circuitId: race.Circuit?.circuitId || 'rodriguez',
-      locality: race.Circuit?.Location?.locality || 'Mexico City',
-      country: race.Circuit?.Location?.country || 'Mexico',
-      fp1,
-      fp2,
-      fp3,
-      qualifying,
-      sprint,
-      sprintQualifying,
-      lat: race.Circuit?.Location?.lat || '19.4042',
-      long: race.Circuit?.Location?.long || '-99.0907'
+      matchupDriver1: duo.driver1,
+      matchupDriver2: duo.driver2,
+      circuitId: data.circuitId || 'vegas',
+      locality: data.locality || '',
+      country: data.country || '',
+      fp1: data.fp1 || undefined,
+      fp2: data.fp2 || undefined,
+      fp3: data.fp3 || undefined,
+      qualifying: data.qualifying || undefined,
+      sprint: data.sprint || null,
+      sprintQualifying: data.sprintQualifying || null,
+      lat: data.lat || '36.1147',
+      long: data.lon || '-115.173'
     };
   }
 
   jolpicaDriverStandings(): Observable<JolpicaDriverStanding[]> {
-    return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/driverStandings.json').pipe(
-      map(data => {
-        const list = data?.MRData?.StandingsTable?.StandingsLists?.[0]?.DriverStandings || [];
-        return list.map((s: any) => ({
-          position: s.position,
-          points: s.points,
-          wins: s.wins,
-          driverId: s.Driver?.driverId || '',
-          code: s.Driver?.code || '',
-          name: `${s.Driver?.givenName || ''} ${s.Driver?.familyName || ''}`.trim(),
-          nationality: s.Driver?.nationality || '',
-          team: s.Constructors?.[0]?.name || 'F1 Team'
-        }));
-      }),
+    return this.http.get<JolpicaDriverStanding[]>(`${this.base}/f1/standings/drivers`).pipe(
+      this.retryOnColdStart(),
       catchError(() => of([]))
     );
   }
 
   jolpicaConstructorStandings(): Observable<JolpicaConstructorStanding[]> {
-    return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/constructorStandings.json').pipe(
-      map(data => {
-        const list = data?.MRData?.StandingsTable?.StandingsLists?.[0]?.ConstructorStandings || [];
-        return list.map((s: any) => ({
-          position: s.position,
-          points: s.points,
-          wins: s.wins,
-          constructorId: s.Constructor?.constructorId || '',
-          name: s.Constructor?.name || '',
-          nationality: s.Constructor?.nationality || ''
-        }));
-      }),
+    return this.http.get<JolpicaConstructorStanding[]>(`${this.base}/f1/standings/constructors`).pipe(
+      this.retryOnColdStart(),
       catchError(() => of([]))
     );
   }
 
   jolpicaLastResults(): Observable<{ raceName: string; round: number; circuit: string; date: string; results: JolpicaRaceResult[] }> {
-    return this.http.get<any>('https://api.jolpi.ca/ergast/f1/current/last/results.json').pipe(
-      map(data => {
-        const race = data?.MRData?.RaceTable?.Races?.[0];
-        if (!race) throw new Error('No last race');
-        const results = (race.Results || []).map((r: any) => ({
-          position: r.position,
-          driverId: r.Driver?.driverId || '',
-          driverName: `${r.Driver?.givenName || ''} ${r.Driver?.familyName || ''}`.trim(),
-          team: r.Constructor?.name || '',
-          status: r.status,
-          points: r.points,
-          grid: r.grid,
-          laps: r.laps
-        }));
-        return {
-          raceName: race.raceName,
-          round: parseInt(race.round, 10),
-          circuit: race.Circuit?.circuitName || '',
-          date: race.date,
-          results
-        };
-      })
+    return this.http.get<{ raceName: string; round: number; circuit: string; date: string; results: JolpicaRaceResult[] }>(`${this.base}/f1/results/last`).pipe(
+      this.retryOnColdStart()
     );
   }
 
-  private readonly dynamicDriverStatsCache = new Map<string, DynamicDriverStats>();
+  private readonly driverStatsRequestCache = new Map<string, Observable<DynamicDriverStats>>();
 
-  jolpicaDriverSeasonResults(driverId: string): Observable<any[]> {
-    const cleanId = (driverId || '').toLowerCase().trim();
-    const jId = cleanId === 'verstappen' ? 'max_verstappen' : (cleanId === 'lindblad' ? 'arvid_lindblad' : cleanId);
-    return this.http.get<any>(`https://api.jolpi.ca/ergast/f1/current/drivers/${jId}/results.json`).pipe(
-      timeout(3500),
-      map(data => data?.MRData?.RaceTable?.Races || []),
-      catchError(() => of([]))
-    );
-  }
-
-  getDynamicDriverStats(driverId: string): Observable<DynamicDriverStats> {
-    const cleanId = (driverId || '').toLowerCase().trim();
-    if (this.dynamicDriverStatsCache.has(cleanId)) {
-      return of(this.dynamicDriverStatsCache.get(cleanId)!);
+  private fetchDriverStatsFromBff(cleanId: string): Observable<DynamicDriverStats> {
+    const existing = this.driverStatsRequestCache.get(cleanId);
+    if (existing) {
+      return existing;
     }
 
-    const jId = cleanId === 'verstappen' ? 'max_verstappen' : (cleanId === 'lindblad' ? 'arvid_lindblad' : cleanId);
     const driverOpt = F1_DRIVERS.find(d => d.id.toLowerCase() === cleanId) || {
       id: cleanId,
       name: cleanId.toUpperCase(),
@@ -510,117 +430,65 @@ export class ApiService {
       teamColor: '#E10600'
     };
 
-    return forkJoin({
-      standings: this.jolpicaDriverStandings(),
-      seasonResults: this.jolpicaDriverSeasonResults(cleanId),
-      careerWinsData: this.http.get<any>(`https://api.jolpi.ca/ergast/f1/drivers/${jId}/results/1.json?limit=1`).pipe(timeout(2500), catchError(() => of(null))),
-      careerPolesData: this.http.get<any>(`https://api.jolpi.ca/ergast/f1/drivers/${jId}/qualifying/1.json?limit=1`).pipe(timeout(2500), catchError(() => of(null))),
-      careerStartsData: this.http.get<any>(`https://api.jolpi.ca/ergast/f1/drivers/${jId}/results.json?limit=1`).pipe(timeout(2500), catchError(() => of(null)))
-    }).pipe(
-      map(({ standings, seasonResults, careerWinsData, careerPolesData, careerStartsData }) => {
-        const targetClean = cleanId.replace(/[^a-z0-9]/g, '');
-        const standing = (standings || []).find(s => {
-          const sId = (s.driverId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-          const sCode = (s.code || '').toLowerCase();
-          const sName = (s.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-          return sId === targetClean ||
-            (sId === 'maxverstappen' && targetClean === 'verstappen') ||
-            (targetClean === 'maxverstappen' && sId === 'verstappen') ||
-            (sId === 'arvidlindblad' && targetClean === 'lindblad') ||
-            (targetClean === 'arvidlindblad' && sId === 'lindblad') ||
-            sCode === targetClean ||
-            sName.includes(targetClean);
-        });
+    const req$ = this.http.get<DynamicDriverStats>(`${this.base}/f1/drivers/${encodeURIComponent(cleanId)}/stats`).pipe(
+      this.retryOnColdStart(),
+      map(apiStats => ({
+        ...apiStats,
+        driverId: cleanId,
+        name: driverOpt.name,
+        code: driverOpt.code,
+        number: driverOpt.number,
+        team: driverOpt.team,
+        teamColor: driverOpt.teamColor
+      })),
+      catchError(() => of({
+        driverId: cleanId,
+        name: driverOpt.name,
+        code: driverOpt.code,
+        number: driverOpt.number,
+        team: driverOpt.team,
+        teamColor: driverOpt.teamColor,
+        points: 0,
+        standingPosition: '-',
+        wins: 0,
+        podiums: 0,
+        poles: 0,
+        fastestLaps: 0,
+        dnfs: 0,
+        racesCount: 0,
+        bestFinish: '-',
+        careerWins: 0,
+        careerPoles: 0,
+        careerStarts: 0,
+        seasonResults: []
+      })),
+      shareReplay(1)
+    );
 
-        const points = standing ? parseInt(standing.points, 10) || 0 : 0;
-        const standingPosition = standing?.position ? `P${standing.position}` : '-';
-        const standingWins = standing ? parseInt(standing.wins, 10) || 0 : 0;
+    this.driverStatsRequestCache.set(cleanId, req$);
+    return req$;
+  }
 
-        const races = seasonResults || [];
-        let seasonWins = 0;
-        let podiums = 0;
-        let poles = 0;
-        let fastestLaps = 0;
-        let dnfs = 0;
-        let bestPos = 99;
+  jolpicaDriverSeasonResults(driverId: string): Observable<any[]> {
+    const cleanId = (driverId || '').toLowerCase().trim();
+    return this.fetchDriverStatsFromBff(cleanId).pipe(
+      map(stats => (stats.seasonResults || []).map(r => ({
+        round: r.round,
+        raceName: r.raceName,
+        Results: [{ position: String(r.position), grid: String(r.grid), status: r.status }]
+      }))),
+      catchError(() => of([]))
+    );
+  }
 
-        for (const race of races) {
-          const res = race?.Results?.[0];
-          if (!res) continue;
-          const pos = parseInt(res.position, 10);
-          const grid = parseInt(res.grid, 10);
+  getDynamicDriverStats(driverId: string): Observable<DynamicDriverStats> {
+    const cleanId = (driverId || '').toLowerCase().trim();
+    return this.fetchDriverStatsFromBff(cleanId);
+  }
 
-          if (pos === 1) seasonWins++;
-          if (pos >= 1 && pos <= 3) podiums++;
-          if (grid === 1) poles++;
-          if (res.FastestLap?.rank === '1') fastestLaps++;
-
-          const status = (res.status || '').toLowerCase();
-          if (status.includes('ret') || status.includes('acc') || status.includes('coll') || 
-              status.includes('eng') || status.includes('punc') || status.includes('gear') ||
-              status.includes('elect') || status.includes('hydr') || status.includes('susp')) {
-            dnfs++;
-          }
-          if (pos > 0 && pos < bestPos) {
-            bestPos = pos;
-          }
-        }
-
-        const wins = Math.max(standingWins, seasonWins);
-        const bestFinish = bestPos < 99 ? `P${bestPos}` : (standingPosition !== '-' ? standingPosition : '-');
-
-        const careerWins = careerWinsData?.MRData?.total != null ? parseInt(careerWinsData.MRData.total, 10) : wins;
-        const careerPoles = careerPolesData?.MRData?.total != null ? parseInt(careerPolesData.MRData.total, 10) : poles;
-        const careerStarts = careerStartsData?.MRData?.total != null ? parseInt(careerStartsData.MRData.total, 10) : races.length;
-
-        const stats: DynamicDriverStats = {
-          driverId: cleanId,
-          name: driverOpt.name,
-          code: driverOpt.code,
-          number: driverOpt.number,
-          team: driverOpt.team,
-          teamColor: driverOpt.teamColor,
-          nationality: standing?.nationality,
-          points,
-          standingPosition,
-          wins,
-          podiums,
-          poles,
-          fastestLaps,
-          dnfs,
-          racesCount: races.length,
-          bestFinish,
-          careerWins,
-          careerPoles,
-          careerStarts
-        };
-
-        this.dynamicDriverStatsCache.set(cleanId, stats);
-        return stats;
-      }),
-      catchError(() => {
-        const fallback: DynamicDriverStats = {
-          driverId: cleanId,
-          name: driverOpt.name,
-          code: driverOpt.code,
-          number: driverOpt.number,
-          team: driverOpt.team,
-          teamColor: driverOpt.teamColor,
-          points: 0,
-          standingPosition: '-',
-          wins: 0,
-          podiums: 0,
-          poles: 0,
-          fastestLaps: 0,
-          dnfs: 0,
-          racesCount: 0,
-          bestFinish: '-',
-          careerWins: 0,
-          careerPoles: 0,
-          careerStarts: 0
-        };
-        return of(fallback);
-      })
+  getProdeScore(year: number, round: number): Observable<ProdeScore> {
+    return this.http.get<ProdeScore>(`${this.base}/scores/me/${year}/${round}`).pipe(
+      this.retryOnColdStart()
     );
   }
 

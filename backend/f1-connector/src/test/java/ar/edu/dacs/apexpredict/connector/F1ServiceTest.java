@@ -1,25 +1,31 @@
 package ar.edu.dacs.apexpredict.connector;
 
 import ar.edu.dacs.apexpredict.connector.client.JolpicaClient;
+import ar.edu.dacs.apexpredict.connector.client.OpenF1Client;
 import ar.edu.dacs.apexpredict.connector.dto.JolpicaDto;
+import ar.edu.dacs.apexpredict.connector.dto.OpenF1Dto;
 import ar.edu.dacs.apexpredict.connector.service.F1Service;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class F1ServiceTest {
     private JolpicaClient client;
+    private OpenF1Client openF1Client;
     private F1Service service;
 
     @BeforeEach
     void setup() {
         client = mock(JolpicaClient.class);
-        service = new F1Service(client);
+        openF1Client = mock(OpenF1Client.class);
+        service = new F1Service(client, openF1Client);
     }
 
     @Test
@@ -97,5 +103,85 @@ class F1ServiceTest {
     void invalidRoundThrowsBadRequest() {
         assertThrows(IllegalArgumentException.class, () -> service.results(2026, 0));
         assertThrows(IllegalArgumentException.class, () -> service.results(2026, 50));
+    }
+
+    @Test
+    void strictJolpicaDtoIgnoresUnknownFieldsLikeTimeAndFastestLapDetails() throws Exception {
+        String rawJolpicaJson = """
+            {
+              "MRData": {
+                "xmlns": "http://ergast.com/mrd/1.5",
+                "series": "f1",
+                "limit": "30",
+                "total": "1",
+                "RaceTable": {
+                  "season": "2026",
+                  "round": "19",
+                  "Races": [{
+                    "season": "2026",
+                    "round": "19",
+                    "url": "https://en.wikipedia.org/wiki/2026_Mexico_City_Grand_Prix",
+                    "raceName": "Mexico City Grand Prix",
+                    "date": "2026-11-01",
+                    "Results": [{
+                      "number": "3",
+                      "position": "1",
+                      "points": "25",
+                      "laps": "71",
+                      "status": "Finished",
+                      "Time": { "millis": "5400000", "time": "1:30:00.000" },
+                      "FastestLap": { "rank": "1", "lap": "60", "Time": { "time": "1:18.000" } },
+                      "Driver": { "driverId": "max_verstappen", "permanentNumber": "3", "givenName": "Max", "familyName": "Verstappen" },
+                      "Constructor": { "constructorId": "red_bull", "name": "Red Bull", "nationality": "Austrian" }
+                    }]
+                  }]
+                }
+              }
+            }
+            """;
+
+        var mapper = JsonMapper.builder()
+            .enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
+        var env = mapper.readValue(rawJolpicaJson, JolpicaDto.Envelope.class);
+        assertEquals(1, env.data().table().races().size());
+        var res = env.data().table().races().getFirst().results().getFirst();
+        assertEquals("1", res.position());
+        assertEquals("max_verstappen", res.driver().id());
+    }
+
+    @Test
+    void officialSummaryCombinesJolpicaAndOpenF1SafetyCarCount() {
+        var race = new JolpicaDto.DetailedRaceDto(
+            "2026", "19", "Mexico City Grand Prix", "2026-11-01",
+            new JolpicaDto.Circuit("rodriguez", "Autódromo Hermanos Rodríguez", new JolpicaDto.Location("19.4", "-99.1", "Mexico City", "Mexico")),
+            List.of(
+                new JolpicaDto.DetailedResultDto("1", "4", "25", "71", "Finished", new JolpicaDto.Driver("max_verstappen", "VER", "Max", "Verstappen", "Dutch"), new JolpicaDto.Constructor("Red Bull"), null),
+                new JolpicaDto.DetailedResultDto("2", "1", "18", "71", "Finished", new JolpicaDto.Driver("hamilton", "HAM", "Lewis", "Hamilton", "British"), new JolpicaDto.Constructor("Ferrari"), null),
+                new JolpicaDto.DetailedResultDto("3", "20", "0", "12", "Retired", new JolpicaDto.Driver("bottas", "BOT", "Valtteri", "Bottas", "Finnish"), new JolpicaDto.Constructor("Cadillac"), null)
+            )
+        );
+        when(client.getDetailedResults(2026, 19, 100, 0)).thenReturn(
+            new JolpicaDto.DetailedEnvelope(new JolpicaDto.DetailedMetadata("3", new JolpicaDto.DetailedRaceTable(List.of(race))))
+        );
+        when(client.getQualifying(2026, 19, 5)).thenReturn(
+            new JolpicaDto.QualifyingEnvelope(new JolpicaDto.QualifyingMetadata(new JolpicaDto.QualifyingRaceTable(List.of(
+                new JolpicaDto.QualifyingRaceDto("2026", "19", List.of(
+                    new JolpicaDto.QualifyingResultDto("1", new JolpicaDto.Driver("hamilton", "Lewis", "Hamilton"))
+                ))
+            ))))
+        );
+        when(openF1Client.getSessions(2026, "Race")).thenReturn(List.of(new OpenF1Dto.SessionDto(11404L, "2026-11-01T20:00:00+00:00")));
+        when(openF1Client.getRaceControl(11404L)).thenReturn(List.of(
+            new OpenF1Dto.RaceControlDto("SafetyCar", "VSC DEPLOYED"),
+            new OpenF1Dto.RaceControlDto("SafetyCar", "SAFETY CAR DEPLOYED"),
+            new OpenF1Dto.RaceControlDto("Flag", "CHEQUERED FLAG")
+        ));
+
+        var summary = service.officialSummary(2026, 19);
+        assertEquals(List.of("verstappen", "hamilton", "bottas"), summary.podiumTop10());
+        assertEquals("hamilton", summary.polePositionDriverId());
+        assertEquals(2, summary.safetyCarCount());
+        assertEquals(1, summary.dnfCount());
     }
 }

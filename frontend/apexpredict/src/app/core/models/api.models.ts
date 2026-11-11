@@ -188,6 +188,23 @@ export interface PredictionHistoryItem {
   } | null;
 }
 
+export interface ProdeScore {
+  season: number;
+  round: number;
+  sessionName: string;
+  hasPrediction: boolean;
+  hasOfficialResults: boolean;
+  totalPoints: number;
+  breakdown: ScoreBreakdown | null;
+  officialResults: {
+    podium: string[];
+    polePositionDriverId: string | null;
+    duelWinnerId: string | null;
+    safetyCarCount: number;
+    dnfCount: number;
+  } | null;
+}
+
 export interface F1Driver {
   id: string;
   name: string;

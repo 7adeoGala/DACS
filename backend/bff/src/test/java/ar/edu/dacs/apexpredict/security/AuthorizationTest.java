@@ -1,10 +1,11 @@
 package ar.edu.dacs.apexpredict.security;
 
+import ar.edu.dacs.apexpredict.application.ProdeScoreService;
 import ar.edu.dacs.apexpredict.client.ConectorClient;
 import ar.edu.dacs.apexpredict.client.DomainClient;
 import ar.edu.dacs.apexpredict.web.ApiController;
 import ar.edu.dacs.apexpredict.web.ApiExceptionHandler;
-import ar.edu.dacs.apexpredict.web.dto.LeagueView;
+import ar.edu.dacs.apexpredict.web.dto.*;
 import feign.FeignException;
 import feign.Request;
 import feign.RequestTemplate;
@@ -39,7 +40,7 @@ class AuthorizationTest {
     @Configuration
     @EnableWebMvc
     @EnableWebSecurity
-    @Import({SecurityConfig.class, ApiController.class, ApiExceptionHandler.class})
+    @Import({SecurityConfig.class, ApiController.class, ApiExceptionHandler.class, ProdeScoreService.class})
     static class Config {
         @Bean
         DomainClient domainClient() {
@@ -230,5 +231,40 @@ class AuthorizationTest {
             .header("Origin", "https://attacker.invalid")
             .header("Access-Control-Request-Method", "PUT"))
             .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void publicF1RoutesWorkWithoutToken() throws Exception {
+        when(conectorClient.nextRace()).thenReturn(new NextRaceInfo(
+            2026, 21, "Las Vegas Grand Prix", "Las Vegas Strip Circuit", "vegas",
+            "USA", "Las Vegas", "2026-11-21", "2026-11-22T04:00:00Z",
+            null, null, null, null, null, null, "36.11", "-115.17"
+        ));
+        mvc.perform(get("/f1/next"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.name").value("Las Vegas Grand Prix"));
+    }
+
+    @Test
+    void scoresRouteOrchestratesDomainAndConnectorForAuthenticatedPlayer() throws Exception {
+        when(domainClient.predictionForSession("2026-20")).thenReturn(new PredictionDetail(
+            UUID.randomUUID(), UUID.randomUUID(), "São Paulo Grand Prix", "Interlagos",
+            Instant.parse("2026-11-08T17:00:00Z"), true,
+            List.of("norris", "verstappen", "hadjar"), "norris", "lawson", 0, 2,
+            null, Instant.now(), "lawson", "lindblad"
+        ));
+        when(conectorClient.officialSummary(2026, 20)).thenReturn(new OfficialRaceSummary(
+            2026, 20, "Brazilian Grand Prix", "Autódromo José Carlos Pace", "2026-11-08",
+            List.of("norris", "max_verstappen", "hadjar", "russell", "antonelli", "piastri", "lawson"),
+            List.of("norris", "max_verstappen", "hadjar", "russell", "antonelli", "piastri", "lawson"),
+            "norris", 0, 2
+        ));
+
+        mvc.perform(get("/scores/me/2026/20"))
+            .andExpect(status().isUnauthorized());
+
+        mvc.perform(get("/scores/me/2026/20").header("Authorization", "Bearer player"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalPoints").value(29));
     }
 }

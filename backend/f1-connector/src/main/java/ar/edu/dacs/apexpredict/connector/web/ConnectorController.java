@@ -1,7 +1,6 @@
 package ar.edu.dacs.apexpredict.connector.web;
 
-import ar.edu.dacs.apexpredict.connector.dto.Finish;
-import ar.edu.dacs.apexpredict.connector.dto.Race;
+import ar.edu.dacs.apexpredict.connector.dto.*;
 import ar.edu.dacs.apexpredict.connector.service.F1Service;
 import java.util.List;
 import java.util.Map;
@@ -28,5 +27,35 @@ public class ConnectorController {
     @GetMapping("/results/{season}/{round}")
     public List<Finish> results(@PathVariable int season, @PathVariable int round) {
         return f1.results(season, round);
+    }
+
+    @GetMapping("/results/{season}/{round}/official-summary")
+    public OfficialRaceSummary officialSummary(@PathVariable int season, @PathVariable int round) {
+        return f1.officialSummary(season, round);
+    }
+
+    @GetMapping("/next")
+    public NextRaceInfo nextRace() {
+        return f1.nextRace();
+    }
+
+    @GetMapping("/results/last")
+    public LastRaceInfo lastResults() {
+        return f1.lastRaceResults();
+    }
+
+    @GetMapping("/standings/drivers")
+    public List<DriverStandingInfo> driverStandings() {
+        return f1.driverStandings();
+    }
+
+    @GetMapping("/standings/constructors")
+    public List<ConstructorStandingInfo> constructorStandings() {
+        return f1.constructorStandings();
+    }
+
+    @GetMapping("/drivers/{driverId}/stats")
+    public DriverDynamicStats driverStats(@PathVariable String driverId) {
+        return f1.driverStats(driverId);
     }
 }
