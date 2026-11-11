@@ -159,4 +159,41 @@ class ScoringServiceTest {
         assertFalse(b.dnfHit());
         assertEquals(0, b.dnfPoints());
     }
+
+    @Test
+    @DisplayName("Normaliza identificadores de pilotos Jolpica (max_verstappen, arvid_lindblad) y puntúa Round 19/20")
+    void normalizesExternalDriverIdsWhenScoring() {
+        var pred = new Prediction(
+            user, session,
+            List.of("verstappen", "hamilton", "antonelli"),
+            "hamilton",
+            "lindblad",
+            3,
+            5,
+            now
+        );
+
+        var result = new SessionResult(
+            session,
+            List.of("max_verstappen", "hamilton", "antonelli", "leclerc", "norris"),
+            "hamilton",
+            3,
+            5,
+            "arvid_lindblad",
+            futureStart.plusSeconds(7200)
+        );
+
+        var matchup = new WeekendMatchup(session, "lawson", "lindblad");
+        var b = scoringService.calculateScore(pred, result, matchup);
+
+        assertEquals(3, b.podiumHits());
+        assertEquals(10, b.podiumPoints());
+        assertTrue(b.poleHit());
+        assertEquals(4, b.polePoints());
+        assertTrue(b.duelHit());
+        assertEquals(3, b.duelPoints());
+        assertTrue(b.safetyCarHit());
+        assertTrue(b.dnfHit());
+        assertEquals(29, b.totalPoints());
+    }
 }

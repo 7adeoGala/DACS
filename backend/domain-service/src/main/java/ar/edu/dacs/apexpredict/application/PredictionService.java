@@ -357,7 +357,7 @@ public class PredictionService {
                 if (result != null) {
                     try {
                         breakdown = scoringService.calculateScore(p, result, matchup);
-                        if (p.getScore() == null) {
+                        if (p.getScore() == null || !p.getScore().equals(breakdown.totalPoints())) {
                             p.applyScore(breakdown.totalPoints(), Instant.now());
                             predictions.save(p);
                         }

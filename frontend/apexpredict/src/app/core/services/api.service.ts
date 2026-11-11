@@ -117,7 +117,7 @@ export class ApiService {
     podium: ['antonelli', 'leclerc', 'verstappen'],
     polePositionDriverId: 'antonelli',
     duelWinnerId: 'verstappen',
-    safetyCarCount: 1,
+    safetyCarCount: 2,
     dnfCount: 3
   };
 
@@ -310,28 +310,28 @@ export class ApiService {
   }
 
   getFallbackNextSession(): NextSession {
-    const duo = getTeammateDuoForRound(20, 2026);
+    const duo = getTeammateDuoForRound(21, 2026);
     return {
-      id: 'f0c23d70-f7ca-411d-b827-7a9d45037102',
+      id: '0bada6fd-642d-4f62-b2d0-0beffbb829a2',
       season: 2026,
-      round: 20,
-      name: 'São Paulo Grand Prix',
-      circuit: 'Autódromo José Carlos Pace (Interlagos)',
-      circuitId: 'interlagos',
+      round: 21,
+      name: 'Las Vegas Grand Prix',
+      circuit: 'Las Vegas Strip Circuit',
+      circuitId: 'vegas',
       type: 'RACE',
-      raceDate: '2026-11-08',
-      startsAt: '2026-11-08T17:00:00Z',
+      raceDate: '2026-11-21',
+      startsAt: '2026-11-22T04:00:00Z',
       isLocked: false,
       matchupDriver1: duo.driver1,
       matchupDriver2: duo.driver2,
-      locality: 'São Paulo',
-      country: 'Brazil',
-      fp1: '2026-11-06T15:30:00Z',
-      fp2: '2026-11-06T19:00:00Z',
-      fp3: '2026-11-07T14:30:00Z',
-      qualifying: '2026-11-07T18:00:00Z',
-      lat: '-23.7036',
-      long: '-46.6997'
+      locality: 'Las Vegas',
+      country: 'USA',
+      fp1: '2026-11-20T00:30:00Z',
+      fp2: '2026-11-20T04:00:00Z',
+      fp3: '2026-11-21T00:30:00Z',
+      qualifying: '2026-11-21T04:00:00Z',
+      lat: '36.1147',
+      long: '-115.173'
     };
   }
 
@@ -709,39 +709,14 @@ export class ApiService {
     };
   }
 
-  predictionHistory(username?: string): Observable<PredictionHistoryItem[]> {
+  predictionHistory(_username?: string): Observable<PredictionHistoryItem[]> {
     return this.http.get<PredictionHistoryItem[]>(`${this.base}/predictions/history`).pipe(
       this.retryOnColdStart(),
       map(items => {
-        let list = items || [];
-        if (list.length === 0) {
-          const cached = this.getCachedPrediction(username);
-          if (cached && (cached.predictionId || (cached.podium && cached.podium.length > 0))) {
-            list = [{
-              predictionId: cached.predictionId || 'cached-pred-r18',
-              sessionId: cached.sessionId || this.ROUND_18_UUID,
-              sessionName: cached.sessionName || 'United States Grand Prix',
-              circuit: cached.circuit || 'Circuit of the Americas',
-              raceDate: '2026-10-25',
-              startsAt: cached.startsAt || '2026-10-25T20:00:00Z',
-              podium: cached.podium || [],
-              polePositionDriverId: cached.polePositionDriverId || null,
-              duelDriverPick: cached.duelDriverPick || null,
-              safetyCarCount: cached.safetyCarCount ?? null,
-              dnfCount: cached.dnfCount ?? null,
-              score: cached.score ?? null,
-              submittedAt: cached.submittedAt || null,
-              matchupDriver1: cached.matchupDriver1 || 'norris',
-              matchupDriver2: cached.matchupDriver2 || 'verstappen'
-            }];
-          }
-        }
-
+        const list = items || [];
         return list.map(item => {
           const isRound18 = item.sessionId === this.ROUND_18_UUID || (item.sessionName && item.sessionName.toLowerCase().includes('united states'));
-          const isPast = isRound18 || (item.startsAt && new Date(item.startsAt).getTime() <= Date.now());
-
-          if (isPast && (item.score == null || !item.scoreBreakdown || !item.officialResults)) {
+          if (isRound18 && (item.score == null || !item.scoreBreakdown || !item.officialResults)) {
             const official = this.OFFICIAL_ROUND_18_RESULTS;
             const breakdown = this.evaluateScoreForPrediction(item, official);
             return {
@@ -760,39 +735,7 @@ export class ApiService {
           return item;
         });
       }),
-      catchError(() => {
-        const cached = this.getCachedPrediction(username);
-        if (cached && (cached.predictionId || (cached.podium && cached.podium.length > 0))) {
-          const official = this.OFFICIAL_ROUND_18_RESULTS;
-          const breakdown = this.evaluateScoreForPrediction(cached, official);
-          return of([{
-            predictionId: cached.predictionId || 'cached-pred-r18',
-            sessionId: cached.sessionId || this.ROUND_18_UUID,
-            sessionName: cached.sessionName || 'United States Grand Prix',
-            circuit: cached.circuit || 'Circuit of the Americas',
-            raceDate: '2026-10-25',
-            startsAt: cached.startsAt || '2026-10-25T20:00:00Z',
-            podium: cached.podium || [],
-            polePositionDriverId: cached.polePositionDriverId || null,
-            duelDriverPick: cached.duelDriverPick || null,
-            safetyCarCount: cached.safetyCarCount ?? null,
-            dnfCount: cached.dnfCount ?? null,
-            score: breakdown.totalPoints,
-            submittedAt: cached.submittedAt || null,
-            matchupDriver1: cached.matchupDriver1 || 'norris',
-            matchupDriver2: cached.matchupDriver2 || 'verstappen',
-            scoreBreakdown: breakdown,
-            officialResults: {
-              podium: official.podium,
-              polePositionDriverId: official.polePositionDriverId,
-              duelWinnerId: official.duelWinnerId,
-              safetyCarCount: official.safetyCarCount,
-              dnfCount: official.dnfCount
-            }
-          }]);
-        }
-        return of([]);
-      })
+      catchError(() => of([]))
     );
   }
 

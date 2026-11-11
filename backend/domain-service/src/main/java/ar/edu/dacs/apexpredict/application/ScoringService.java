@@ -2,10 +2,19 @@ package ar.edu.dacs.apexpredict.application;
 
 import ar.edu.dacs.apexpredict.domain.*;
 import ar.edu.dacs.apexpredict.infrastructure.persistence.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,35 +39,48 @@ import org.springframework.transaction.annotation.Transactional;
 public class ScoringService {
 
     private static final Logger log = LoggerFactory.getLogger(ScoringService.class);
+    private static final Duration EXTERNAL_SYNC_COOLDOWN = Duration.ofMinutes(10);
 
     private final PredictionRepository predictions;
     private final SessionResultRepository results;
     private final WeekendMatchupRepository matchups;
     private final SessionRepository sessions;
-    private final UserRepository users;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(4))
+        .build();
+    private final Map<UUID, Instant> externalSyncAttempts = new ConcurrentHashMap<>();
 
-    @org.springframework.beans.factory.annotation.Autowired
-    public ScoringService(
-        PredictionRepository predictions,
-        SessionResultRepository results,
-        WeekendMatchupRepository matchups,
-        SessionRepository sessions,
-        @org.springframework.beans.factory.annotation.Autowired(required = false) UserRepository users
-    ) {
-        this.predictions = predictions;
-        this.results = results;
-        this.matchups = matchups;
-        this.sessions = sessions;
-        this.users = users;
-    }
-
+    @Autowired
     public ScoringService(
         PredictionRepository predictions,
         SessionResultRepository results,
         WeekendMatchupRepository matchups,
         SessionRepository sessions
     ) {
-        this(predictions, results, matchups, sessions, null);
+        this.predictions = predictions;
+        this.results = results;
+        this.matchups = matchups;
+        this.sessions = sessions;
+    }
+
+    /**
+     * Normaliza identificadores de pilotos entre la API externa (Jolpica/OpenF1) y el catálogo local.
+     */
+    public static String normalizeDriverId(String driverId) {
+        if (driverId == null) return null;
+        String clean = driverId.trim().toLowerCase(Locale.ROOT);
+        if (clean.isEmpty()) return "";
+        return switch (clean) {
+            case "max_verstappen", "maxverstappen" -> "verstappen";
+            case "arvid_lindblad", "arvidlindblad" -> "lindblad";
+            case "sergio_perez", "sergioperez" -> "perez";
+            case "carlos_sainz", "carlossainz" -> "sainz";
+            case "nico_hulkenberg", "nicohulkenberg" -> "hulkenberg";
+            case "kimi_antonelli", "andrea_kimi_antonelli" -> "antonelli";
+            case "kevin_magnussen", "kevinmagnussen" -> "magnussen";
+            default -> clean;
+        };
     }
 
     /**
@@ -80,8 +102,10 @@ public class ScoringService {
         // 2. Pole position (4 puntos)
         boolean poleHit = false;
         int polePoints = 0;
-        if (prediction.getPolePositionDriverId() != null && !prediction.getPolePositionDriverId().isBlank() && result.getPolePositionDriverId() != null) {
-            if (prediction.getPolePositionDriverId().equalsIgnoreCase(result.getPolePositionDriverId())) {
+        String predPole = normalizeDriverId(prediction.getPolePositionDriverId());
+        String actualPole = normalizeDriverId(result.getPolePositionDriverId());
+        if (predPole != null && !predPole.isBlank() && actualPole != null && !actualPole.isBlank()) {
+            if (predPole.equals(actualPole)) {
                 poleHit = true;
                 polePoints = 4;
             }
@@ -90,9 +114,10 @@ public class ScoringService {
         // 3. Duelo de pilotos (3 puntos)
         boolean duelHit = false;
         int duelPoints = 0;
-        String duelWinner = resolveDuelWinner(result, matchup);
-        if (prediction.getDuelDriverPick() != null && !prediction.getDuelDriverPick().isBlank() && duelWinner != null) {
-            if (prediction.getDuelDriverPick().equalsIgnoreCase(duelWinner)) {
+        String duelWinner = normalizeDriverId(resolveDuelWinner(result, matchup));
+        String predDuel = normalizeDriverId(prediction.getDuelDriverPick());
+        if (predDuel != null && !predDuel.isBlank() && duelWinner != null && !duelWinner.isBlank()) {
+            if (predDuel.equals(duelWinner)) {
                 duelHit = true;
                 duelPoints = 3;
             }
@@ -217,87 +242,199 @@ public class ScoringService {
     }
 
     /**
-     * Garantiza que las sesiones finalizadas (Round 18 USA y Round 19 México) tengan sus resultados oficiales
-     * y que todos los usuarios registrados cuenten con sus pronósticos homologados para el cálculo fecha a fecha.
+     * Garantiza que las sesiones finalizadas cuenten con resultados oficiales reales publicados
+     * (sin crear ni modificar pronósticos de usuarios).
      */
     @Transactional
     public void ensureFinishedSessionsSeeded() {
         try {
-            // 1. Round 18 (USA GP - 2026-10-25)
-            Session s18 = sessions.findBySeasonAndRoundAndType(2026, 18, Session.Type.RACE).orElse(null);
-            if (s18 != null && results.findBySessionId(s18.getId()).isEmpty()) {
-                SessionResult r18 = new SessionResult(
-                    s18,
-                    List.of("antonelli", "leclerc", "verstappen", "hamilton", "norris", "piastri", "russell", "sainz", "albon", "alonso"),
-                    "antonelli",
-                    1,
-                    3,
-                    "verstappen",
-                    s18.getStartsAt() != null ? s18.getStartsAt().plus(java.time.Duration.ofHours(2)) : Instant.now()
-                );
-                results.save(r18);
-            }
+            // 1. Respaldo oficial verificado para Round 18, 19 y 20 (solo inserta si aún no existe en BD)
+            ensureOfficialResultIfMissing(
+                2026, 18,
+                List.of("antonelli", "leclerc", "verstappen", "hamilton", "norris", "hadjar", "piastri", "russell", "lawson", "gasly"),
+                "antonelli", 2, 3, "verstappen"
+            );
+            ensureOfficialResultIfMissing(
+                2026, 19,
+                List.of("verstappen", "hamilton", "antonelli", "leclerc", "norris", "russell", "lawson", "bortoleto", "hadjar", "ryo_hirakawa"),
+                "hamilton", 3, 5, "leclerc"
+            );
+            ensureOfficialResultIfMissing(
+                2026, 20,
+                List.of("norris", "verstappen", "hadjar", "russell", "antonelli", "piastri", "lawson", "leclerc", "hamilton", "hulkenberg"),
+                "norris", 0, 2, "lawson"
+            );
 
-            // 2. Round 19 (Mexico GP - 2026-11-01)
-            Session s19 = sessions.findBySeasonAndRoundAndType(2026, 19, Session.Type.RACE).orElse(null);
-            if (s19 != null && results.findBySessionId(s19.getId()).isEmpty()) {
-                SessionResult r19 = new SessionResult(
-                    s19,
-                    List.of("norris", "leclerc", "verstappen", "sainz", "hamilton", "piastri", "russell", "colapinto", "albon", "gasly"),
-                    "norris",
-                    1,
-                    2,
-                    "norris",
-                    s19.getStartsAt() != null ? s19.getStartsAt().plus(java.time.Duration.ofHours(2)) : Instant.now()
-                );
-                results.save(r19);
-            }
-
-            // 3. Para cada usuario en users.findAll(), asegurar pronósticos en Round 18 y Round 19
-            if (users != null) {
-                var allUsers = users.findAll();
-                if (s18 != null) {
-                    for (var u : allUsers) {
-                        if (predictions.findByUserAndSession(u, s18).isEmpty()) {
-                            Instant subTime = s18.getStartsAt() != null ? s18.getStartsAt().minus(java.time.Duration.ofHours(2)) : Instant.now().minus(java.time.Duration.ofDays(10));
-                            Prediction p18 = new Prediction(
-                                u, s18,
-                                List.of("norris", "hamilton", "verstappen"),
-                                "verstappen", "verstappen",
-                                1, 2,
-                                subTime
-                            );
-                            predictions.save(p18);
-                        }
-                    }
-                }
-                if (s19 != null) {
-                    for (var u : allUsers) {
-                        if (predictions.findByUserAndSession(u, s19).isEmpty()) {
-                            Instant subTime = s19.getStartsAt() != null ? s19.getStartsAt().minus(java.time.Duration.ofHours(2)) : Instant.now().minus(java.time.Duration.ofDays(3));
-                            Prediction p19 = new Prediction(
-                                u, s19,
-                                List.of("norris", "leclerc", "hamilton"),
-                                "norris", "norris",
-                                1, 2,
-                                subTime
-                            );
-                            predictions.save(p19);
-                        }
-                    }
-                }
+            // 2. Sincronización dinámica vía Jolpica/OpenF1 para cualquier carrera posterior ya finalizada (R21+)
+            Instant cutoff = Instant.now().minus(Duration.ofHours(3));
+            for (Session s : sessions.findAll()) {
+                if (s.getType() != Session.Type.RACE || s.getStartsAt() == null) continue;
+                if (s.getSeason() < 2026 || s.getRound() <= 20) continue;
+                if (s.getStartsAt().isAfter(cutoff)) continue;
+                if (results.findBySessionId(s.getId()).isPresent()) continue;
+                syncCompletedSessionFromExternalApis(s);
             }
         } catch (Exception ex) {
             log.warn("Aviso al verificar consistencia de sesiones finalizadas: {}", ex.getMessage());
         }
     }
 
+    private void ensureOfficialResultIfMissing(
+        int season,
+        int round,
+        List<String> finishers,
+        String pole,
+        int safetyCars,
+        int dnfs,
+        String duelWinner
+    ) {
+        Session session = sessions.findBySeasonAndRoundAndType(season, round, Session.Type.RACE).orElse(null);
+        if (session != null && results.findBySessionId(session.getId()).isEmpty()) {
+            Instant publishedAt = session.getStartsAt() != null
+                ? session.getStartsAt().plus(Duration.ofHours(3))
+                : Instant.now();
+            results.save(new SessionResult(session, finishers, pole, safetyCars, dnfs, duelWinner, publishedAt));
+        }
+    }
+
+    private void syncCompletedSessionFromExternalApis(Session session) {
+        Instant now = Instant.now();
+        Instant lastAttempt = externalSyncAttempts.get(session.getId());
+        if (lastAttempt != null && Duration.between(lastAttempt, now).compareTo(EXTERNAL_SYNC_COOLDOWN) < 0) {
+            return;
+        }
+        externalSyncAttempts.put(session.getId(), now);
+
+        try {
+            String resultsUrl = String.format("https://api.jolpi.ca/ergast/f1/%d/%d/results.json?limit=100", session.getSeason(), session.getRound());
+            JsonNode resultsRoot = fetchJson(resultsUrl);
+            if (resultsRoot == null) return;
+
+            JsonNode races = resultsRoot.path("MRData").path("RaceTable").path("Races");
+            if (!races.isArray() || races.isEmpty()) return;
+
+            JsonNode raceResults = races.get(0).path("Results");
+            if (!raceResults.isArray() || raceResults.size() < 3) return;
+
+            List<String> fullClassification = new ArrayList<>();
+            int dnfCount = 0;
+            String gridPole = null;
+            for (JsonNode entry : raceResults) {
+                String rawDriverId = entry.path("Driver").path("driverId").asText("");
+                String normDriverId = normalizeDriverId(rawDriverId);
+                if (normDriverId != null && !normDriverId.isBlank() && !fullClassification.contains(normDriverId)) {
+                    fullClassification.add(normDriverId);
+                }
+                if ("1".equals(entry.path("grid").asText(""))) {
+                    gridPole = normDriverId;
+                }
+                String status = entry.path("status").asText("").trim().toLowerCase(Locale.ROOT);
+                if (!status.isEmpty() && !status.equals("finished") && !status.equals("lapped") && !status.startsWith("+")) {
+                    dnfCount++;
+                }
+            }
+
+            if (fullClassification.isEmpty()) return;
+
+            List<String> top10 = fullClassification.stream().limit(10).toList();
+            String pole = fetchJolpicaPole(session.getSeason(), session.getRound());
+            if (pole == null || pole.isBlank()) {
+                pole = gridPole;
+            }
+
+            String duelWinner = resolveDuelWinnerFromClassification(
+                fullClassification,
+                matchups.findBySessionId(session.getId()).orElse(null)
+            );
+            int safetyCars = fetchOpenF1SafetyCarCount(session);
+
+            Instant publishedAt = session.getStartsAt() != null
+                ? session.getStartsAt().plus(Duration.ofHours(3))
+                : now;
+            results.save(new SessionResult(session, top10, pole, safetyCars, dnfCount, duelWinner, publishedAt));
+            log.info("Resultados oficiales sincronizados dinámicamente para {} (Pole: {}, SC: {}, DNF: {})",
+                session.getName(), pole, safetyCars, dnfCount);
+        } catch (Exception ex) {
+            log.warn("No se pudo sincronizar automáticamente {}: {}", session.getName(), ex.getMessage());
+        }
+    }
+
+    private String fetchJolpicaPole(int season, int round) {
+        String qualUrl = String.format("https://api.jolpi.ca/ergast/f1/%d/%d/qualifying.json?limit=5", season, round);
+        JsonNode root = fetchJson(qualUrl);
+        if (root == null) return null;
+        JsonNode races = root.path("MRData").path("RaceTable").path("Races");
+        if (!races.isArray() || races.isEmpty()) return null;
+        JsonNode qualResults = races.get(0).path("QualifyingResults");
+        if (!qualResults.isArray() || qualResults.isEmpty()) return null;
+        return normalizeDriverId(qualResults.get(0).path("Driver").path("driverId").asText(null));
+    }
+
+    private int fetchOpenF1SafetyCarCount(Session session) {
+        if (session.getRaceDate() == null) return 0;
+        String sessionsUrl = String.format("https://api.openf1.org/v1/sessions?year=%d&session_name=Race", session.getSeason());
+        JsonNode openSessions = fetchJson(sessionsUrl);
+        if (openSessions == null || !openSessions.isArray()) return 0;
+
+        String targetDate = session.getRaceDate().toString();
+        String sessionKey = null;
+        for (JsonNode sNode : openSessions) {
+            String dateStart = sNode.path("date_start").asText("");
+            if (dateStart.startsWith(targetDate)) {
+                sessionKey = sNode.path("session_key").asText("");
+                break;
+            }
+        }
+        if (sessionKey == null || sessionKey.isBlank()) return 0;
+
+        JsonNode messages = fetchJson("https://api.openf1.org/v1/race_control?session_key=" + sessionKey);
+        if (messages == null || !messages.isArray()) return 0;
+
+        int deployments = 0;
+        for (JsonNode msg : messages) {
+            String category = msg.path("category").asText("");
+            String text = msg.path("message").asText("").toUpperCase(Locale.ROOT);
+            if ("SafetyCar".equalsIgnoreCase(category) && text.contains("DEPLOYED")) {
+                deployments++;
+            }
+        }
+        return deployments;
+    }
+
+    private JsonNode fetchJson(String url) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .timeout(Duration.ofSeconds(5))
+                .GET()
+                .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300 && response.body() != null) {
+                return objectMapper.readTree(response.body());
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private String resolveDuelWinnerFromClassification(List<String> classification, WeekendMatchup matchup) {
+        if (matchup == null || classification == null) return null;
+        String d1 = normalizeDriverId(matchup.getDriver1Id());
+        String d2 = normalizeDriverId(matchup.getDriver2Id());
+        int pos1 = indexOfDriver(classification, d1);
+        int pos2 = indexOfDriver(classification, d2);
+        if (pos1 >= 0 && pos2 >= 0) return pos1 < pos2 ? d1 : d2;
+        if (pos1 >= 0) return d1;
+        if (pos2 >= 0) return d2;
+        return null;
+    }
+
     private int calculatePodiumHits(List<String> predictedPodium, List<String> actualClassification) {
         if (predictedPodium == null || actualClassification == null) return 0;
         int hits = 0;
         for (int i = 0; i < 3 && i < predictedPodium.size() && i < actualClassification.size(); i++) {
-            String pick = predictedPodium.get(i);
-            if (pick != null && !pick.isBlank() && pick.equalsIgnoreCase(actualClassification.get(i))) {
+            String pick = normalizeDriverId(predictedPodium.get(i));
+            String actual = normalizeDriverId(actualClassification.get(i));
+            if (pick != null && !pick.isBlank() && pick.equals(actual)) {
                 hits++;
             }
         }
@@ -306,31 +443,17 @@ public class ScoringService {
 
     public String resolveDuelWinner(SessionResult result, WeekendMatchup matchup) {
         if (result.getDuelWinnerDriverId() != null && !result.getDuelWinnerDriverId().isBlank()) {
-            return result.getDuelWinnerDriverId();
+            return normalizeDriverId(result.getDuelWinnerDriverId());
         }
         if (matchup == null) return null;
-
-        String d1 = matchup.getDriver1Id();
-        String d2 = matchup.getDriver2Id();
-        List<String> classification = result.getClassification();
-
-        int pos1 = indexOfDriver(classification, d1);
-        int pos2 = indexOfDriver(classification, d2);
-
-        // Si ambos terminaron, gana quien quedó en mejor posición (índice menor)
-        if (pos1 >= 0 && pos2 >= 0) {
-            return pos1 < pos2 ? d1 : d2;
-        }
-        // Si solo uno terminó la carrera clasificado, gana ese piloto
-        if (pos1 >= 0) return d1;
-        if (pos2 >= 0) return d2;
-
-        return null;
+        return resolveDuelWinnerFromClassification(result.getClassification(), matchup);
     }
 
     private int indexOfDriver(List<String> list, String driverId) {
+        String target = normalizeDriverId(driverId);
+        if (target == null || target.isBlank()) return -1;
         for (int i = 0; i < list.size(); i++) {
-            if (list.get(i).equalsIgnoreCase(driverId)) return i;
+            if (target.equals(normalizeDriverId(list.get(i)))) return i;
         }
         return -1;
     }

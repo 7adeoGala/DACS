@@ -378,9 +378,11 @@ export class DashboardComponent implements OnInit {
         this.globalLeaderboard.set(lb || []);
         this.isLoadingGlobalLeaderboard.set(false);
         // Sincronizar puntos de usuario actual en navbar si coincide
-        const myName = this.auth.username()?.toLowerCase();
+        const myName = this.auth.username()?.trim().toLowerCase();
         if (myName) {
-          const me = (lb || []).find(u => u.displayName.toLowerCase().includes(myName));
+          const list = lb || [];
+          const me = list.find(u => u.displayName.trim().toLowerCase() === myName)
+            || list.find(u => u.displayName.trim().toLowerCase().includes(myName));
           if (me) {
             this.auth.userPoints.set(me.totalScore);
           }
@@ -599,7 +601,7 @@ export class DashboardComponent implements OnInit {
     if (this.isSaving() || this.isLocked()) return;
     
     const sess = this.session();
-    const sessionId = sess?.id || 'f0c23d70-f7ca-411d-b827-7a9d45037101';
+    const sessionId = sess?.id || 'next';
 
     this.isSaving.set(true);
     this.saveError.set('');
