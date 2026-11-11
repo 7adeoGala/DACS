@@ -231,3 +231,4 @@ BEGIN
         WHERE id = rec_pred.pred_id;
     END LOOP;
 END $$;
+
