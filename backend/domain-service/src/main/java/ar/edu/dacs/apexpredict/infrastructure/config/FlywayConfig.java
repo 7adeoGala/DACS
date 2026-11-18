@@ -5,13 +5,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@SuppressWarnings("null")
 public class FlywayConfig {
 
     @Bean
     public FlywayMigrationStrategy flywayMigrationStrategy() {
         return flyway -> {
-            flyway.repair();
-            flyway.migrate();
+            if (flyway != null) {
+                flyway.repair();
+                flyway.migrate();
+            }
         };
     }
 }

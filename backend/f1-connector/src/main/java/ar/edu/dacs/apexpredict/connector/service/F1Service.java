@@ -9,9 +9,11 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 
 @Service
+@SuppressWarnings("null")
 public class F1Service {
     private static final Duration CACHE_TTL = Duration.ofMinutes(5);
 
@@ -24,7 +26,7 @@ public class F1Service {
     private volatile CacheEntry<List<ConstructorStandingInfo>> constructorStandingsCache;
 
     @Autowired
-    public F1Service(JolpicaClient client, @Autowired(required = false) OpenF1Client openF1Client) {
+    public F1Service(JolpicaClient client, @Nullable OpenF1Client openF1Client) {
         this.client = client;
         this.openF1Client = openF1Client;
     }
@@ -310,7 +312,9 @@ public class F1Service {
             List<DriverStandingInfo> standings = List.of();
             try {
                 standings = driverStandings();
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+                // standings fallback to empty
+            }
 
             DriverStandingInfo standing = standings.stream()
                 .filter(s -> normalizeDriverId(s.driverId()).equals(cleanId))
@@ -441,7 +445,9 @@ public class F1Service {
             if (env != null && env.data() != null && env.data().total() != null) {
                 return Integer.parseInt(env.data().total());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            // fallback value when endpoint fails
+        }
         return fallback;
     }
 

@@ -23,7 +23,7 @@ import org.springframework.web.server.ResponseStatusException;
  * Controlador REST encargado del Dashboard de Predicciones y validación estricta del "Lock Time".
  */
 @RestController
-@RequestMapping
+@SuppressWarnings("null")
 public class PredictionController {
 
     private final PredictionService predictionService;
@@ -104,7 +104,9 @@ public class PredictionController {
             UUID uuid = null;
             try {
                 uuid = UUID.fromString(sessionId);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+                // sessionId may be a slug or round identifier instead of a UUID
+            }
 
             var req = new PredictionService.SubmitPredictionRequest(
                 body.podium(),

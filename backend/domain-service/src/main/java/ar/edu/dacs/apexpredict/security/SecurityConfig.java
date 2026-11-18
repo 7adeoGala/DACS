@@ -15,6 +15,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
@@ -22,6 +23,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 
 @Configuration
 @EnableMethodSecurity
+@SuppressWarnings("null")
 public class SecurityConfig {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -29,7 +31,7 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-            .csrf(AbstractHttpConfigurer::disable)
+            .csrf(csrf -> csrf.disable())
             .sessionManagement(sessions -> sessions.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -93,7 +95,7 @@ public class SecurityConfig {
             return roles.stream().filter(String.class::isInstance).map(String.class::cast)
                 .filter(role -> role.equals("player") || role.equals("admin"))
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
-                .map(org.springframework.security.core.GrantedAuthority.class::cast).toList();
+                .map(GrantedAuthority.class::cast).toList();
         });
         return converter;
     }
