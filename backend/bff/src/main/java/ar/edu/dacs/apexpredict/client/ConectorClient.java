@@ -7,10 +7,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(
-    name = "conectorClient",
-    url = "${F1_CONNECTOR_URL:https://dacs-1-v4ik.onrender.com/conector}"
-)
+@FeignClient(name = "conectorClient", url = "${F1_CONNECTOR_URL:https://dacs-1-jpud.onrender.com/conector}")
 public interface ConectorClient {
 
     @GetMapping("/ping")

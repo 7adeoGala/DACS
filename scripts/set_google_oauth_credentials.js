@@ -14,7 +14,7 @@ if (!clientId || !clientSecret) {
 
 async function main() {
   console.log('1. Autenticando con Keycloak Master Admin...');
-  const tokenRes = await fetch('https://dacs-3-dswy.onrender.com/auth/realms/master/protocol/openid-connect/token', {
+  const tokenRes = await fetch('https://dacs-3-u0q1.onrender.com/auth/realms/master/protocol/openid-connect/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -55,7 +55,7 @@ async function main() {
   };
 
   console.log('2. Guardando credenciales de Google Identity Provider en realm apexpredict...');
-  const updateRes = await fetch('https://dacs-3-dswy.onrender.com/auth/admin/realms/apexpredict/identity-provider/instances/google', {
+  const updateRes = await fetch('https://dacs-3-u0q1.onrender.com/auth/admin/realms/apexpredict/identity-provider/instances/google', {
     method: 'PUT',
     headers,
     body: JSON.stringify(idpPayload)
@@ -64,7 +64,7 @@ async function main() {
   if (updateRes.status === 204 || updateRes.ok) {
     console.log('✓ ¡Google Identity Provider configurado exitosamente en Keycloak!');
     console.log('Callback URI configurada en Google Cloud Console:');
-    console.log('  https://dacs-3-dswy.onrender.com/auth/realms/apexpredict/broker/google/endpoint');
+    console.log('  https://dacs-3-u0q1.onrender.com/auth/realms/apexpredict/broker/google/endpoint');
   } else {
     console.error('Error al actualizar IDP:', updateRes.status, await updateRes.text());
   }

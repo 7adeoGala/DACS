@@ -15,8 +15,8 @@ public class RenderUrlSanitizerEnvironmentPostProcessor implements EnvironmentPo
     @Override
     public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
         Map<String, Object> sanitized = new HashMap<>();
-        sanitize(environment, sanitized, "DOMAIN_SERVICE_URL", "https://dacs-pmkx.onrender.com/backend");
-        sanitize(environment, sanitized, "F1_CONNECTOR_URL", "https://dacs-1-v4ik.onrender.com/conector");
+        sanitize(environment, sanitized, "DOMAIN_SERVICE_URL", "https://dacs-f0st.onrender.com/backend");
+        sanitize(environment, sanitized, "F1_CONNECTOR_URL", "https://dacs-1-jpud.onrender.com/conector");
 
         if (!sanitized.isEmpty()) {
             if (sanitized.containsKey("DOMAIN_SERVICE_URL")) {

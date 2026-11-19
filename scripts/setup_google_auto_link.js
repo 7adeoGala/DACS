@@ -9,7 +9,7 @@
 
 async function main() {
   console.log('1. Autenticando con Keycloak Master Admin...');
-  const tokenRes = await fetch('https://dacs-3-dswy.onrender.com/auth/realms/master/protocol/openid-connect/token', {
+  const tokenRes = await fetch('https://dacs-3-u0q1.onrender.com/auth/realms/master/protocol/openid-connect/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -29,13 +29,13 @@ async function main() {
   const headers = { Authorization: 'Bearer ' + access_token, 'Content-Type': 'application/json' };
 
   // 1. Verificar si existe el flujo personalizado
-  const flowsRes = await fetch('https://dacs-3-dswy.onrender.com/auth/admin/realms/apexpredict/authentication/flows', { headers });
+  const flowsRes = await fetch('https://dacs-3-u0q1.onrender.com/auth/admin/realms/apexpredict/authentication/flows', { headers });
   const flows = await flowsRes.json();
   let customFlow = flows.find(f => f.alias === 'first broker login auto link');
 
   if (!customFlow) {
     console.log('2. Copiando flujo base "first broker login" a "first broker login auto link"...');
-    const copyRes = await fetch('https://dacs-3-dswy.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login/copy', {
+    const copyRes = await fetch('https://dacs-3-u0q1.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login/copy', {
       method: 'POST',
       headers,
       body: JSON.stringify({ newName: 'first broker login auto link' })
@@ -46,14 +46,14 @@ async function main() {
   }
 
   // 2. Obtener ejecuciones del flujo copiado
-  const execsRes = await fetch('https://dacs-3-dswy.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login%20auto%20link/executions', { headers });
+  const execsRes = await fetch('https://dacs-3-u0q1.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login%20auto%20link/executions', { headers });
   const execs = await execsRes.json();
 
   // 3. Desactivar "Review Profile" para evitar pantallas intermedias
   const reviewExec = execs.find(e => e.providerId === 'idp-review-profile');
   if (reviewExec && reviewExec.requirement !== 'DISABLED') {
     reviewExec.requirement = 'DISABLED';
-    await fetch('https://dacs-3-dswy.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login%20auto%20link/executions', {
+    await fetch('https://dacs-3-u0q1.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login%20auto%20link/executions', {
       method: 'PUT',
       headers,
       body: JSON.stringify(reviewExec)
@@ -67,20 +67,20 @@ async function main() {
 
   if (!autoLinkExec && userCreationFlow) {
     console.log('3. Agregando idp-auto-link al subflujo "User creation or linking"...');
-    await fetch('https://dacs-3-dswy.onrender.com/auth/admin/realms/apexpredict/authentication/flows/' + encodeURIComponent(userCreationFlow.displayName) + '/executions/execution', {
+    await fetch('https://dacs-3-u0q1.onrender.com/auth/admin/realms/apexpredict/authentication/flows/' + encodeURIComponent(userCreationFlow.displayName) + '/executions/execution', {
       method: 'POST',
       headers,
       body: JSON.stringify({ provider: 'idp-auto-link' })
     });
     // Volver a consultar para obtener su ID
-    const refetch = await fetch('https://dacs-3-dswy.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login%20auto%20link/executions', { headers });
+    const refetch = await fetch('https://dacs-3-u0q1.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login%20auto%20link/executions', { headers });
     const newExecs = await refetch.json();
     autoLinkExec = newExecs.find(e => e.providerId === 'idp-auto-link');
   }
 
   if (autoLinkExec && autoLinkExec.requirement !== 'ALTERNATIVE') {
     autoLinkExec.requirement = 'ALTERNATIVE';
-    await fetch('https://dacs-3-dswy.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login%20auto%20link/executions', {
+    await fetch('https://dacs-3-u0q1.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login%20auto%20link/executions', {
       method: 'PUT',
       headers,
       body: JSON.stringify(autoLinkExec)
@@ -92,7 +92,7 @@ async function main() {
   const handleExistingExec = execs.find(e => e.displayName && e.displayName.includes('Handle Existing Account'));
   if (handleExistingExec && handleExistingExec.requirement !== 'DISABLED') {
     handleExistingExec.requirement = 'DISABLED';
-    await fetch('https://dacs-3-dswy.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login%20auto%20link/executions', {
+    await fetch('https://dacs-3-u0q1.onrender.com/auth/admin/realms/apexpredict/authentication/flows/first%20broker%20login%20auto%20link/executions', {
       method: 'PUT',
       headers,
       body: JSON.stringify(handleExistingExec)
@@ -101,13 +101,13 @@ async function main() {
   }
 
   // 6. Configurar el proveedor Google para usar el nuevo flujo
-  const idpRes = await fetch('https://dacs-3-dswy.onrender.com/auth/admin/realms/apexpredict/identity-provider/instances/google', { headers });
+  const idpRes = await fetch('https://dacs-3-u0q1.onrender.com/auth/admin/realms/apexpredict/identity-provider/instances/google', { headers });
   if (idpRes.ok) {
     const idp = await idpRes.json();
     idp.firstBrokerLoginFlowAlias = 'first broker login auto link';
     idp.trustEmail = true;
     idp.linkOnly = false;
-    await fetch('https://dacs-3-dswy.onrender.com/auth/admin/realms/apexpredict/identity-provider/instances/google', {
+    await fetch('https://dacs-3-u0q1.onrender.com/auth/admin/realms/apexpredict/identity-provider/instances/google', {
       method: 'PUT',
       headers,
       body: JSON.stringify(idp)

@@ -6,7 +6,7 @@ if (!html.includes('<base href="/apexpredict/">')) throw new Error('Compilar con
 const scripts = readdirSync(source).filter(name => name.endsWith('.js'))
   .map(name => readFileSync(new URL(name, source), 'utf8'));
 if (!scripts.some(script => script.includes('https://dacs2026.local/api')) ||
-    scripts.some(script => script.includes('https://dacs-2-crv9.onrender.com/bff'))) {
+    scripts.some(script => script.includes('https://dacs-2-2q62.onrender.com/bff'))) {
   throw new Error('Nginx local requiere el build --configuration=production,local.');
 }
 mkdirSync(destination, { recursive: true });

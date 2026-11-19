@@ -24,12 +24,12 @@ feign:
         readTimeout: 60000
         loggerLevel: basic
       domainClient:
-        url: ${DOMAIN_SERVICE_URL:https://dacs-pmkx.onrender.com/backend}
+        url: ${DOMAIN_SERVICE_URL:https://dacs-f0st.onrender.com/backend}
       conectorClient:
-        url: ${F1_CONNECTOR_URL:https://dacs-1-v4ik.onrender.com/conector}
+        url: ${F1_CONNECTOR_URL:https://dacs-1-jpud.onrender.com/conector}
 apexpredict:
   security:
-    issuer: ${KEYCLOAK_ISSUER_URI:${KEYCLOAK_ISSUER:https://dacs-3-dswy.onrender.com/auth/realms/apexpredict}}
-    jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:https://dacs-3-dswy.onrender.com/auth/realms/apexpredict/protocol/openid-connect/certs}
+    issuer: ${KEYCLOAK_ISSUER_URI:${KEYCLOAK_ISSUER:https://dacs-3-u0q1.onrender.com/auth/realms/apexpredict}}
+    jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:https://dacs-3-u0q1.onrender.com/auth/realms/apexpredict/protocol/openid-connect/certs}
     audience: apexpredict-bff
     cors-origins: ${CORS_ORIGINS:https://dacs-nine.vercel.app,http://localhost:4200,https://localhost:4200,https://dacs2026.local}

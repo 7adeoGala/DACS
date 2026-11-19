@@ -9,8 +9,10 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 public class ApexPredictApplication {
 
     public static void main(String[] args) {
-        sanitizeUrlProperty("DOMAIN_SERVICE_URL", "feign.client.config.domainClient.url", "https://dacs-pmkx.onrender.com/backend");
-        sanitizeUrlProperty("F1_CONNECTOR_URL", "feign.client.config.conectorClient.url", "https://dacs-1-v4ik.onrender.com/conector");
+        sanitizeUrlProperty("DOMAIN_SERVICE_URL", "feign.client.config.domainClient.url",
+                "https://dacs-f0st.onrender.com/backend");
+        sanitizeUrlProperty("F1_CONNECTOR_URL", "feign.client.config.conectorClient.url",
+                "https://dacs-1-jpud.onrender.com/conector");
         SpringApplication.run(ApexPredictApplication.class, args);
     }
 

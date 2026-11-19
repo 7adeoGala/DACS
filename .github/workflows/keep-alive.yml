@@ -1,9 +1,9 @@
 name: Render Keep Alive
 
 on:
-  schedule:
-    # Se ejecuta cada 5 minutos para evitar que Render suspenda las instancias por inactividad (15 min)
-    - cron: '*/5 * * * *'
+  # Cron desactivado para no superar las 750 horas/mes del plan Free de Render (4 servicios x 24h = 96h/día).
+  # schedule:
+  #   - cron: '*/5 * * * *'
   push:
     branches: [main]
   workflow_dispatch: # Permite ejecutar el ping manualmente desde la pestaña Actions de GitHub
@@ -15,21 +15,21 @@ jobs:
       - name: Ping Servicios Render
         run: |
           echo "Pinging BFF Health..."
-          curl -s -o /dev/null -w "BFF: %{http_code}\n" --max-time 45 https://dacs-2-crv9.onrender.com/bff/ping || true
+          curl -s -o /dev/null -w "BFF: %{http_code}\n" --max-time 45 https://dacs-2-2q62.onrender.com/bff/ping || true
           sleep 2
 
           echo "Pinging Domain Service Direct..."
-          curl -s -o /dev/null -w "Domain Service: %{http_code}\n" --max-time 60 https://dacs-pmkx.onrender.com/backend/ping || true
+          curl -s -o /dev/null -w "Domain Service: %{http_code}\n" --max-time 60 https://dacs-f0st.onrender.com/backend/ping || true
           sleep 2
 
           echo "Pinging BFF-to-Domain Chain..."
-          curl -s -o /dev/null -w "BFF-to-Domain: %{http_code}\n" --max-time 60 https://dacs-2-crv9.onrender.com/bff/backendping || true
+          curl -s -o /dev/null -w "BFF-to-Domain: %{http_code}\n" --max-time 60 https://dacs-2-2q62.onrender.com/bff/backendping || true
           sleep 2
 
           echo "Pinging F1 Connector Direct..."
-          curl -s -o /dev/null -w "F1 Connector: %{http_code}\n" --max-time 60 https://dacs-1-v4ik.onrender.com/conector/ping || true
+          curl -s -o /dev/null -w "F1 Connector: %{http_code}\n" --max-time 60 https://dacs-1-jpud.onrender.com/conector/ping || true
           sleep 2
 
           echo "Pinging Keycloak Auth..."
-          curl -s -o /dev/null -w "Keycloak: %{http_code}\n" --max-time 60 https://dacs-3-dswy.onrender.com/auth/realms/apexpredict || true
+          curl -s -o /dev/null -w "Keycloak: %{http_code}\n" --max-time 60 https://dacs-3-u0q1.onrender.com/auth/realms/apexpredict || true
 

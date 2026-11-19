@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthHeaderComponent } from './auth-header.component';
 import { AuthService } from '../../core/auth/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-register',
@@ -270,7 +271,7 @@ export class RegisterComponent implements OnInit {
 
   ngOnInit() {
     if (typeof window !== 'undefined') {
-      fetch('https://dacs-3-dswy.onrender.com/auth/realms/apexpredict', { mode: 'no-cors' }).catch(() => {});
+      fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}`, { mode: 'no-cors' }).catch(() => {});
     }
   }
 
