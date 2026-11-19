@@ -59,7 +59,6 @@ describe('Formulario de ligas', () => {
     comp.createLeague();
     expect(api.createLeague).toHaveBeenCalledWith('Liga del paddock', undefined, undefined);
 
-    // Un segundo envio mientras espera la respuesta no duplica la peticion
     comp.createLeague();
     expect(api.createLeague).toHaveBeenCalledTimes(1);
 
@@ -83,10 +82,8 @@ describe('Formulario de ligas', () => {
     const comp = fixture.componentInstance;
     comp.activeTab.set('pronostico');
 
-    // Inicialmente vacio: canSavePrediction es true (permite guardar predicciones vacias)
     expect(comp.canSavePrediction()).toBe(true);
 
-    // Selecciona solo P1
     comp.p1DriverId.set('norris');
     expect(comp.canSavePrediction()).toBe(true);
     comp.savePrediction();

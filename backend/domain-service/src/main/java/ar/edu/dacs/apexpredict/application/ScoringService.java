@@ -18,23 +18,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Servicio encargado de la lógica matemática y persistencia de puntuación para ApexPredict.
- * 
- * Reglas de puntuación oficiales:
- * - Podio (Posiciones #1, #2 y #3):
- *     1 acierto  -> 3 puntos
- *     2 aciertos -> 7 puntos
- *     3 aciertos -> 10 puntos
- * - Pole position:
- *     Acertar -> 4 puntos
- * - Duelo de pilotos:
- *     Acertar el piloto ganador del duelo del fin de semana -> 3 puntos
- * - Cantidad de autos de seguridad (VSC - SC):
- *     Acertar la cantidad exacta -> 6 puntos
- * - Cantidad de abandonos (DNF - DNS):
- *     Acertar la cantidad exacta -> 6 puntos
- */
 @Service
 public class ScoringService {
 
@@ -64,9 +47,6 @@ public class ScoringService {
         this.sessions = sessions;
     }
 
-    /**
-     * Normaliza identificadores de pilotos entre la API externa (Jolpica/OpenF1) y el catálogo local.
-     */
     public static String normalizeDriverId(String driverId) {
         if (driverId == null) return null;
         String clean = driverId.trim().toLowerCase(Locale.ROOT);
@@ -83,14 +63,10 @@ public class ScoringService {
         };
     }
 
-    /**
-     * Calcula el desglose detallado y puntaje total de un pronóstico contra el resultado oficial.
-     */
     public ScoreBreakdown calculateScore(Prediction prediction, SessionResult result, WeekendMatchup matchup) {
         Objects.requireNonNull(prediction, "La predicción no puede ser nula.");
         Objects.requireNonNull(result, "El resultado oficial de la sesión no puede ser nulo.");
 
-        // 1. Podio (#1, #2 y #3)
         int podiumHits = calculatePodiumHits(prediction.getPodium(), result.getClassification());
         int podiumPoints = switch (podiumHits) {
             case 1 -> 3;
@@ -99,7 +75,6 @@ public class ScoringService {
             default -> 0;
         };
 
-        // 2. Pole position (4 puntos)
         boolean poleHit = false;
         int polePoints = 0;
         String predPole = normalizeDriverId(prediction.getPolePositionDriverId());
@@ -111,7 +86,6 @@ public class ScoringService {
             }
         }
 
-        // 3. Duelo de pilotos (3 puntos)
         boolean duelHit = false;
         int duelPoints = 0;
         String duelWinner = normalizeDriverId(resolveDuelWinner(result, matchup));
@@ -123,7 +97,6 @@ public class ScoringService {
             }
         }
 
-        // 4. Cantidad de autos de seguridad (VSC - SC): 6 puntos
         boolean safetyCarHit = false;
         int safetyCarPoints = 0;
         if (prediction.getSafetyCarCount() != null && result.getSafetyCarCount() != null) {
@@ -133,7 +106,6 @@ public class ScoringService {
             }
         }
 
-        // 5. Cantidad de abandonos (DNF - DNS): 6 puntos
         boolean dnfHit = false;
         int dnfPoints = 0;
         if (prediction.getDnfCount() != null && result.getDnfCount() != null) {
@@ -160,9 +132,6 @@ public class ScoringService {
         );
     }
 
-    /**
-     * Procesa y persiste los puntos para todas las predicciones de una sesión cerrada con resultados oficiales.
-     */
     @Transactional
     public List<ScoredPredictionSummary> scoreSession(UUID sessionId) {
         var session = sessions.findById(sessionId)
@@ -194,9 +163,6 @@ public class ScoringService {
         return summaries;
     }
 
-    /**
-     * Evalúa y asigna puntuación automáticamente al iniciar la aplicación.
-     */
     @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
     @Transactional
     public void onApplicationReady() {
@@ -207,10 +173,6 @@ public class ScoringService {
         }
     }
 
-    /**
-     * Evalúa y asigna puntuación automáticamente a todas las predicciones pendientes (score == null)
-     * de cualquier sesión que ya tenga resultados oficiales publicados.
-     */
     @Transactional
     public void autoScoreAllCompletedSessions() {
         ensureFinishedSessionsSeeded();
@@ -241,14 +203,9 @@ public class ScoringService {
         }
     }
 
-    /**
-     * Garantiza que las sesiones finalizadas cuenten con resultados oficiales reales publicados
-     * (sin crear ni modificar pronósticos de usuarios).
-     */
     @Transactional
     public void ensureFinishedSessionsSeeded() {
         try {
-            // 1. Respaldo oficial verificado para Round 18, 19 y 20 (solo inserta si aún no existe en BD)
             ensureOfficialResultIfMissing(
                 2026, 18,
                 List.of("antonelli", "leclerc", "verstappen", "hamilton", "norris", "hadjar", "piastri", "russell", "lawson", "gasly"),
@@ -265,7 +222,6 @@ public class ScoringService {
                 "norris", 0, 2, "lawson"
             );
 
-            // 2. Sincronización dinámica vía Jolpica/OpenF1 para cualquier carrera posterior ya finalizada (R21+)
             Instant cutoff = Instant.now().minus(Duration.ofHours(3));
             for (Session s : sessions.findAll()) {
                 if (s.getType() != Session.Type.RACE || s.getStartsAt() == null) continue;

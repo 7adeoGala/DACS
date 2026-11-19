@@ -14,7 +14,6 @@ public class Session extends BaseEntity {
     @Column(nullable = false, length = 160) private String name;
     @Column(nullable = false, length = 160) private String circuit;
     @Column(nullable = false) private LocalDate raceDate;
-    // Si la API no publica horario, no se inventa una hora de cierre.
     private Instant startsAt;
     protected Session() {}
     public Session(int season, int round, Type type, String name, String circuit, LocalDate raceDate, Instant startsAt) {

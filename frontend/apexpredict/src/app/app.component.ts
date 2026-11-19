@@ -28,10 +28,8 @@ export class App {
       }
     });
 
-    // Despertar todos los microservicios (Keycloak, BFF, Domain, Connector) inmediatamente
     this.api.wakeServices();
 
-    // Asegurar que la pestaña del navegador aplique el logo oficial ApexPredict sin bloqueos de caché
     if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       try {
         const link = (document.querySelector("link[rel*='icon']") as HTMLLinkElement) || document.createElement('link');

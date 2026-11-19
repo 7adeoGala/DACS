@@ -6,7 +6,6 @@ import { Component } from '@angular/core';
   template: `
     <header class="auth-header">
       <div class="auth-header-inner">
-        <!-- LOGO ORIGINAL APEXPREDICT (FOTO OFICIAL) -->
         <a class="brand-link" href="/">
           <svg class="logo-racing-mark" viewBox="0 0 18 18" width="22" height="22" fill="none" style="margin-right: 4px;">
             <path d="M2 14L8 4H12L6 14H2Z" fill="#e10600"/>

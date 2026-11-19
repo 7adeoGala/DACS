@@ -39,16 +39,10 @@ public class SessionResult extends BaseEntity {
 
     protected SessionResult() {}
 
-    /**
-     * Constructor compatible con versiones anteriores.
-     */
     public SessionResult(Session session, List<String> classification, Instant publishedAt) {
         this(session, classification, null, 0, 0, null, publishedAt);
     }
 
-    /**
-     * Constructor ampliado con datos oficiales completos para scoring.
-     */
     public SessionResult(
         Session session,
         List<String> classification,

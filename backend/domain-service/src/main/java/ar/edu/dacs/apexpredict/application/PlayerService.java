@@ -151,7 +151,6 @@ public class PlayerService {
 
     @Transactional(readOnly = true)
     public List<LeagueView> searchLeagues(String issuer, String subject, String query) {
-        // Las ligas privadas son estrictamente confidenciales: no son buscables ni visibles públicamente.
         return List.of();
     }
 
@@ -173,10 +172,6 @@ public class PlayerService {
         return createLeague(issuer, subject, name, null, null);
     }
 
-    /**
-     * Permite editar una liga privada existente (nombre, descripción y contraseña).
-     * Solo el propietario tiene autorización para modificarla.
-     */
     @Transactional
     public LeagueView editLeague(String issuer, String subject, UUID leagueId, String newName, String newDescription, String newPassword) {
         var user = getOrCreateUser(issuer, subject);
@@ -192,9 +187,6 @@ public class PlayerService {
         return editLeague(issuer, subject, leagueId, newName, newDescription, null);
     }
 
-    /**
-     * Permite a un usuario unirse a una liga privada mediante su ID y contraseña (si la tiene).
-     */
     @Transactional
     public LeagueView joinLeague(String issuer, String subject, UUID leagueId, String password) {
         var user = getOrCreateUser(issuer, subject);
@@ -213,9 +205,6 @@ public class PlayerService {
         return toLeagueView(league, user, true);
     }
 
-    /**
-     * Permite a un usuario unirse a una liga privada mediante un código/link de invitación.
-     */
     @Transactional
     public LeagueView joinLeagueByInviteCode(String issuer, String subject, UUID inviteCode, String password) {
         var user = getOrCreateUser(issuer, subject);
@@ -239,9 +228,6 @@ public class PlayerService {
         return joinLeagueByInviteCode(issuer, subject, inviteCode, null);
     }
 
-    /**
-     * Tabla de posiciones global acumulada en tiempo real.
-     */
     @Transactional
     public List<LeaderboardEntry> getGlobalLeaderboard() {
         try {
@@ -272,9 +258,6 @@ public class PlayerService {
         return leaderboard;
     }
 
-    /**
-     * Tabla de posiciones de una liga privada acumulada en tiempo real.
-     */
     @Transactional
     public List<LeaderboardEntry> getLeagueLeaderboard(UUID leagueId) {
         if (!leagues.existsById(leagueId)) {
@@ -329,7 +312,6 @@ public class PlayerService {
         String favoriteTeamId,
         Boolean notificationsEnabled
     ) {}
-
 
     public record LeagueView(
         UUID id,

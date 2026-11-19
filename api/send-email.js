@@ -4,7 +4,6 @@ function sendTlsEmail(options) {
   return new Promise((resolve, reject) => {
     const isNotification = options.type === 'notification';
 
-    // Selección dinámica de cuenta según el servicio
     const user = isNotification
       ? (process.env.NOTIF_EMAIL_USER || process.env.EMAIL_USER || 'tadeocdu@gmail.com')
       : (process.env.AUTH_EMAIL_USER || process.env.EMAIL_USER || 'tadeocdu@gmail.com');
@@ -75,7 +74,6 @@ function sendTlsEmail(options) {
             '</div>'
           ].join('\r\n');
         } else {
-          // Servicio de Seguridad / Códigos
           const code = options.code || '';
           subject = `Tu código de seguridad ApexPredict: ${code}`;
           htmlContent = [

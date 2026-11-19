@@ -50,9 +50,6 @@ public class League extends BaseEntity {
         this.createdAt = Instant.now();
     }
 
-    /**
-     * Permite editar la liga privada, validando que quien realiza el cambio sea el propietario.
-     */
     public void update(String newName, String newDescription, User requester) {
         update(newName, newDescription, this.password, requester);
     }

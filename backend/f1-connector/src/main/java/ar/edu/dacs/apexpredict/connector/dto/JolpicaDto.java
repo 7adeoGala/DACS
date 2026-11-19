@@ -4,10 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
-/**
- * DTOs con filtrado estricto (@JsonIgnoreProperties(ignoreUnknown = true)) para aislar
- * únicamente los campos necesarios de las respuestas de Jolpica F1 API.
- */
 public class JolpicaDto {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -85,7 +81,7 @@ public class JolpicaDto {
         }
     }
 
-    // --- Qualifying estricto (solo position y Driver) ---
+    // --- Clasificación ---
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record QualifyingEnvelope(@JsonProperty("MRData") QualifyingMetadata data) {}
 
@@ -108,7 +104,7 @@ public class JolpicaDto {
         @JsonProperty("Driver") Driver driver
     ) {}
 
-    // --- Next Race & Sessions estricto ---
+    // --- Próxima carrera y sesiones ---
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record NextRaceEnvelope(@JsonProperty("MRData") NextRaceMetadata data) {}
 
@@ -137,7 +133,7 @@ public class JolpicaDto {
         @JsonProperty("SprintQualifying") SessionTimeDto sprintQualifying
     ) {}
 
-    // --- Resultados detallados estricto (incluye grid/points/laps/fastestLap para stats y last race) ---
+    // --- Resultados ---
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record DetailedEnvelope(@JsonProperty("MRData") DetailedMetadata data) {}
 
@@ -172,7 +168,7 @@ public class JolpicaDto {
         @JsonProperty("FastestLap") FastestLapDto fastestLap
     ) {}
 
-    // --- Standings estricto ---
+    // --- Posiciones ---
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record StandingsEnvelope(@JsonProperty("MRData") StandingsMetadata data) {}
 

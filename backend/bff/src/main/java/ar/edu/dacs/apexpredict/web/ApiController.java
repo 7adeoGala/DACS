@@ -67,7 +67,7 @@ public class ApiController {
         return conectorClient.results(season, round);
     }
 
-    // --- Endpoints públicos de F1 aislados vía f1-connector (el Frontend nunca consulta Jolpica/OpenF1 directamente) ---
+    // --- Endpoints públicos de F1 ---
 
     @GetMapping("/f1/next")
     public NextRaceInfo nextF1Race() {
@@ -94,7 +94,7 @@ public class ApiController {
         return conectorClient.driverStats(driverId);
     }
 
-    // --- Orquestación en BFF: cruce de pronósticos en Dominio + resultados reales del Conector ---
+    // --- Puntuación ---
 
     @GetMapping("/scores/me/{year}/{round}")
     @PreAuthorize("hasAnyRole('player', 'admin')")
@@ -126,8 +126,7 @@ public class ApiController {
         return domainClient.checkDisplayName(name);
     }
 
-
-    // --- Ligas y Leaderboards ---
+    // --- Ligas y clasificaciones ---
 
     @GetMapping("/leagues")
     @PreAuthorize("hasAnyRole('player', 'admin')")
@@ -177,7 +176,7 @@ public class ApiController {
         return domainClient.leagueLeaderboard(id);
     }
 
-    // --- Predicciones y Lock Time ---
+    // --- Predicciones ---
 
     @GetMapping("/sessions/next")
     public NextSession nextSession() {

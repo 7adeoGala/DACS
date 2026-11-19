@@ -18,9 +18,7 @@
   --line-strong: rgba(255, 255, 255, 0.12);
 }
 
-/* ======================================================== */
-/* 1. ESTRUCTURA GLOBAL Y FONDO F1 TELEMETRY                */
-/* ======================================================== */
+/* Estructura general */
 html, body {
   background-color: #090b0e !important;
   color: #f8fafc !important;
@@ -63,9 +61,7 @@ body#keycloak-bg {
   box-sizing: border-box !important;
 }
 
-/* ======================================================== */
-/* 2. ENCABEZADO Y LOGO OFICIAL APEXPREDICT                 */
-/* ======================================================== */
+/* Encabezado y logo */
 .pf-v5-c-login__header {
   margin-bottom: 1.75rem !important;
   text-align: center !important;
@@ -121,9 +117,7 @@ body#keycloak-bg {
   text-align: center !important;
 }
 
-/* ======================================================== */
-/* 3. TARJETA GLASSMORPHISM F1                              */
-/* ======================================================== */
+/* Tarjeta principal */
 .pf-v5-c-login__main {
   width: 100% !important;
   background: rgba(18, 23, 34, 0.85) !important;
@@ -154,7 +148,6 @@ body#keycloak-bg {
   color: #ffffff !important;
 }
 
-/* Selector de Idioma Telemétrico */
 .pf-v5-c-login__main-header-utilities select,
 #kc-locale select {
   font-family: 'JetBrains Mono', monospace !important;
@@ -175,9 +168,7 @@ body#keycloak-bg {
   color: #ffffff !important;
 }
 
-/* ======================================================== */
-/* 4. MENSAJES DE ALERTA (ACCOUNT ALREADY EXISTS, ETC)       */
-/* ======================================================== */
+/* Mensajes de alerta */
 .pf-v5-c-alert,
 .alert,
 #kc-error-message,
@@ -213,9 +204,7 @@ body#keycloak-bg {
   margin-right: 0.65rem !important;
 }
 
-/* ======================================================== */
-/* 5. FORMULARIOS Y CAMPOS                                   */
-/* ======================================================== */
+/* Formularios */
 .pf-v5-c-form__group {
   margin-bottom: 1.15rem !important;
 }
@@ -258,9 +247,7 @@ input[type="email"]:focus {
   box-shadow: 0 0 0 2px rgba(225, 6, 0, 0.2) !important;
 }
 
-/* ======================================================== */
-/* 6. BOTONES PRIMARIOS Y SECUNDARIOS                       */
-/* ======================================================== */
+/* Botones */
 .pf-v5-c-form__actions,
 #kc-form-buttons,
 #kc-form-options {
@@ -271,7 +258,6 @@ input[type="email"]:focus {
   width: 100% !important;
 }
 
-/* BOTÓN PRIMARIO DE ALTO IMPACTO (Add to existing account / Iniciar sesión) */
 .pf-v5-c-button.pf-m-primary,
 button#linkAccount,
 button[name="submitAction"][value="linkAccount"],
@@ -308,7 +294,6 @@ input[type="submit"].pf-v5-c-button:hover {
   transform: translateY(-1px) !important;
 }
 
-/* BOTÓN SECUNDARIO TELEMÉTRICO (Review profile / Volver / Cancelar) */
 .pf-v5-c-button.pf-m-secondary,
 .pf-v5-c-button.pf-m-tertiary,
 button#updateProfile,
@@ -344,9 +329,7 @@ button#cancel:hover {
   transform: translateY(-1px) !important;
 }
 
-/* ======================================================== */
-/* 7. ENLACES Y PIE DE PÁGINA                               */
-/* ======================================================== */
+/* Enlaces y pie de página */
 a {
   color: #00f2fe !important;
   text-decoration: none !important;
@@ -380,7 +363,6 @@ a:hover {
   border-color: #e10600 !important;
 }
 
-/* SUB-PIE TELEMÉTRICO OFICIAL */
 .pf-v5-c-login__container::after {
   content: '● PADDOCK TELEMETRY SERVERS ONLINE | PKCE 256-BIT ENCRYPTED' !important;
   display: flex !important;

@@ -52,7 +52,7 @@
       box-shadow: inset 0 -2px 0 var(--red);
     }
 
-    /* ACCIONES DE SESIÓN EN NAVBAR (ARRIBA A LA DERECHA) */
+    /* Acciones de sesión */
     .nav-actions {
       display: flex;
       align-items: center;
@@ -104,7 +104,7 @@
       transform: translateY(-1px);
     }
 
-    /* DROPDOWN WRAPPER Y TRIGGER BUTTON */
+    /* Menú desplegable de perfil */
     .profile-dropdown-wrapper {
       position: relative;
     }
@@ -174,7 +174,6 @@
       flex-shrink: 0;
     }
 
-    /* DROPDOWN MENU CARD */
     .profile-dropdown-menu {
       position: absolute;
       top: calc(100% + 10px);
@@ -196,7 +195,7 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* HEADER */
+    /* Encabezado del perfil */
     .dropdown-header {
       display: flex;
       align-items: center;
@@ -271,8 +270,7 @@
       transition: color 0.25s ease, background 0.25s ease, border-color 0.25s ease;
     }
 
-
-    /* FORM FIELDS */
+    /* Campos del formulario */
     .form-field-group {
       margin-bottom: 0.75rem;
     }
@@ -386,7 +384,7 @@
       letter-spacing: 0.02em;
     }
 
-    /* CUSTOM SELECT SYSTEM (COPIADO Y ALINEADO CON DRIVER-PICKER-MODAL) */
+    /* Selector personalizado */
     .custom-select-container {
       position: relative;
       width: 100%;
@@ -462,7 +460,6 @@
       color: #ffffff;
     }
 
-    /* DROPDOWN LIST OVERLAY */
     .custom-select-dropdown {
       position: absolute;
       top: calc(100% + 5px);
@@ -501,7 +498,6 @@
       background: rgba(255, 255, 255, 0.38);
     }
 
-    /* DROPDOWN OPTION BUTTON */
     .custom-select-option {
       width: 100%;
       background: transparent;
@@ -568,7 +564,6 @@
       margin-left: 2px;
     }
 
-    /* TEAM DOT TOKEN */
     .team-dot {
       width: 8px;
       height: 8px;
@@ -577,7 +572,6 @@
       box-shadow: 0 0 6px rgba(0, 0, 0, 0.5);
     }
 
-    /* TEAM TAG PILL (MONO) */
     .team-tag-pill {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.65rem;
@@ -593,7 +587,6 @@
       white-space: nowrap;
     }
 
-    /* DRIVER CODE AND NUMBER BADGES */
     .dtc-code {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.72rem;
@@ -615,7 +608,7 @@
       white-space: nowrap;
     }
 
-    /* SWITCH ROW */
+    /* Interruptor de notificaciones */
     .switch-row {
       display: flex;
       align-items: center;
@@ -679,7 +672,7 @@
       background-color: var(--team-switch-knob, #ffffff);
     }
 
-    /* SAVE BUTTON */
+    /* Botón guardar */
     .btn-save-profile {
       width: 100%;
       background: var(--team-color, var(--red));
@@ -728,7 +721,7 @@
       to { transform: rotate(360deg); }
     }
 
-    /* FOOTER ACTIONS */
+    /* Acciones inferiores */
     .dropdown-footer {
       display: flex;
       align-items: center;
@@ -768,7 +761,7 @@
       text-decoration: underline;
     }
 
-    /* HAMBURGUESA BOOTSTRAP PARA TELÉFONOS */
+    /* Menú móvil */
     .navbar-toggler {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid rgba(255, 255, 255, 0.15);
@@ -806,7 +799,6 @@
       transform: translateY(-7px) rotate(-45deg);
     }
 
-    /* MOBILE NAVIGATION DRAWER */
     .mobile-nav-drawer {
       display: flex;
       flex-direction: column;

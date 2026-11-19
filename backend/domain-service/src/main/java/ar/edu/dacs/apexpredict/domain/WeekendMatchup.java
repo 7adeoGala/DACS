@@ -4,10 +4,6 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.Objects;
 
-/**
- * Representa el duelo de pilotos seleccionado por fin de semana de carrera.
- * El sistema selecciona aleatoriamente 2 pilotos por fin de semana (los mismos 2 para todos los usuarios).
- */
 @Entity
 @Table(name = "weekend_matchups")
 public class WeekendMatchup extends BaseEntity {

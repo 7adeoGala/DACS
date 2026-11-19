@@ -5,9 +5,7 @@
   box-sizing: border-box;
 }
 
-/* ======================================================== */
-/* CONTENEDOR PRINCIPAL                                      */
-/* ======================================================== */
+/* Contenedor principal */
 .podium-card-wrapper {
   background: var(--surface, #141822);
   border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
@@ -19,9 +17,7 @@
   box-sizing: border-box;
 }
 
-/* ======================================================== */
-/* CABECERA DE LA TARJETA                                    */
-/* ======================================================== */
+/* Encabezado */
 .card-title-row {
   display: flex;
   justify-content: space-between;
@@ -53,9 +49,7 @@
   font-weight: 400;
 }
 
-/* ======================================================== */
-/* GRILLA DEL PODIO (ESTRUCTURA DE ESCALÓN F1)              */
-/* ======================================================== */
+/* Grilla del podio */
 .podium-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -80,7 +74,6 @@
   position: relative;
 }
 
-/* ORDEN VISUAL EN DESKTOP: P2 (IZQ), P1 (CENTRO), P3 (DER) */
 .slot-p2 {
   order: 1;
 }
@@ -93,7 +86,6 @@
   order: 3;
 }
 
-/* ELEVACIÓN Y ESCALONADO DE PODIO: 1 POR ENCIMA DE 2, Y 2 POR ENCIMA DE 3 */
 .gold-border {
   border-top: 4px solid var(--gold, #f5b000);
   background: linear-gradient(180deg, rgba(245, 176, 0, 0.12) 0%, rgba(13, 17, 24, 0.98) 100%);
@@ -208,9 +200,7 @@
   width: 100%;
 }
 
-/* ======================================================== */
-/* PEDESTAL BASE INFERIOR (PUESTO 1, 2, 3)                   */
-/* ======================================================== */
+/* Pedestal del podio */
 .podium-pedestal-base {
   width: 100%;
   align-self: stretch;
@@ -320,9 +310,7 @@
   filter: drop-shadow(0 2px 8px rgba(234, 88, 12, 0.55));
 }
 
-/* ======================================================== */
-/* TARJETA DINÁMICA DE PILOTO (CON EFECTO NEÓN)              */
-/* ======================================================== */
+/* Tarjeta de piloto */
 .driver-template-card {
   --driver-color: #3671c6;
   background: #080b10;
@@ -422,9 +410,7 @@
   color: var(--cyan, #00f2fe);
 }
 
-/* ======================================================== */
-/* MODAL DE SELECCIÓN FLOTANTE                               */
-/* ======================================================== */
+/* Modal de selección */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -647,9 +633,7 @@
   to { opacity: 1; }
 }
 
-/* ======================================================== */
-/* ADAPTABILIDAD RESPONSIVE (MÓVIL / TABLET)                 */
-/* ======================================================== */
+/* Diseño adaptable */
 @media (max-width: 900px) {
   .podium-grid {
     grid-template-columns: 1fr;
@@ -692,9 +676,7 @@
   }
 }
 
-/* ======================================================== */
-/* ESTADO VACÍO (SIN PILOTO SELECCIONADO)                   */
-/* ======================================================== */
+/* Estado vacío */
 .driver-template-card.empty-slot {
   --driver-color: rgba(255, 255, 255, 0.25);
   border: 1px dashed rgba(255, 255, 255, 0.2);

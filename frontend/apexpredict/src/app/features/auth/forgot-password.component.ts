@@ -12,15 +12,12 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, FormsModule, RouterLink, AuthHeaderComponent],
   template: `
     <div class="auth-layout">
-      <!-- HEADER IDÉNTICO PERSISTENTE -->
       <app-auth-header />
 
-      <!-- CONTENEDOR CENTRADO DE LA TARJETA -->
       <main class="auth-main">
         @if (isLoading()) {
-          <!-- PANTALLA DE CARGA EN EL CENTRO -->
+          <!-- Pantalla de carga -->
           <div class="auth-loading-screen">
-            <!-- ANIMACIÓN F1 CON AROS Y LOGO -->
             <div class="f1-loader-wrap">
               <div class="f1-loader-rings">
                 <div class="ring-outer"></div>
@@ -33,7 +30,6 @@ import { ApiService } from '../../core/services/api.service';
                 </div>
               </div>
 
-              <!-- 5 LUCES DE SEMÁFORO DE LARGADA F1 EN SECUENCIA -->
               <div class="f1-start-lights" aria-hidden="true">
                 <div class="light-unit"><span class="light-bulb bulb-1"></span></div>
                 <div class="light-unit"><span class="light-bulb bulb-2"></span></div>
@@ -43,7 +39,6 @@ import { ApiService } from '../../core/services/api.service';
               </div>
             </div>
 
-            <!-- CARTEL EN EL CENTRO -->
             <div class="loading-cartel-box">
               <span class="loading-cartel-dot"></span>
               <p class="loading-cartel-text">
@@ -53,7 +48,7 @@ import { ApiService } from '../../core/services/api.service';
           </div>
         } @else {
           <div class="auth-card">
-            <!-- BARRA DE PROGRESO DE 3 PASOS -->
+            <!-- Progreso de pasos -->
             <div class="step-indicator">
               <div class="step-bar" [class.active]="step() === 1" [class.completed]="step() > 1"></div>
               <div class="step-bar" [class.active]="step() === 2" [class.completed]="step() > 2"></div>
@@ -95,7 +90,7 @@ import { ApiService } from '../../core/services/api.service';
               </div>
             }
 
-            <!-- PASO 1: SOLICITAR EMAIL -->
+            <!-- Paso 1: Solicitar correo -->
             @if (step() === 1) {
               <form (ngSubmit)="handleRequestCode()" class="auth-form">
                 <div class="form-group">
@@ -126,7 +121,7 @@ import { ApiService } from '../../core/services/api.service';
               </form>
             }
 
-            <!-- PASO 2: INGRESAR CÓDIGO -->
+            <!-- Paso 2: Ingresar código -->
             @if (step() === 2) {
               <form (ngSubmit)="handleVerifyCode()" class="auth-form">
                 <div class="alert-message warning" style="margin-bottom: 1.15rem; font-size: 0.85rem; line-height: 1.45;">
@@ -174,7 +169,7 @@ import { ApiService } from '../../core/services/api.service';
               </form>
             }
 
-            <!-- PASO 3: NUEVA CONTRASEÑA -->
+            <!-- Paso 3: Nueva contraseña -->
             @if (step() === 3) {
               <form (ngSubmit)="handleCompleteReset()" class="auth-form">
                 <div class="alert-message success" style="margin-bottom: 0.75rem;">

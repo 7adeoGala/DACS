@@ -18,9 +18,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * Controlador REST encargado del Dashboard de Predicciones y validación estricta del "Lock Time".
- */
 @RestController
 @SuppressWarnings("null")
 public class PredictionController {
@@ -33,9 +30,6 @@ public class PredictionController {
         this.scoringService = scoringService;
     }
 
-    /**
-     * Requerimiento 2.A: Al ingresar a la plataforma, el usuario debe visualizar la siguiente carrera programada.
-     */
     @GetMapping("/sessions/next")
     public PredictionService.NextSessionView getNextSession() {
         var next = predictionService.getNextScheduledSession();
@@ -45,9 +39,6 @@ public class PredictionController {
         return next;
     }
 
-    /**
-     * Consulta el pronóstico del usuario actual para la siguiente carrera programada.
-     */
     @GetMapping("/predictions/current")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PredictionService.PredictionDetailView getCurrentPrediction(@AuthenticationPrincipal Jwt jwt) {
@@ -58,18 +49,12 @@ public class PredictionController {
         return predictionService.getUserPrediction(jwt.getIssuer().toString(), jwt.getSubject(), next.id());
     }
 
-    /**
-     * Consulta el historial completo de pronósticos y puntuaciones del usuario.
-     */
     @GetMapping("/predictions/history")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public List<PredictionService.PredictionHistoryItem> getPredictionHistory(@AuthenticationPrincipal Jwt jwt) {
         return predictionService.getUserPredictionHistory(jwt.getIssuer().toString(), jwt.getSubject());
     }
 
-    /**
-     * Consulta el pronóstico del usuario para una sesión específica.
-     */
     @GetMapping("/predictions/session/{sessionId}")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PredictionService.PredictionDetailView getPredictionForSession(
@@ -86,12 +71,6 @@ public class PredictionController {
         return getPredictionForSession(jwt, sessionId.toString());
     }
 
-    /**
-     * Requerimiento 2.A y Regla de Negocio (Lock Time):
-     * El usuario debe poder cargar y editar sus predicciones a través de un formulario.
-     * El sistema debe bloquear cualquier edición o carga de pronósticos exactamente en el horario
-     * oficial de inicio de la sesión; no se permiten cambios posteriores.
-     */
     @PostMapping("/predictions/session/{sessionId}")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PredictionService.PredictionDetailView submitPrediction(
@@ -104,7 +83,6 @@ public class PredictionController {
             try {
                 uuid = UUID.fromString(sessionId);
             } catch (Exception ignored) {
-                // sessionId may be a slug or round identifier instead of a UUID
             }
 
             var req = new PredictionService.SubmitPredictionRequest(
@@ -121,10 +99,8 @@ public class PredictionController {
                 return predictionService.saveOrUpdatePrediction(jwt.getIssuer().toString(), jwt.getSubject(), sessionId, req);
             }
         } catch (IllegalStateException ex) {
-            // Error de negocio: Lock Time superado o perfil no creado
             throw new ResponseStatusException(HttpStatus.LOCKED, ex.getMessage(), ex);
         } catch (IllegalArgumentException ex) {
-            // Error de validación de datos
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }
     }
@@ -137,9 +113,6 @@ public class PredictionController {
         return submitPrediction(jwt, sessionId.toString(), body);
     }
 
-    /**
-     * Ejecuta el cálculo y asignación de puntos para las predicciones de una sesión concluida.
-     */
     @PostMapping("/admin/sessions/{sessionId}/score")
     @PreAuthorize("hasRole('admin')")
     public List<ScoringService.ScoredPredictionSummary> scoreSession(@PathVariable UUID sessionId) {

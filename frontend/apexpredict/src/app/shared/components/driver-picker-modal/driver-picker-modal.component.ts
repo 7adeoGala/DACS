@@ -11,7 +11,6 @@ import { F1Driver, F1_DRIVERS, ACTIVE_F1_DRIVERS, PodiumSlot } from '../../../co
   styleUrls: ['./driver-picker-modal.component.css']
 })
 export class DriverPickerModalComponent {
-  // Entradas de estado actual del podio
   readonly isOpen = input<boolean>(false);
   readonly currentSlot = input<PodiumSlot>('p1');
   readonly p1DriverId = input<string>('');
@@ -19,18 +18,14 @@ export class DriverPickerModalComponent {
   readonly p3DriverId = input<string>('');
   readonly poleDriverId = input<string>('');
 
-  // Emisores de eventos
   readonly onClose = output<void>();
   readonly onDriverSelected = output<{ slot: PodiumSlot; driverId: string }>();
 
-  // Lista base de pilotos
   readonly drivers: F1Driver[] = ACTIVE_F1_DRIVERS;
 
-  // Filtros interactivos
   readonly searchQuery = signal<string>('');
   readonly selectedTeam = signal<string>('ALL');
 
-  // Catálogo de escuderías para la barra de píldoras
   readonly teamList: Array<{ name: string; color: string; gradient?: string }> = [
     { name: 'McLaren', color: '#ff8000' },
     { name: 'Red Bull', color: '#3671c6' },
@@ -45,7 +40,6 @@ export class DriverPickerModalComponent {
     { name: 'Cadillac', color: '#ffffff', gradient: 'linear-gradient(135deg, #ffffff 50%, #111111 100%)' }
   ];
 
-  // Atajos globales de teclado
   @HostListener('window:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
     if (!this.isOpen()) return;
@@ -59,7 +53,6 @@ export class DriverPickerModalComponent {
     }
   }
 
-  // Filtrado reactivo en tiempo real
   readonly filteredDrivers = computed(() => {
     const q = this.searchQuery().trim().toLowerCase();
     const team = this.selectedTeam();
@@ -78,7 +71,6 @@ export class DriverPickerModalComponent {
     });
   });
 
-  // Título e identificadores contextuales
   getSlotIcon(): string {
     switch (this.currentSlot()) {
       case 'p1': return 'P1';
@@ -115,7 +107,6 @@ export class DriverPickerModalComponent {
     }
   }
 
-  // Comprueba si el piloto está seleccionado en el slot actual
   isCurrentInSlot(driverId: string): boolean {
     const slot = this.currentSlot();
     if (slot === 'p1') return this.p1DriverId() === driverId;
@@ -125,10 +116,9 @@ export class DriverPickerModalComponent {
     return false;
   }
 
-  // Comprueba si el piloto ocupa otra posición del podio (para swap)
   isDriverInAnotherSlot(driverId: string): boolean {
     const slot = this.currentSlot();
-    if (slot === 'pole') return false; // La pole puede coincidir con el podio
+    if (slot === 'pole') return false;
 
     if (slot === 'p1') return this.p2DriverId() === driverId || this.p3DriverId() === driverId;
     if (slot === 'p2') return this.p1DriverId() === driverId || this.p3DriverId() === driverId;

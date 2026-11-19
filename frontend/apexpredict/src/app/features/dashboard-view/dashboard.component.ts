@@ -39,11 +39,9 @@ export class DashboardComponent implements OnInit {
   readonly leagueSubTab = signal<'list' | 'create' | 'join'>('list');
   readonly posicionesSubTab = signal<'jugadores' | 'pilotos' | 'equipos'>('jugadores');
 
-  // Clasificaciones F1 oficiales (WDC y WCC desde Jolpica F1 API)
   readonly driverStandings = signal<JolpicaDriverStanding[]>([]);
   readonly constructorStandings = signal<JolpicaConstructorStanding[]>([]);
 
-  // Item seleccionado en historial para comparar resultados
   readonly selectedHistoryItem = signal<PredictionHistoryItem | null>(null);
 
   @HostListener('document:keydown.escape')
@@ -56,7 +54,6 @@ export class DashboardComponent implements OnInit {
     }
   }
 
-  // Sesión F1 activa
   readonly session = signal<NextSession | null>(null);
   readonly isLocked = computed(() => this.session()?.isLocked ?? false);
   readonly matchupDriver1 = computed(() => this.session()?.matchupDriver1 || getTeammateDuoForRound(this.session()?.round || 20).driver1);
@@ -65,7 +62,6 @@ export class DashboardComponent implements OnInit {
     return resolveCircuitShortName(null, this.session());
   });
 
-  // Estado reactivo del pronóstico con Signals
   readonly p1DriverId = signal<string>('');
   readonly p2DriverId = signal<string>('');
   readonly p3DriverId = signal<string>('');
@@ -74,7 +70,6 @@ export class DashboardComponent implements OnInit {
   readonly safetyCars = signal<number>(0);
   readonly dnfs = signal<number>(0);
 
-  // Selector interactivo de pilotos
   readonly isPickerOpen = signal<boolean>(false);
   readonly pickerSlot = signal<'p1' | 'p2' | 'p3' | 'pole'>('p1');
   readonly pickerSearch = signal<string>('');
@@ -98,7 +93,6 @@ export class DashboardComponent implements OnInit {
     return !!(this.p1DriverId() && this.p2DriverId() && this.p3DriverId());
   });
 
-  // Validación de podio duplicado reactiva (solo entre posiciones con piloto asignado)
   readonly isPodiumDuplicate = computed(() => {
     const picks = [this.p1DriverId(), this.p2DriverId(), this.p3DriverId()].filter(id => !!id && id.trim().length > 0);
     return new Set(picks).size !== picks.length;
@@ -108,19 +102,16 @@ export class DashboardComponent implements OnInit {
     return !this.isPodiumDuplicate() && !this.isSaving() && !this.isLocked();
   });
 
-  // Ligas privadas
   readonly myLeagues = signal<League[]>([]);
   readonly selectedLeague = signal<League | null>(null);
   readonly leagueLeaderboard = signal<LeaderboardEntry[]>([]);
 
-  // Clasificación Global e Historial
   readonly globalLeaderboard = signal<LeaderboardEntry[]>([]);
   readonly isLoadingGlobalLeaderboard = signal<boolean>(false);
   readonly globalLeaderboardError = signal<string | null>(null);
   readonly historyItems = signal<PredictionHistoryItem[]>([]);
   readonly isLoadingHistory = signal<boolean>(false);
 
-  // Estados de feedback de la UI
   readonly isSaving = signal(false);
   readonly saveSuccess = signal(false);
   readonly saveError = signal('');
@@ -133,7 +124,6 @@ export class DashboardComponent implements OnInit {
   readonly leagueSuccess = signal('');
   readonly leagueError = signal('');
 
-  // Formularios de ligas
   newLeagueName = '';
   newLeagueDescription = '';
   newLeaguePassword = '';
@@ -141,7 +131,6 @@ export class DashboardComponent implements OnInit {
   joinPassword = '';
 
   ngOnInit() {
-    // 1. Restaurar inmediatamente desde caché local para evitar demoras y saltos visuales
     this.restoreLocalCache();
 
     this.loadNextSession();
@@ -153,7 +142,6 @@ export class DashboardComponent implements OnInit {
     }
     this.loadF1Standings();
 
-    // Comprobar parámetros de ruta (ej: /join/:inviteCode)
     const routeInvite = this.route.snapshot.paramMap.get('inviteCode');
     if (routeInvite) {
       this.activeTab.set('ligas');
@@ -161,7 +149,6 @@ export class DashboardComponent implements OnInit {
       this.joinCode = routeInvite;
     }
 
-    // Comprobar query params (ej: ?tab=ligas, ?tab=posiciones, ?tab=historial)
     this.route.queryParamMap.subscribe((params) => {
       const tabParam = params.get('tab');
       if (tabParam === 'ligas') {
@@ -196,13 +183,11 @@ export class DashboardComponent implements OnInit {
         const prevSessionId = this.session()?.id;
         this.session.set(sess);
 
-        // Si la carrera cambió o el pronóstico en pantalla es de otra carrera, reestablecer
         const activePredSession = this.currentPredictionSessionId();
         if ((prevSessionId && prevSessionId !== sess.id) || (activePredSession && activePredSession !== sess.id)) {
           this.clearPredictionState();
         }
 
-        // Cargar pronóstico específico para la carrera actual
         this.loadCurrentPrediction(sess.id);
       },
       error: () => {}
@@ -379,7 +364,6 @@ export class DashboardComponent implements OnInit {
       next: (lb) => {
         this.globalLeaderboard.set(lb || []);
         this.isLoadingGlobalLeaderboard.set(false);
-        // Sincronizar puntos de usuario actual en navbar si coincide
         const myName = this.auth.username()?.trim().toLowerCase();
         if (myName) {
           const list = lb || [];
@@ -515,7 +499,6 @@ export class DashboardComponent implements OnInit {
       return;
     }
 
-    // Lógica de auto-intercambio (swap) para evitar errores de duplicado
     const currentP1 = this.p1DriverId();
     const currentP2 = this.p2DriverId();
     const currentP3 = this.p3DriverId();

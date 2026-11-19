@@ -10,7 +10,7 @@
   color: var(--text-main);
 }
 
-/* Status Bar */
+/* Barra de estado */
 .paddock-status-bar {
   display: flex;
   justify-content: space-between;
@@ -69,7 +69,7 @@
   color: var(--cyan);
 }
 
-/* Hero Header */
+/* Encabezado principal */
 .gp-hero-header {
   display: flex;
   justify-content: space-between;
@@ -129,9 +129,7 @@
   font-size: 0.95rem;
 }
 
-
-
-/* Grilla Principal */
+/* Grilla principal */
 .telemetry-main-grid {
   display: grid;
   grid-template-columns: 280px 1fr 300px;
@@ -161,7 +159,7 @@
   }
 }
 
-/* Columna Izquierda: Schedule */
+/* Columna izquierda: Cronograma */
 .sidebar-schedule {
   display: flex;
   flex-direction: column;
@@ -282,7 +280,7 @@
   margin-top: 4px;
 }
 
-/* Meteo Widget */
+/* Clima del circuito */
 .meteo-widget {
   background: var(--surface-card);
   border: 1px solid var(--line);
@@ -335,7 +333,7 @@
   display: block;
 }
 
-/* Center Stage */
+/* Columna central */
 .center-stage {
   display: flex;
   flex-direction: column;
@@ -436,7 +434,7 @@
   background: var(--red-bright);
 }
 
-/* Circuit SVG Display */
+/* Trazado del circuito */
 .circuit-display-card {
   background: var(--surface-card);
   border: 1px solid var(--line);
@@ -560,7 +558,7 @@
   display: block;
 }
 
-/* Sidebar User */
+/* Panel de usuario */
 .sidebar-user {
   display: flex;
   flex-direction: column;
@@ -675,7 +673,7 @@
   color: var(--green);
 }
 
-/* Mini Leaderboard */
+/* Tabla de posiciones resumida */
 .league-preview-card {
   background: var(--surface-card);
   border: 1px solid var(--line);
@@ -764,8 +762,7 @@
   color: var(--text-main);
 }
 
-
-/* Duelo Norris vs Verstappen */
+/* Duelo de pilotos */
 .duel-section {
   background: var(--surface-card);
   border: 1px solid var(--line);
@@ -931,7 +928,7 @@
   color: #fff;
 }
 
-/* Battle Center Metrics */
+/* Métricas del duelo */
 .battle-center-metrics {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1048,7 +1045,7 @@
   margin-top: 8px;
 }
 
-/* Bottom Banner */
+/* Banner inferior */
 .bottom-helper-banner {
   display: flex;
   justify-content: space-between;
@@ -1115,7 +1112,7 @@
   100% { transform: scale(0.95); opacity: 0.7; }
 }
 
-/* Center Stage en Modo Invitado */
+/* Modo invitado: Columna central */
 .center-stage.guest-center {
   display: flex;
   flex-direction: column;
@@ -1123,7 +1120,6 @@
   height: 100%;
 }
 
-/* Landing Page Card (Unauthenticated - Explainer) */
 .landing-welcome-card {
   background: var(--surface-card);
   border: 1px solid var(--line-strong);
@@ -1235,7 +1231,6 @@
   margin: 0;
 }
 
-/* Scoring preview card */
 .scoring-preview-card {
   background: var(--surface-card);
   border: 1px solid var(--line);
@@ -1293,7 +1288,7 @@
   color: var(--cyan);
 }
 
-/* Columna Derecha en Modo Invitado */
+/* Modo invitado: Columna derecha */
 .sidebar-right-circuit {
   display: flex;
   flex-direction: column;
@@ -1379,7 +1374,6 @@
   font-size: 0.75rem;
 }
 
-
 .val-code.silver {
   color: var(--silver);
   font-weight: 700;
@@ -1390,7 +1384,6 @@
   font-weight: 700;
 }
 
-/* Modo Invitado: Centro de Predicciones y Columna Derecha de Circuito/Cuenta Regresiva */
 .guest-center {
   display: flex;
   flex-direction: column;
@@ -1508,7 +1501,7 @@
   }
 }
 
-/* OPTIMIZACIÓN RESPONSIVE BOOTSTRAP PARA TELÉFONOS CELULARES */
+/* Diseño adaptable */
 @media (max-width: 576px) {
   .gp-telemetry-container {
     padding: 12px 10px 32px 10px;
@@ -1570,12 +1563,7 @@
   }
 }
 
-
-
-
-/* ============================================================ */
-/* SELECTOR DE ESCUDERÍAS & ESTADÍSTICAS DINÁMICAS             */
-/* ============================================================ */
+/* Selector de escuderías y estadísticas */
 .team-selector-card {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1629,7 +1617,6 @@
   line-height: 1.4;
 }
 
-/* Barra horizontal de pills scrolleable */
 .teams-filter-bar {
   display: flex;
   gap: 10px;
@@ -1701,7 +1688,6 @@
   margin-left: 2px;
 }
 
-/* Barra de Conmutación de Modo de Estadísticas */
 .stats-mode-bar {
   display: flex;
   align-items: center;

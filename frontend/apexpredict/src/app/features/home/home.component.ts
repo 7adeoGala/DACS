@@ -10,7 +10,7 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
   selector: 'app-home',
   imports: [DatePipe, RouterLink],
   template: `
-    <!-- HERO SECTION WITH CIRCUIT SPOTLIGHT -->
+    <!-- Encabezado principal -->
     <section class="hero-spotlight">
       <div class="hero-copy">
         <p class="eyebrow">
@@ -38,7 +38,7 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
         </div>
       </div>
 
-      <!-- SPOTLIGHT: CIRCUITO Y PRÓXIMA CARRERA -->
+      <!-- Próxima carrera y circuito -->
       <article class="spotlight-card">
         <div class="spotlight-header">
           <div>
@@ -52,7 +52,6 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
           </div>
         </div>
 
-        <!-- SVG CIRCUITO REAL / ESTILIZADO -->
         <div class="circuit-svg-box">
           <svg [attr.viewBox]="currentCircuit().viewBox || '0 0 500 500'">
             <path [attr.d]="currentCircuit().svgPath" />
@@ -60,7 +59,6 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
           </svg>
         </div>
 
-        <!-- DATOS TÉCNICOS DEL CIRCUITO -->
         <div class="circuit-specs-grid">
           <div class="spec-item">
             <span class="spec-label">Longitud</span>
@@ -80,7 +78,7 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
           </div>
         </div>
 
-        <!-- HORARIOS OFICIALES DEL FIN DE SEMANA (HORARIO DE ARGENTINA - ART / UTC-3) -->
+        <!-- Horarios del fin de semana -->
         <div class="schedule-list">
           <div class="schedule-row">
             <span class="sess-name">Práctica Libre 1 (FP1)</span>
@@ -110,7 +108,7 @@ import { Race, NextSession, CircuitInfo, F1_CIRCUITS, DEFAULT_CIRCUIT } from '..
       </article>
     </section>
 
-    <!-- CALENDARIO DE CARRERAS FUTURAS -->
+    <!-- Calendario de carreras -->
     <section class="section" aria-labelledby="calendar-title">
       <div class="section-heading">
         <div>
@@ -188,7 +186,6 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.loading.set(true);
     this.error.set('');
 
-    // Si ya existe calendario en caché local, mostrarlo al instante (0ms)
     try {
       const cached = localStorage.getItem(`apexpredict_calendar_${this.season}`);
       if (cached) {
@@ -201,7 +198,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       }
     } catch {}
 
-    // Cargar siguiente sesión desde Jolpica/Backend
     this.api.nextSession().subscribe({
       next: (session) => {
         this.nextSession.set(session);
@@ -212,7 +208,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Cargar calendario completo
     this.api.calendar(this.season).subscribe({
       next: (races) => {
         this.allRaces.set(races);

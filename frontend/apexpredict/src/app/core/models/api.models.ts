@@ -28,7 +28,6 @@ export interface UpdateProfileRequest {
   notificationsEnabled?: boolean;
 }
 
-
 export interface League {
   id: string;
   name: string;
@@ -250,7 +249,6 @@ export const F1_DRIVERS: DriverOption[] = [
   { id: 'ocon', name: 'Esteban Ocon', code: 'OCO', number: 31, team: 'Haas GR', teamColor: '#FFFFFF' },
   { id: 'perez', name: 'Sergio Pérez', code: 'PER', number: 11, team: 'Cadillac', teamColor: '#FFFFFF' },
   { id: 'bottas', name: 'Valtteri Bottas', code: 'BOT', number: 77, team: 'Cadillac', teamColor: '#FFFFFF' },
-  // Pilotos de reserva oficiales (no compiten en duelos ni parrilla titular)
   { id: 'tsunoda', name: 'Yuki Tsunoda', code: 'TSU', number: 22, team: 'Red Bull / RB (Reserva)', teamColor: '#6692FF', isReserve: true },
   { id: 'doohan', name: 'Jack Doohan', code: 'DOO', number: 7, team: 'Alpine (Reserva)', teamColor: '#0093CC', isReserve: true }
 ];

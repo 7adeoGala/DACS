@@ -24,8 +24,6 @@ public interface PredictionRepository extends JpaRepository<Prediction, UUID> {
     @Query("SELECT COUNT(p) FROM Prediction p WHERE p.user.id = :userId")
     long countByUserId(@Param("userId") UUID userId);
 
-
-    // Leaderboard global acumulado en tiempo real de todos los usuarios registrados
     @Query("""
         SELECT u.id as userId, u.displayName as displayName, COALESCE(SUM(p.score), 0) as totalScore, COUNT(p.id) as predictionsCount
         FROM User u
@@ -35,7 +33,6 @@ public interface PredictionRepository extends JpaRepository<Prediction, UUID> {
     """)
     List<GlobalLeaderboardRow> getGlobalLeaderboard();
 
-    // Leaderboard de liga privada
     @Query("""
         SELECT m.user.id as userId, m.user.displayName as displayName, COALESCE(SUM(p.score), 0) as totalScore, COUNT(p.id) as predictionsCount
         FROM LeagueMember m

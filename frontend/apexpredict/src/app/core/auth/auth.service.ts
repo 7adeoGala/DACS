@@ -6,7 +6,7 @@ import { environment } from '../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  static readonly SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000; // 7 días
+  static readonly SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
   private static readonly TOKEN_KEY = 'apex_token';
   private static readonly REFRESH_TOKEN_KEY = 'apex_refresh_token';
   private static readonly USERNAME_KEY = 'apex_username';
@@ -189,13 +189,11 @@ export class AuthService {
       }
     };
 
-    // Validar ventana máxima de 7 días antes de restaurar credenciales guardadas
     if (!hasOAuthCallback && this.isStoredSessionExpired()) {
       this.clearLocalSession();
       this.sessionExpired.set(true);
     }
 
-    // Restaurar token si se inició sesión previamente (soporta localStorage y sessionStorage)
     const restoreTokens = () => {
       if (this.isStoredSessionExpired()) {
         this.clearLocalSession();
@@ -268,7 +266,6 @@ export class AuthService {
       }
     }
 
-    // Si el access token ya expiró (ej. recarga dentro de los 7 días), renovarlo antes de habilitar la vista
     if (this.authenticated() && this.isTokenExpired() && this.safeGetItem(AuthService.REFRESH_TOKEN_KEY)) {
       await Promise.race([
         this.refreshAccessToken().catch(() => null),
@@ -356,13 +353,11 @@ export class AuthService {
           return await handleSuccess(res, userToTry);
         }
 
-        // Si falló con 400/401, intentar resolver el usuario alternativo (usuario <-> correo)
         if (res.status === 400 || res.status === 401) {
           try {
             const adminToken = await this.getMasterAdminToken();
             const foundUser = await this.findUserByIdentifier(userToTry, adminToken);
             if (foundUser) {
-              // Asegurar emailVerified: true en segundo plano si estaba deshabilitado
               if (!foundUser.emailVerified && foundUser.id) {
                 fetch(`${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users/${foundUser.id}`, {
                   method: 'PUT',
@@ -371,7 +366,6 @@ export class AuthService {
                 }).catch(() => {});
               }
 
-              // Si el usuario ingresó correo, intentar con su username canónico
               if (foundUser.username && foundUser.username.toLowerCase() !== userToTry.toLowerCase()) {
                 const retryUsernameRes = await attemptFetch(foundUser.username);
                 if (retryUsernameRes.ok) {
@@ -379,7 +373,6 @@ export class AuthService {
                 }
               }
 
-              // Si el usuario ingresó username, intentar con su correo
               if (foundUser.email && foundUser.email.toLowerCase() !== userToTry.toLowerCase()) {
                 const retryEmailRes = await attemptFetch(foundUser.email.toLowerCase());
                 if (retryEmailRes.ok) {
@@ -391,7 +384,6 @@ export class AuthService {
             console.warn('Resolución de identidad omitida en login:', resErr);
           }
 
-          // Fallback con @gmail.com si el usuario ingresó solo el prefijo sin @
           if (!userToTry.includes('@')) {
             try {
               const fallbackRes = await attemptFetch(userToTry.toLowerCase() + '@gmail.com');
@@ -404,7 +396,6 @@ export class AuthService {
           throw new Error('Credenciales no válidas. Revisá tu usuario/correo y contraseña.');
         }
 
-        // Si es 502, 503, 504: Render se está despertando en frío
         statusCallback?.('Servidor de autenticación iniciándose en Render... Aguardá unos segundos.');
         await new Promise((r) => setTimeout(r, 2500));
       } catch (err: any) {
@@ -460,7 +451,6 @@ export class AuthService {
     try {
       const decoded = this.decodeJwt(t);
       if (!decoded || !decoded.exp) return false;
-      // Considerar expirado si le quedan menos de 30 segundos
       return Date.now() >= ((decoded.exp * 1000) - 30000);
     } catch {
       return false;
@@ -645,7 +635,6 @@ export class AuthService {
       throw new Error(errText || 'No se pudo crear la cuenta en este momento. Intentá nuevamente.');
     }
 
-    // Iniciar sesión automáticamente tras el registro exitoso
     await this.loginWithCredentials(userData.username.trim(), userData.password, true);
   }
 
@@ -736,9 +725,8 @@ export class AuthService {
       throw new Error('No encontramos ninguna cuenta asociada a ese usuario o correo.');
     }
 
-    // Generar código de 6 dígitos numéricos
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expires = String(Date.now() + 15 * 60 * 1000); // 15 minutos
+    const expires = String(Date.now() + 15 * 60 * 1000);
 
     const headers = { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
     const adminUsersUrl = `${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users`;
@@ -749,7 +737,6 @@ export class AuthService {
       throw new Error('Esta cuenta no tiene un correo electrónico válido registrado para recibir el código.');
     }
 
-    // Guardar código y expiración en atributos de Keycloak preservando todos los campos
     const updatePayload = {
       id: foundUser.id,
       username: foundUser.username,
@@ -775,7 +762,6 @@ export class AuthService {
       throw new Error('No se pudo generar el código de verificación. Intentá nuevamente.');
     }
 
-    // Despacho de correo real mediante el endpoint seguro de correo
     try {
       const emailEndpoint = typeof window !== 'undefined'
         ? `${window.location.origin}/api/send-email`
@@ -825,7 +811,6 @@ export class AuthService {
     const headers = { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
     const adminUsersUrl = `${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users`;
 
-    // Leer usuario fresco de Keycloak
     const userRes = await fetch(`${adminUsersUrl}/${foundUser.id}`, { headers });
     if (!userRes.ok) {
       throw new Error('Error al verificar código con el servidor de autenticación.');
@@ -859,7 +844,6 @@ export class AuthService {
       throw new Error('Datos incompletos para restablecer la contraseña.');
     }
 
-    // 1. Validar código
     await this.verifyResetCode(rawId, rawCode);
 
     const adminToken = await this.getMasterAdminToken();
@@ -872,7 +856,6 @@ export class AuthService {
     const headers = { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
     const adminUsersUrl = `${environment.keycloak.url}/admin/realms/${environment.keycloak.realm}/users`;
 
-    // 2. Restablecer la contraseña
     const resetUrl = `${adminUsersUrl}/${foundUser.id}/reset-password`;
     const resetRes = await fetch(resetUrl, {
       method: 'PUT',
@@ -888,7 +871,6 @@ export class AuthService {
       throw new Error('No se pudo actualizar la contraseña. Verificá que cumpla las políticas.');
     }
 
-    // 3. Limpiar código utilizado y asegurar estado del usuario preservando todos los campos
     const userUpdates: any = {
       id: foundUser.id,
       username: foundUser.username,

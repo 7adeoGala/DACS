@@ -4,7 +4,7 @@ export interface F1Driver {
   code: string;
   number: number;
   team: string;
-  teamColor: string; // Color HEX oficial de la escudería
+  teamColor: string;
   isReserve?: boolean;
 }
 
@@ -33,7 +33,6 @@ export const F1_DRIVERS: F1Driver[] = [
   { id: 'ocon', name: 'Esteban Ocon', code: 'OCO', number: 31, team: 'Haas GR', teamColor: '#FFFFFF' },
   { id: 'perez', name: 'Sergio Pérez', code: 'PER', number: 11, team: 'Cadillac', teamColor: '#FFFFFF' },
   { id: 'bottas', name: 'Valtteri Bottas', code: 'BOT', number: 77, team: 'Cadillac', teamColor: '#FFFFFF' },
-  // Pilotos de reserva (no corren como titulares 2026)
   { id: 'tsunoda', name: 'Yuki Tsunoda', code: 'TSU', number: 22, team: 'Red Bull / RB (Reserva)', teamColor: '#6692FF', isReserve: true },
   { id: 'doohan', name: 'Jack Doohan', code: 'DOO', number: 7, team: 'Alpine (Reserva)', teamColor: '#0093CC', isReserve: true }
 ];
@@ -65,7 +64,6 @@ export interface DynamicDriverStats {
   team: string;
   teamColor: string;
   nationality?: string;
-  // Métricas oficiales temporada 2026
   points: number;
   standingPosition: string;
   wins: number;
@@ -75,7 +73,6 @@ export interface DynamicDriverStats {
   dnfs: number;
   racesCount: number;
   bestFinish: string;
-  // Métricas históricas de trayectoria F1
   careerWins: number;
   careerPoles: number;
   careerStarts: number;

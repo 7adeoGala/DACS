@@ -161,13 +161,11 @@ class PredictionServiceTest {
         List<PredictionService.PredictionHistoryItem> history = predictionService.getUserPredictionHistory(ISSUER, SUBJECT);
 
         assertEquals(2, history.size());
-        // Primero Brasil (sin pronóstico, pero con resultado oficial)
         assertEquals(r20Id, history.get(0).sessionId());
         assertNull(history.get(0).predictionId());
         assertTrue(history.get(0).podium().isEmpty());
         assertNotNull(history.get(0).officialResults());
 
-        // Segundo México (con pronóstico puntuado: 2 podio=7 + pole=4 + duel=3 + SC=6 = 20)
         assertEquals(r19Id, history.get(1).sessionId());
         assertEquals(pred19Id, history.get(1).predictionId());
         assertEquals(20, history.get(1).score());

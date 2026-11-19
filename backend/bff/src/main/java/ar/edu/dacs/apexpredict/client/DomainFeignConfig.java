@@ -12,7 +12,6 @@ public class DomainFeignConfig {
 
     @Bean
     public Retryer feignRetryer() {
-        // No habilitar reintentos automaticos que puedan duplicar creaciones en el backend
         return Retryer.NEVER_RETRY;
     }
 }

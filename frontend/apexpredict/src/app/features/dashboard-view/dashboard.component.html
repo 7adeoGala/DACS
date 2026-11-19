@@ -1,9 +1,6 @@
 <div class="dashboard-page">
 
-
-      <!-- ========================================== -->
-      <!-- TAB 1: PRONÓSTICO GP                       -->
-      <!-- ========================================== -->
+      <!-- Pestaña 1: Pronóstico GP -->
       @if (activeTab() === 'pronostico') {
         <section class="tab-content">
           <div class="section-hero">
@@ -12,11 +9,9 @@
               <h2>Configuración de Pronósticos Oficiales</h2>
               <p class="subtitle">Asigná los 3 puestos de podio sin duplicar, poleman, duelo de la fecha y telemetría de carrera.</p>
 
-              <!-- DETALLE DE LOS PUNTAJES OFICIALES DE LA PREDICCIÓN -->
               <div class="scoring-rules-panel">
                 <div class="scoring-rules-title">Los puntajes:</div>
                 <div class="scoring-groups-list">
-                  <!-- PREDICCIONES DEL PODIO DE LA CARRERA -->
                   <div class="scoring-group">
                     <div class="scoring-group-label">Predicciones del podio de la carrera:</div>
                     <div class="scoring-group-cards">
@@ -38,7 +33,6 @@
                     </div>
                   </div>
 
-                  <!-- SUBGRUPOS DE OTRAS PREDICCIONES -->
                   <div class="scoring-subgroups-grid">
                     <div class="scoring-group">
                       <div class="scoring-group-label">Predicción del poleman:</div>
@@ -89,9 +83,8 @@
             </div>
           </div>
 
-          <!-- CARTEL DINÁMICO DE ESTADO CON SEMÁFORO F1 -->
+          <!-- Estado del pronóstico -->
           @if (isSaving()) {
-            <!-- ESTADO AMARILLO: CARGANDO -->
             <div class="prediction-status-card status-yellow">
               <div class="traffic-lights-box" aria-hidden="true">
                 <div class="traffic-housing">
@@ -111,7 +104,6 @@
               </div>
             </div>
           } @else if (hasExistingPrediction()) {
-            <!-- ESTADO VERDE: CARGADO -->
             <div class="prediction-status-card status-green">
               <div class="traffic-lights-box" aria-hidden="true">
                 <div class="traffic-housing">
@@ -136,7 +128,6 @@
               </div>
             </div>
           } @else {
-            <!-- ESTADO ROJO: SIN CARGAR -->
             <div class="prediction-status-card status-red">
               <div class="traffic-lights-box" aria-hidden="true">
                 <div class="traffic-housing">
@@ -169,17 +160,15 @@
             </div>
           }
 
-          <!-- 1. PODIO OFICIAL DE CARRERA (P1, P2, P3) - COMPONENTE MODULAR -->
+          <!-- Podio de carrera -->
           <app-podium-picker 
             [(p1DriverId)]="p1DriverId"
             [(p2DriverId)]="p2DriverId"
             [(p3DriverId)]="p3DriverId"
             (onSavePodium)="handleSavePodium($event)" />
 
-
-          <!-- 2. POLEMAN, SAFETY CARS Y ABANDONOS (MISMA LÍNEA) -->
+          <!-- Pole position, Safety Car y abandonos -->
           <div class="grid-three-cols">
-            <!-- TARJETA 1: POLE POSITION -->
             <div class="spotlight-card telemetry-card pole-card">
               <div class="card-title-row">
                 <div class="card-title-group">
@@ -229,7 +218,6 @@
               }
             </div>
 
-            <!-- TARJETA 2: SAFETY CAR -->
             <div class="spotlight-card telemetry-card sc-card">
               <div class="card-title-row">
                 <div class="card-title-group">
@@ -273,7 +261,6 @@
               </div>
             </div>
 
-            <!-- TARJETA 3: ABANDONOS DNFs -->
             <div class="spotlight-card telemetry-card dnf-card">
               <div class="card-title-row">
                 <div class="card-title-group">
@@ -318,7 +305,7 @@
             </div>
           </div>
 
-          <!-- 3. DUELO DE PILOTOS DEBAJO A ANCHO COMPLETO -->
+          <!-- Duelo de pilotos -->
           <div class="spotlight-card duel-spotlight-card">
             <div class="card-title-row">
               <div class="duel-title-wrap">
@@ -337,9 +324,7 @@
               </div>
             </div>
 
-            <!-- SELECTOR DE PILOTOS EN FORMATO ARENA F1 -->
             <div class="duel-arena-grid">
-              <!-- PILOTO 1 -->
               @if (getDriver(matchupDriver1()); as d1) {
                 <button 
                   type="button"
@@ -382,12 +367,10 @@
                 </button>
               }
 
-              <!-- VS BADGE -->
               <div class="duel-vs-separator" aria-hidden="true">
                 <span class="vs-text">VS</span>
               </div>
 
-              <!-- PILOTO 2 -->
               @if (getDriver(matchupDriver2()); as d2) {
                 <button 
                   type="button"
@@ -431,7 +414,6 @@
               }
             </div>
 
-            <!-- BLOQUE EXPLICATIVO DE CRITERIOS DE VICTORIA Y DESEMPATE -->
             <div class="duel-criteria-panel">
               <div class="criteria-header-row">
                 <svg class="criteria-svg" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -466,7 +448,6 @@
             </div>
           </div>
 
-          <!-- BOTÓN DE GUARDADO CON FEEDBACK -->
           <div class="submit-bar">
             <button 
               class="button" 
@@ -491,12 +472,9 @@
         </section>
       }
 
-      <!-- ========================================== -->
-      <!-- TAB 2: MIS LIGAS PRIVADAS (SIN BUSCADOR)   -->
-      <!-- ========================================== -->
+      <!-- Pestaña 2: Ligas privadas -->
       @if (activeTab() === 'ligas') {
         <section class="tab-content">
-          <!-- SUB-NAVEGACIÓN INTERNA -->
           <div class="sub-nav-leagues">
             <button 
               type="button"
@@ -530,10 +508,9 @@
             </div>
           }
 
-          <!-- SUB-TAB 1: LISTADO DE MIS LIGAS -->
+          <!-- Subsección: Mis ligas -->
           @if (leagueSubTab() === 'list') {
             @if (myLeagues().length > 0) {
-              <!-- SELECTOR DE LIGAS SI PERTENECE A MÁS DE UNA -->
               @if (myLeagues().length > 1) {
                 <div class="league-pills-row">
                   @for (l of myLeagues(); track l.id) {
@@ -556,7 +533,6 @@
                 </div>
               }
 
-              <!-- CAJA DE INVITACIÓN DIRECTA DE LA LIGA SELECCIONADA -->
               <div class="invite-strip">
                 <div class="invite-row">
                   <div>
@@ -620,7 +596,6 @@
                 }
               </div>
 
-              <!-- PODIO TOP 3 DE LA LIGA -->
               <div class="spotlight-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                   <h3 class="podium-title" style="margin: 0;">Podio de la Liga: {{ selectedLeague()?.name }}</h3>
@@ -645,7 +620,6 @@
 
                 @if (leagueLeaderboard().length >= 1) {
                   <div class="league-podium-pedestals">
-                    <!-- P2: PLATA -->
                     <div class="pedestal silver-ped">
                       <div class="pos-badge">P2</div>
                       <div class="pilot-name">{{ leagueLeaderboard()[1]?.displayName || 'Esperando corredor' }}</div>
@@ -655,7 +629,6 @@
                       </span>
                     </div>
 
-                    <!-- P1: ORO -->
                     <div class="pedestal gold-ped">
                       <div class="crown" aria-hidden="true">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -674,7 +647,6 @@
                       </span>
                     </div>
 
-                    <!-- P3: BRONCE -->
                     <div class="pedestal bronze-ped">
                       <div class="pos-badge">P3</div>
                       <div class="pilot-name">{{ leagueLeaderboard()[2]?.displayName || 'Esperando corredor' }}</div>
@@ -686,7 +658,6 @@
                   </div>
                 }
 
-                <!-- TABLA DE POSICIONES DE LA LIGA -->
                 <h4 style="margin: 1.5rem 0 1rem; font-size: 1.05rem;">Participantes de la Liga ({{ leagueLeaderboard().length }})</h4>
                 @if (leagueLeaderboard().length > 0) {
                   <div class="table-responsive">
@@ -727,7 +698,6 @@
                 }
               </div>
             } @else {
-              <!-- EMPTY STATE CUANDO NO TIENE LIGAS -->
               <div class="spotlight-card" style="text-align: center; padding: 3rem 1.5rem;">
                 <div class="empty-state-f1-icon" style="margin: 0 auto 1.25rem; display: flex; justify-content: center;">
                   <svg width="68" height="68" viewBox="0 0 64 64" fill="none" stroke="currentColor">
@@ -753,7 +723,7 @@
             }
           }
 
-          <!-- SUB-TAB 2: CREAR NUEVA LIGA -->
+          <!-- Subsección: Crear liga -->
           @if (leagueSubTab() === 'create') {
             <div class="spotlight-card form-box">
               <h3>Crear Nueva Liga Privada</h3>
@@ -797,7 +767,7 @@
             </div>
           }
 
-          <!-- SUB-TAB 3: UNIRSE POR LINK O CLAVE -->
+          <!-- Subsección: Unirse a liga -->
           @if (leagueSubTab() === 'join') {
             <div class="spotlight-card form-box">
               <h3>Unirse a una Liga Privada</h3>
@@ -833,12 +803,9 @@
         </section>
       }
 
-      <!-- ========================================== -->
-      <!-- TAB 3: POSICIONES (JUGADORES, WDC, WCC)    -->
-      <!-- ========================================== -->
+      <!-- Pestaña 3: Posiciones -->
       @if (activeTab() === 'posiciones') {
         <section class="tab-content">
-          <!-- SUB-NAVEGACIÓN INTERNA DE POSICIONES -->
           <div class="sub-nav-leagues">
             <button 
               type="button"
@@ -860,7 +827,7 @@
             </button>
           </div>
 
-          <!-- 1. JUGADORES GLOBAL (COMUNIDAD APEXPREDICT) -->
+          <!-- Posiciones globales -->
           @if (posicionesSubTab() === 'jugadores') {
             <div class="spotlight-card">
               <div class="card-title-row">
@@ -974,7 +941,7 @@
             </div>
           }
 
-          <!-- 2. PILOTOS F1 (WDC) -->
+          <!-- Campeonato de pilotos -->
           @if (posicionesSubTab() === 'pilotos') {
             <div class="spotlight-card">
               <div class="card-title-row">
@@ -1023,7 +990,7 @@
             </div>
           }
 
-          <!-- 3. EQUIPOS F1 (WCC) -->
+          <!-- Campeonato de constructores -->
           @if (posicionesSubTab() === 'equipos') {
             <div class="spotlight-card">
               <div class="card-title-row">
@@ -1067,9 +1034,7 @@
         </section>
       }
 
-      <!-- ========================================== -->
-      <!-- TAB 4: HISTORIAL                           -->
-      <!-- ========================================== -->
+      <!-- Pestaña 4: Historial -->
       @if (activeTab() === 'historial') {
         <section class="tab-content">
           <div class="spotlight-card">
@@ -1080,7 +1045,6 @@
               </div>
             </div>
 
-            <!-- AVISO TEMPORADA 2026 -->
             <div class="alert-box info" style="margin: 1rem 0; display: flex; align-items: flex-start; gap: 10px;">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
               <div>
@@ -1119,7 +1083,6 @@
                       </div>
                     </div>
 
-                    <!-- DETALLE DE PICKS GUARDADOS (VALOR PUESTO) -->
                     @if (h.predictionId) {
                       <div class="history-card-picks-box">
                         <div class="picks-box-header">
@@ -1161,7 +1124,6 @@
                       </div>
                     }
 
-                    <!-- DETALLE DE RESULTADO OFICIAL FIA (RESULTADO FINAL) -->
                     @if (h.officialResults) {
                       <div class="history-card-official-box">
                         <div class="official-box-header">
@@ -1221,9 +1183,7 @@
         </section>
       }
 
-      <!-- ========================================== -->
-      <!-- MODAL SELECTOR DE PILOTOS MODULAR          -->
-      <!-- ========================================== -->
+      <!-- Modal selector de pilotos -->
       <app-driver-picker-modal
         [isOpen]="isPickerOpen()"
         [currentSlot]="pickerSlot()"
@@ -1234,10 +1194,7 @@
         (onClose)="closeDriverPicker()"
         (onDriverSelected)="handleModalDriverSelected($event)" />
 
-
-      <!-- ========================================== -->
-      <!-- MODAL COMPARATIVO: RESULTADOS vs OFICIALES -->
-      <!-- ========================================== -->
+      <!-- Modal comparativo de resultados -->
       @if (selectedHistoryItem(); as item) {
         <div class="driver-picker-backdrop" (click)="selectedHistoryItem.set(null)">
           <div class="driver-picker-modal comparison-modal" (click)="$event.stopPropagation()">
@@ -1253,7 +1210,6 @@
             </div>
 
             <div class="comparison-modal-body custom-scrollbar" tabindex="0">
-              <!-- RESUMEN DE PUNTOS TOTALES -->
               <div class="comparison-summary-bar">
                 <div>
                   <span class="dim" style="font-size: 0.82rem;">PUNTAJE OBTENIDO EN ESTE GP:</span>
@@ -1280,7 +1236,6 @@
                 </div>
               }
 
-              <!-- RESUMEN EN CHIPS -->
               @if (item.scoreBreakdown) {
                 <div class="score-breakdown-tags" style="display: flex; flex-wrap: wrap; gap: 8px;">
                   <span class="chip-score" [class.hit]="item.scoreBreakdown.podiumHits > 0">
@@ -1301,7 +1256,6 @@
                 </div>
               }
 
-              <!-- TABLA COMPARATIVA ITEM POR ITEM -->
               <div class="comparison-table">
                 <div class="comp-header-row">
                   <span class="c-col cat">Categoría</span>
@@ -1311,12 +1265,10 @@
                   <span class="c-col status">Evaluación</span>
                 </div>
 
-                <!-- SECCIÓN 1: PODIO DE CARRERA -->
                 <div class="comp-section-row">
                   <span class="sec-title">PODIO OFICIAL DE CARRERA</span>
                 </div>
 
-                <!-- P1 WINNER -->
                 <div class="comp-data-row">
                   <span class="c-col cat">
                     <strong class="cat-name">P1 (Ganador GP)</strong>
@@ -1342,7 +1294,6 @@
                   </span>
                 </div>
 
-                <!-- P2 SEGUNDO -->
                 <div class="comp-data-row">
                   <span class="c-col cat">
                     <strong class="cat-name">P2 (Segundo Puesto)</strong>
@@ -1368,7 +1319,6 @@
                   </span>
                 </div>
 
-                <!-- P3 TERCERO -->
                 <div class="comp-data-row">
                   <span class="c-col cat">
                     <strong class="cat-name">P3 (Tercer Puesto)</strong>
@@ -1394,12 +1344,10 @@
                   </span>
                 </div>
 
-                <!-- SECCIÓN 2: CLASIFICACIÓN Y DUELO -->
                 <div class="comp-section-row">
                   <span class="sec-title">CLASIFICACIÓN Y DUELO DIRECTO</span>
                 </div>
 
-                <!-- POLE POSITION -->
                 <div class="comp-data-row">
                   <span class="c-col cat">
                     <strong class="cat-name">Pole Position (Q3)</strong>
@@ -1425,7 +1373,6 @@
                   </span>
                 </div>
 
-                <!-- DUELO DE LA FECHA -->
                 <div class="comp-data-row">
                   <span class="c-col cat">
                     <strong class="cat-name">Duelo de la Fecha</strong>
@@ -1455,12 +1402,10 @@
                   </span>
                 </div>
 
-                <!-- SECCIÓN 3: INCIDENCIAS -->
                 <div class="comp-section-row">
                   <span class="sec-title">TELEMETRÍA E INCIDENCIAS EN PISTA</span>
                 </div>
 
-                <!-- SAFETY CAR -->
                 <div class="comp-data-row">
                   <span class="c-col cat">
                     <strong class="cat-name">Autos de Seguridad</strong>
@@ -1488,7 +1433,6 @@
                   </span>
                 </div>
 
-                <!-- ABANDONOS DNFS -->
                 <div class="comp-data-row">
                   <span class="c-col cat">
                     <strong class="cat-name">Abandonos (DNFs)</strong>
@@ -1518,7 +1462,6 @@
               </div>
             </div>
 
-            <!-- FOOTER CON BOTÓN DE CIERRE -->
             <div class="comparison-modal-footer">
               <button type="button" class="button primary" (click)="selectedHistoryItem.set(null)">Entendido / Cerrar</button>
             </div>

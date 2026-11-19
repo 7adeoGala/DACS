@@ -57,7 +57,6 @@ class ProdeScoreServiceTest {
 
         assertTrue(score.hasPrediction());
         assertTrue(score.hasOfficialResults());
-        // 3/3 podio (10) + pole fail (0) + duel leclerc hit (3) + SC 3 hit (6) + DNF fail (0) = 19
         assertEquals(19, score.totalPoints());
         assertEquals(3, score.breakdown().podiumHits());
         assertEquals(10, score.breakdown().podiumPoints());

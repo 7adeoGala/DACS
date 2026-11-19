@@ -7,9 +7,6 @@ import java.util.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Servicio encargado del ciclo de vida de pronósticos y validación estricta de Lock Time.
- */
 @Service
 public class PredictionService {
 
@@ -36,9 +33,6 @@ public class PredictionService {
         this.scoringService = scoringService;
     }
 
-    /**
-     * Obtiene la siguiente carrera/sesión programada en el calendario con su respectivo duelo de pilotos.
-     */
     @Transactional
     public NextSessionView getNextScheduledSession() {
         Instant now = Instant.now();
@@ -67,9 +61,6 @@ public class PredictionService {
         );
     }
 
-    /**
-     * Consulta el pronóstico del usuario para una sesión, indicando el estado del Lock Time.
-     */
     @Transactional(readOnly = true)
     public Session resolveSession(String sessionIdentifier) {
         if (sessionIdentifier == null || sessionIdentifier.isBlank()) {
@@ -88,13 +79,11 @@ public class PredictionService {
             return sessions.findFirstByStartsAtAfterOrderByStartsAtAsc(Instant.now()).orElse(null);
         }
 
-        // Si es el UUID estándar del GP de México 2026 (Round 19)
         if ("f0c23d70-f7ca-411d-b827-7a9d45037101".equalsIgnoreCase(cleanId)) {
             Session s19 = sessions.findBySeasonAndRoundAndType(2026, 19, Session.Type.RACE).orElse(null);
             if (s19 != null) return s19;
         }
 
-        // Si es el UUID estándar del GP de Estados Unidos 2026 (Round 18)
         if ("f0c23d70-f7ca-411d-b827-7a9d45037100".equalsIgnoreCase(cleanId)) {
             Session s18 = sessions.findBySeasonAndRoundAndType(2026, 18, Session.Type.RACE).orElse(null);
             if (s18 != null) return s18;
@@ -150,9 +139,6 @@ public class PredictionService {
         return getUserPrediction(issuer, subject, session.getId());
     }
 
-    /**
-     * Consulta el pronóstico del usuario para una sesión, indicando el estado del Lock Time.
-     */
     @Transactional(readOnly = true)
     public PredictionDetailView getUserPrediction(String issuer, String subject, UUID sessionId) {
         User user = getOrCreateUser(issuer, subject);
@@ -239,9 +225,6 @@ public class PredictionService {
         return saveOrUpdatePrediction(issuer, subject, session.getId(), request);
     }
 
-    /**
-     * Carga o edita la predicción del usuario, validando estrictamente el "Lock Time".
-     */
     @Transactional
     public PredictionDetailView saveOrUpdatePrediction(
         String issuer,
@@ -264,16 +247,12 @@ public class PredictionService {
 
         Instant now = Instant.now();
 
-        // REGLA DE NEGOCIO ESTRICTA (Lock Time):
-        // "El sistema debe bloquear cualquier edición o carga de pronósticos exactamente en el horario
-        // oficial de inicio de la sesión; no se permiten cambios posteriores."
         if (session.getStartsAt() == null || !now.isBefore(session.getStartsAt())) {
             throw new IllegalStateException("Lock Time superado: No se permiten cambios ni cargas de pronósticos una vez iniciada la sesión.");
         }
 
         WeekendMatchup matchup = matchupService.getOrGenerateMatchup(session);
 
-        // Validación de pick de duelo
         if (request.duelDriverPick() != null && !request.duelDriverPick().isBlank() && !matchup.involvesDriver(request.duelDriverPick().trim())) {
             throw new IllegalArgumentException(String.format(
                 "El piloto de duelo '%s' no coincide con los asignados (%s vs %s).",
@@ -281,7 +260,6 @@ public class PredictionService {
             ));
         }
 
-        // Validación numérica
         if (request.safetyCarCount() != null && request.safetyCarCount() < 0) {
             throw new IllegalArgumentException("La cantidad de autos de seguridad no puede ser negativa.");
         }
@@ -334,10 +312,6 @@ public class PredictionService {
         );
     }
 
-    /**
-     * Consulta el historial completo de carreras desde el inicio de la plataforma
-     * junto con los pronósticos, desgloses y puntuaciones del usuario (haya o no cargado pronóstico).
-     */
     @Transactional
     public List<PredictionHistoryItem> getUserPredictionHistory(String issuer, String subject) {
         try {
@@ -377,7 +351,6 @@ public class PredictionService {
             history.add(toHistoryItem(s, p, result));
         }
 
-        // Respaldo defensivo en caso de pronósticos asociados a sesiones no devueltas arriba
         if (user != null) {
             Set<UUID> includedIds = new HashSet<>();
             for (PredictionHistoryItem item : history) {

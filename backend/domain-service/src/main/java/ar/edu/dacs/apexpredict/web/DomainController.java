@@ -55,7 +55,6 @@ public class DomainController {
         );
     }
 
-
     @RequestMapping(value = "/me/profile", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PlayerService.Profile updateProfile(
@@ -74,7 +73,6 @@ public class DomainController {
         boolean available = players.isDisplayNameAvailable(jwt.getIssuer().toString(), jwt.getSubject(), name);
         return Map.of("available", available, "name", name != null ? name : "");
     }
-
 
     @GetMapping("/leagues")
     @PreAuthorize("hasAnyRole('player', 'admin')")
@@ -98,9 +96,6 @@ public class DomainController {
         return players.createLeague(jwt.getIssuer().toString(), jwt.getSubject(), request.name(), request.description(), request.password());
     }
 
-    /**
-     * Requerimiento 2.B: Las ligas privadas deben ser editables.
-     */
     @PutMapping("/leagues/{id}")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PlayerService.LeagueView editLeague(
@@ -117,9 +112,6 @@ public class DomainController {
         }
     }
 
-    /**
-     * Unirse a una liga privada mediante su ID y contraseña (si la tiene).
-     */
     @PostMapping("/leagues/{id}/join")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PlayerService.LeagueView joinLeagueById(
@@ -135,9 +127,6 @@ public class DomainController {
         }
     }
 
-    /**
-     * Requerimiento 2.B: Funcionalidad de unirse a ligas privadas mediante un link/código de invitación.
-     */
     @PostMapping("/leagues/join/{inviteCode}")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PlayerService.LeagueView joinLeague(
@@ -153,17 +142,11 @@ public class DomainController {
         }
     }
 
-    /**
-     * Requerimiento 2.B: Tabla de posiciones global acumulada en tiempo real.
-     */
     @GetMapping("/leaderboard/global")
     public List<PlayerService.LeaderboardEntry> globalLeaderboard() {
         return players.getGlobalLeaderboard();
     }
 
-    /**
-     * Requerimiento 2.B: Tabla de posiciones de una liga privada acumulada en tiempo real.
-     */
     @GetMapping("/leagues/{id}/leaderboard")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public List<PlayerService.LeaderboardEntry> leagueLeaderboard(@PathVariable UUID id) {
@@ -174,18 +157,12 @@ public class DomainController {
         }
     }
 
-    /**
-     * Requerimiento 2.D: Consultar notificaciones recibidas por el usuario.
-     */
     @GetMapping("/notifications")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public List<NotificationService.NotificationDto> notifications(@AuthenticationPrincipal Jwt jwt) {
         return notifications.getUserNotifications(jwt.getIssuer().toString(), jwt.getSubject());
     }
 
-    /**
-     * Requerimiento 2.D: Disparar recordatorios para una sesión (Mock / Test).
-     */
     @PostMapping("/admin/notifications/send-reminders/{sessionId}")
     @PreAuthorize("hasRole('admin')")
     public Map<String, Object> sendReminders(@PathVariable UUID sessionId) {

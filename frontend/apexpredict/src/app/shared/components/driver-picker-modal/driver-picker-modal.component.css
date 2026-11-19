@@ -1,4 +1,4 @@
-/* BACKDROP CON DESENFOQUE GLASSMORPHISM */
+/* Fondo del modal */
 .driver-picker-backdrop {
   position: fixed;
   inset: 0;
@@ -18,7 +18,7 @@
   to { opacity: 1; }
 }
 
-/* CAJA DEL MODAL */
+/* Contenedor del modal */
 .driver-picker-modal {
   background: #0f131a;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -39,7 +39,7 @@
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* CABECERA */
+/* Encabezado */
 .picker-header {
   display: flex;
   justify-content: space-between;
@@ -128,7 +128,7 @@
   color: #ffffff;
 }
 
-/* BUSCADOR */
+/* Buscador */
 .picker-search-bar {
   padding: 0.85rem 1.75rem;
   position: relative;
@@ -195,7 +195,7 @@
   color: #fff;
 }
 
-/* FILTRO DE ESCUDERÍAS */
+/* Filtro de escuderías */
 .teams-filter-bar {
   padding: 0.85rem 1.75rem 0.95rem;
   background: #0d1016;
@@ -269,7 +269,7 @@
   flex-shrink: 0;
 }
 
-/* ÁREA DE SCROLL Y GRILLA */
+/* Grilla de pilotos */
 .picker-grid-scroll {
   overflow-y: auto;
   padding: 1.25rem 1.75rem;
@@ -283,7 +283,7 @@
   gap: 1rem;
 }
 
-/* TARJETA DINÁMICA DE PILOTO */
+/* Tarjeta de piloto */
 .driver-template-card.picker-mode {
   --driver-color: #3671c6;
   background: #0d1118;
@@ -363,7 +363,7 @@
   letter-spacing: -0.01em;
 }
 
-/* CHIPS DE ACCIÓN */
+/* Etiquetas de estado */
 .status-chip {
   font-size: 0.75rem;
   font-weight: 700;
@@ -395,7 +395,7 @@
   color: #ffffff;
 }
 
-/* FOOTER INFORMATIVO */
+/* Pie del modal */
 .picker-footer-info {
   padding: 0.85rem 1.75rem;
   background: #090b0e;

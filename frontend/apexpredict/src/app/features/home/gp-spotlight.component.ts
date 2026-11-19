@@ -94,7 +94,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   private timerInterval: any;
   private targetTimeMs: number = new Date('2026-11-01T20:00:00Z').getTime();
 
-  // Estado reactivo con Signals
   readonly session = signal<NextSession | null>(null);
   readonly currentPrediction = signal<PredictionDetail | null>(null);
   readonly hasAnyPodiumPicks = computed(() => {
@@ -103,7 +102,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   });
   readonly isLoading = signal<boolean>(true);
 
-  // Meteorología Real (Open-Meteo)
   readonly weather = signal<WeatherData>({
     trackTemp: '32°C',
     airTemp: '24°C',
@@ -114,23 +112,19 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     conditionDesc: 'Pista Seca'
   });
 
-  // Cuenta regresiva reactiva
   readonly days = signal<string>('00');
   readonly hours = signal<string>('00');
   readonly minutes = signal<string>('00');
   readonly seconds = signal<string>('00');
 
-  // Clasificación oficial de pilotos de Jolpica (en vivo)
   readonly driverStandings = signal<JolpicaDriverStanding[]>([]);
 
-  // 11 Escuderías Oficiales F1 2026 con sus duplas titulares
   readonly teamOptions = TEAM_DUOS_CATALOG;
   readonly selectedTeamId = signal<string>('rb');
   readonly isTeamDropdownOpen = signal<boolean>(false);
   readonly statsMode = signal<'season' | 'career'>('season');
   readonly isLoadingStats = signal<boolean>(false);
 
-  // Identificador de escudería del duelo oficial de la fecha activa
   readonly officialMatchupTeamId = computed<string>(() => {
     const s = this.session();
     const duo = getTeammateDuoForRound(s?.round || 20);
@@ -140,7 +134,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     return found ? found.id : 'rb';
   });
 
-  // Escudería y dupla de compañeros activa en pantalla
   readonly activeTeam = computed<TeamDuoOption>(() => {
     return getTeamDuoById(this.selectedTeamId()) || this.teamOptions[0];
   });
@@ -154,7 +147,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   readonly driver1TeamDetails = computed(() => getTeamDetail(this.duelDriver1().team));
   readonly driver2TeamDetails = computed(() => getTeamDetail(this.duelDriver2().team));
 
-  // Estadísticas dinámicas oficiales obtenidas de la API (Jolpica Ergast)
   readonly driver1Stats = signal<DynamicDriverStats | null>(null);
   readonly driver2Stats = signal<DynamicDriverStats | null>(null);
 
@@ -205,7 +197,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
 
   readonly seasonYear = computed<number>(() => this.session()?.season || 2026);
 
-  // Telemetría comparada dinámica (Quali y Carrera Head-to-Head)
   readonly qualiD1 = signal<number>(0);
   readonly qualiD2 = signal<number>(0);
   readonly raceD1 = signal<number>(0);
@@ -231,17 +222,14 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   });
   readonly pitD2Pct = computed(() => 100 - this.pitD1Pct());
 
-  // Voto de comunidad en duelo directo
   readonly driver1Votes = signal<number>(54);
   readonly driver2Votes = signal<number>(46);
   readonly totalDuelVotes = signal<string>('14.820');
   readonly duelPick = signal<string | null>(null);
 
-  // Compatibilidad con templates y bindings previos
   readonly norrisVotes = this.driver1Votes;
   readonly verstappenVotes = this.driver2Votes;
 
-  // Circuito actual dinámico (datos oficiales reales)
   readonly circuit = computed<CircuitInfo>(() => {
     const s = this.session();
     const id = s?.circuitId || '';
@@ -262,7 +250,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     return F1_CIRCUITS['rodriguez'] || DEFAULT_CIRCUIT;
   });
 
-  // Sigla / nombre corto del circuito dinámico (ej: AHR, COTA, INTERLAGOS)
   readonly circuitShortName = computed<string>(() => {
     return resolveCircuitShortName(this.circuit(), this.session());
   });
@@ -271,22 +258,18 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     return this.circuit().city || this.session()?.locality || 'la fecha';
   });
 
-  // Estadísticas históricas del circuito dinámicas para ambos duelistas
   readonly driver1CircuitStat = computed(() => this.getDriverCircuitStat(this.duelDriver1().id));
   readonly driver2CircuitStat = computed(() => this.getDriverCircuitStat(this.duelDriver2().id));
 
-  // Compatibilidad hacia atrás
   readonly norrisCircuitStat = this.driver1CircuitStat;
   readonly verCircuitStat = this.driver2CircuitStat;
 
-  // Cronograma dinámico calculado a partir de la API de Jolpica y hora actual
   readonly schedule = computed<SessionSchedule[]>(() => {
     const s = this.session();
     if (!s) return [];
 
     const items: { name: string; type: string; iso?: string | null }[] = [];
 
-    // Verificamos si es formato Sprint
     if (s.sprint) {
       items.push({ name: 'Práctica Libre 1 (FP1)', type: 'FP1', iso: s.fp1 });
       items.push({ name: 'Clasificación Sprint', type: 'SPRINT_QUALY', iso: s.sprintQualifying || s.fp2 });
@@ -316,30 +299,25 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       });
   });
 
-  // Mini Leaderboard de la Liga / Global real (sin mocks)
   readonly paddockStandings = signal<PaddockStandingUser[]>([]);
   readonly isLoadingLeaderboard = signal<boolean>(false);
 
   readonly isLocked = computed(() => this.session()?.isLocked ?? false);
 
   constructor() {
-    // 0. Calcular cuenta regresiva inicial inmediatamente con la hora oficial (17hs Argentina)
     this.tickCountdown();
 
-    // 1. Restaurar de inmediato caché local de clasificación si existe
     const cachedLb = this.api.getCachedGlobalLeaderboard?.();
     if (cachedLb && cachedLb.length > 0) {
       this.populatePaddockStandings(cachedLb);
     }
 
-    // 2. Reaccionar automáticamente en cuanto el usuario se autentique o sincronice token
     effect(() => {
       const isAuth = this.auth.authenticated();
       const username = this.auth.username();
       const sess = this.session();
 
       if (isAuth) {
-        // Restaurar caché de pronóstico SOLO si corresponde a la sesión activa
         const cachedPred = this.api.getCachedPrediction?.(username, sess?.id);
         if (cachedPred && (cachedPred.predictionId || (cachedPred.podium && cachedPred.podium.length > 0))) {
           if (!sess || !cachedPred.sessionId || cachedPred.sessionId === sess.id) {
@@ -356,10 +334,8 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
           this.duelPick.set(null);
         }
 
-        // Cargar pronóstico fresco desde el backend para esta sesión
         this.loadUserPrediction(username);
 
-        // Cargar tabla de líderes con autenticación
         this.loadLeaderboard();
       }
     });
@@ -378,7 +354,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   }
 
   private loadData(): void {
-    // 1. Cargar clasificación oficial WDC de pilotos desde la API Jolpica
     this.api.jolpicaDriverStandings().subscribe({
       next: (standings) => {
         if (standings && standings.length > 0) {
@@ -387,7 +362,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       }
     });
 
-    // 2. Cargar sesión activa
     this.api.nextSession().subscribe({
       next: (sessionData) => {
         const prevSessionId = this.session()?.id;
@@ -403,7 +377,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         this.selectedTeamId.set(matchTeam.id);
         this.loadTeamDuoStats(matchTeam.driver1Id, matchTeam.driver2Id);
 
-        // Al cambiar de carrera, reestablecer el estado del pronóstico
         if (prevSessionId && prevSessionId !== sessionData.id) {
           this.currentPrediction.set(null);
           this.duelPick.set(null);
@@ -440,7 +413,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     request$.subscribe({
       next: (predData) => {
         if (predData && (predData.predictionId || (predData.podium && predData.podium.length > 0))) {
-          // Comprobar que el pronóstico devuelto pertenece a la sesión activa
           if (!sess || !predData.sessionId || predData.sessionId === sess.id) {
             this.currentPrediction.set(predData);
             if (predData.duelDriverPick) {
@@ -449,7 +421,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
             return;
           }
         }
-        // Carrera nueva o sin pronóstico para esta fecha: reestablecer a limpio
         this.currentPrediction.set(null);
         this.duelPick.set(null);
         this.api.clearCachedPrediction?.(username);
@@ -585,7 +556,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         this.driver1Stats.set(s1);
         this.driver2Stats.set(s2);
 
-        // Head-to-Head carrera a carrera
         let q1 = 0, q2 = 0;
         let rc1 = 0, rc2 = 0;
         const maxCommon = Math.min((r1 || []).length, (r2 || []).length);
@@ -614,7 +584,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         this.raceD1.set(rc1);
         this.raceD2.set(rc2);
 
-        // Tendencia de votos comunitaria ponderada por puntos
         const pts1 = Math.max(1, s1.points);
         const pts2 = Math.max(1, s2.points);
         const tot = pts1 + pts2;
@@ -630,7 +599,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     });
   }
 
-  // Compatibilidad hacia atrás
   loadDuelHeadToHead(d1Id: string, d2Id: string): void {
     const matchTeam = findTeamDuoByDrivers(d1Id, d2Id) || this.teamOptions[0];
     this.selectTeamDuo(matchTeam.id);
@@ -663,9 +631,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Obtiene la meteorología real en vivo desde Open-Meteo usando las coordenadas del circuito.
-   */
   private fetchRealWeather(lat?: string, lon?: string): void {
     const latitude = lat || '30.1328';
     const longitude = lon || '-97.6411';
@@ -690,14 +655,10 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         }
       },
       error: () => {
-        // En caso de error de red, conserva el pronóstico estándar realista
       }
     });
   }
 
-  /**
-   * Formatea fecha y hora en huso horario oficial de Argentina (ART / UTC-3).
-   */
   private formatArgTime(isoString?: string | null): { dateLabel: string; timeArg: string } {
     if (!isoString) return { dateLabel: 'A programar', timeArg: '--:-- hs (Arg)' };
     const date = new Date(isoString);
@@ -718,14 +679,11 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     };
   }
 
-  /**
-   * Determina con precisión el estado de la sesión comparando con el reloj actual.
-   */
   private calculateSessionStatus(isoString?: string | null): 'COMPLETED' | 'LIVE' | 'UPCOMING' | 'PROGRAMMED' {
     if (!isoString) return 'PROGRAMMED';
     const start = new Date(isoString).getTime();
     const now = Date.now();
-    const durationMs = 90 * 60 * 1000; // Duración típica de sesión: 1h 30m
+    const durationMs = 90 * 60 * 1000;
 
     if (now > start + durationMs) {
       return 'COMPLETED';

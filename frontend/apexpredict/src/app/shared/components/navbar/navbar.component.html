@@ -1,6 +1,5 @@
 <header class="navbar-wrapper">
       <div class="navbar-container">
-        <!-- LOGO ESTILIZADO APEXPREDICT -->
         <a routerLink="/" class="brand-logo" (click)="closeMobileNav()">
           <svg class="logo-racing-mark" viewBox="0 0 18 18" width="20" height="20" fill="none" style="margin-right: 3px;">
             <path d="M2 14L8 4H12L6 14H2Z" fill="var(--red)"/>
@@ -9,7 +8,7 @@
           <span class="txt-apex">APEX</span> <span class="txt-predict">PREDICT</span>
         </a>
 
-        <!-- NAVEGACIÓN DESKTOP (PANTALLAS GRANDES) -->
+        <!-- Navegación principal -->
         @if (auth.isAuthenticated()) {
           <nav class="nav-links d-none d-lg-flex">
             <a routerLink="/" [class.active]="isCurrent('inicio')">Inicio</a>
@@ -20,12 +19,10 @@
           </nav>
         }
 
-        <!-- ACCIONES DE SESIÓN / PERFIL -->
+        <!-- Perfil de usuario -->
         <div class="nav-actions">
           @if (auth.isAuthenticated()) {
-            <!-- CONTENEDOR RELATIVO PARA EL DROPDOWN -->
             <div class="profile-dropdown-wrapper">
-              <!-- BOTÓN ACTIVADOR (PILL FIJO CON DATOS GUARDADOS Y PREVIEW DE COLOR) -->
               <button 
                 type="button" 
                 class="profile-trigger-btn" 
@@ -46,7 +43,7 @@
                 <span class="chevron-icon d-none d-sm-inline">{{ isProfileOpen() ? '▲' : '▼' }}</span>
               </button>
 
-              <!-- MENÚ FLOTANTE DROPDOWN -->
+              <!-- Menú de configuración de perfil -->
               @if (isProfileOpen()) {
                 <div class="profile-dropdown-menu" 
                   (click)="$event.stopPropagation()"
@@ -54,7 +51,6 @@
                   [style.--team-secondary]="activeTeam().secondaryColor"
                   [style.--team-btn-text]="activeTeam().btnTextColor || activeTeam().textColor || '#ffffff'"
                   [style.--team-switch-knob]="activeTeam().switchKnobColor || '#ffffff'">
-                  <!-- ENCABEZADO DEL PERFIL (REFLEJA PREVISUALIZACIÓN DE COLORES DE EQUIPO, PERO NOMBRE GUARDADO) -->
                   <div class="dropdown-header">
                     <div class="avatar-box" 
                       [style.background]="activeTeam().gradient || activeTeam().color"
@@ -74,7 +70,6 @@
                     </div>
                   </div>
 
-                  <!-- CAMPO 1: NOMBRE PÚBLICO (LIMITADO A 20 CARACTERES) -->
                   <div class="form-field-group">
                     <div class="field-label-row">
                       <label class="field-label" for="displayNameInput">NOMBRE PÚBLICO</label>
@@ -132,7 +127,6 @@
                     }
                   </div>
 
-                  <!-- CAMPO 2: ESCUDERÍA FAVORITA (CUSTOM DROPDOWN CON ESTILOS DE PICKER F1) -->
                   <div class="form-field-group">
                     <label class="field-label" id="favTeamLabel">ESCUDERÍA FAVORITA</label>
                     <div class="custom-select-container" [class.is-active]="isTeamSelectOpen()">
@@ -183,7 +177,6 @@
                     </div>
                   </div>
 
-                  <!-- CAMPO 3: PILOTO FAVORITO (CUSTOM DROPDOWN CON ESTILOS DE PICKER F1) -->
                   <div class="form-field-group">
                     <label class="field-label" id="favDriverLabel">PILOTO FAVORITO</label>
                     <div class="custom-select-container" [class.is-active]="isDriverSelectOpen()">
@@ -236,7 +229,6 @@
                     </div>
                   </div>
 
-                  <!-- CAMPO 4: RECORDATORIOS DE GP (SWITCH) -->
                   <div class="switch-row">
                     <div class="switch-labels">
                       <span class="switch-title">Recordatorios de GP</span>
@@ -251,7 +243,6 @@
                     </label>
                   </div>
 
-                  <!-- BOTÓN GUARDAR PERFIL -->
                   <button 
                     type="button" 
                     class="btn-save-profile" 
@@ -275,7 +266,6 @@
                     }
                   </button>
 
-                  <!-- FOOTER: CAMBIAR CONTRASEÑA & CERRAR SESIÓN -->
                   <div class="dropdown-footer">
                     <a [href]="changePasswordUrl()" target="_blank" rel="noopener noreferrer" class="link-security" title="Cambiar contraseña">
                       Cambiar contraseña ↗
@@ -288,7 +278,6 @@
               }
             </div>
 
-            <!-- BOTÓN HAMBURGUESA BOOTSTRAP PARA TELÉFONOS MÓVILES -->
             <button 
               type="button" 
               class="navbar-toggler d-flex d-lg-none" 
@@ -301,7 +290,7 @@
               <span class="navbar-toggler-bar"></span>
             </button>
           } @else {
-            <!-- ACCIONES DE SESIÓN PARA VISITANTES (ARRIBA A LA DERECHA) -->
+            <!-- Acciones para visitantes -->
             <div class="nav-auth-buttons">
               <a routerLink="/login" class="nav-btn-login" id="navLoginBtn">
                 Iniciar Sesión
@@ -314,7 +303,7 @@
         </div>
       </div>
 
-      <!-- MENÚ DESPLEGABLE MÓVIL BOOTSTRAP (EN PANTALLAS PEQUEÑAS < 992px) -->
+      <!-- Menú móvil -->
       @if (auth.isAuthenticated() && isMobileNavOpen()) {
         <nav class="mobile-nav-drawer d-lg-none" (click)="$event.stopPropagation()">
           <a routerLink="/" [class.active]="isCurrent('inicio')" (click)="closeMobileNav()" class="mobile-nav-link">

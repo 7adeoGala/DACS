@@ -6,7 +6,6 @@ import { request } from './local-http.mjs';
 const users = JSON.parse(readFileSync(new URL('../.local/dev-users.json', import.meta.url), 'utf8'));
 const redirectUri = 'https://dacs2026.local/apexpredict/';
 
-// Cliente OIDC de prueba: Authorization Code + PKCE, sin habilitar password grant.
 async function login(username) {
   const verifier = randomBytes(32).toString('base64url');
   const state = randomBytes(16).toString('hex');

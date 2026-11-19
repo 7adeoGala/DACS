@@ -16,9 +16,6 @@ export class JolpicaF1Service {
     return this.http.get<any[]>(`${this.bffUrl}/f1/standings/drivers`);
   }
 
-  /**
-   * Convierte cualquier string UTC recibido a Hora de Argentina con sufijo oficial
-   */
   formatToArgTime(dateStr: string, timeStr?: string): string {
     if (!dateStr) return '--:-- hs (Arg)';
     const isoString = timeStr ? `${dateStr}T${timeStr}` : dateStr;

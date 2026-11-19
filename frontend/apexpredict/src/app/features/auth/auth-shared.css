@@ -1,4 +1,4 @@
-/* ESTRUCTURA GLOBAL */
+/* Estructura general */
 .auth-layout {
   min-height: 100vh;
   display: flex;
@@ -18,7 +18,7 @@
   padding: 2.5rem 1rem;
 }
 
-/* TARJETA GLASSMORPHISM F1 */
+/* Tarjeta principal */
 .auth-card {
   width: 100%;
   max-width: 440px;
@@ -36,7 +36,7 @@
   max-width: 520px;
 }
 
-/* ENCABEZADO DE TARJETA */
+/* Encabezado */
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -72,7 +72,7 @@
   cursor: pointer;
 }
 
-/* FORMULARIOS */
+/* Formularios */
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -146,7 +146,7 @@
   padding: 4px;
 }
 
-/* OPCIONES ADICIONALES */
+/* Opciones adicionales */
 .form-options {
   display: flex;
   justify-content: space-between;
@@ -175,7 +175,7 @@
   text-decoration: underline;
 }
 
-/* BOTÓN PRIMARIO DE ALTO IMPACTO */
+/* Botón primario */
 .btn-primary {
   width: 100%;
   background: linear-gradient(135deg, #e10600 0%, #b30500 100%);
@@ -203,7 +203,7 @@
   cursor: not-allowed;
 }
 
-/* DIVISOR */
+/* Divisor */
 .divider-wrap {
   display: flex;
   align-items: center;
@@ -226,7 +226,7 @@
   padding: 0 0.75rem;
 }
 
-/* BOTÓN GOOGLE SSO */
+/* Botón de Google */
 .btn-google {
   width: 100%;
   background: #0d1118;
@@ -257,7 +257,7 @@
   height: 16px;
 }
 
-/* PIE DE TARJETA */
+/* Pie de tarjeta */
 .card-footer {
   margin-top: 1.5rem;
   text-align: center;
@@ -290,8 +290,6 @@
 .link-back:hover {
   text-decoration: underline;
 }
-
-
 
 .alert-message {
   padding: 0.65rem 0.85rem;
@@ -339,7 +337,7 @@
   }
 }
 
-/* PANTALLA DE CARGA DE AUTENTICACIÓN (LOADING SCREEN CENTRADA) */
+/* Pantalla de carga */
 .auth-loading-screen {
   display: flex;
   flex-direction: column;
@@ -366,7 +364,6 @@
   }
 }
 
-/* F1 TELEMETRY LOADER WRAPPER */
 .f1-loader-wrap {
   display: flex;
   flex-direction: column;
@@ -447,7 +444,6 @@
   }
 }
 
-/* 5 LUCES DE SEMÁFORO DE LARGADA F1 */
 .f1-start-lights {
   display: inline-flex;
   align-items: center;
@@ -604,7 +600,6 @@
   }
 }
 
-/* EL CARTEL EN EL CENTRO (ESTILO EXACTO DE LA FOTO DEL USUARIO) */
 .loading-cartel-box {
   display: flex;
   align-items: center;
@@ -653,7 +648,7 @@
   letter-spacing: -0.01em;
 }
 
-/* WIZARD DE PASOS F1 */
+/* Pasos de recuperación */
 .step-indicator {
   display: flex;
   align-items: center;
@@ -698,7 +693,6 @@
   margin-bottom: 0.5rem;
 }
 
-/* CAJA DE SIMULACIÓN DE CORREO SALIENTE */
 .code-sim-box {
   background: linear-gradient(135deg, rgba(13, 27, 42, 0.9) 0%, rgba(10, 15, 26, 0.95) 100%);
   border: 1px solid rgba(0, 242, 254, 0.4);

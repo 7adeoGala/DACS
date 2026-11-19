@@ -59,7 +59,6 @@ export class AppHeaderComponent {
   readonly auth = inject(AuthService);
 
   onLogout(): void {
-    // Retorno exacto del logout respetando el subpath base (/DACS/)
     this.auth.logout();
   }
 }

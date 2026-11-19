@@ -313,7 +313,6 @@ public class F1Service {
             try {
                 standings = driverStandings();
             } catch (Exception ignored) {
-                // standings fallback to empty
             }
 
             DriverStandingInfo standing = standings.stream()
@@ -446,7 +445,6 @@ public class F1Service {
                 return Integer.parseInt(env.data().total());
             }
         } catch (Exception ignored) {
-            // fallback value when endpoint fails
         }
         return fallback;
     }

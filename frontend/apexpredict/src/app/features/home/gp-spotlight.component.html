@@ -1,5 +1,5 @@
 <div class="gp-telemetry-container">
-  <!-- Hero Header del Gran Premio -->
+  <!-- Encabezado del Gran Premio -->
   <header class="gp-hero-header">
     <div class="gp-title-group">
       <div class="chips-row">
@@ -16,10 +16,9 @@
 
   </header>
 
-  <!-- Grilla Principal: Cronograma, Circuito Vectorial y Countdown + Leaderboard -->
   <div class="telemetry-main-grid" [class.guest-mode]="!auth.authenticated()">
 
-    <!-- Columna Izquierda: Cronograma Oficial ART Dinámico -->
+    <!-- Cronograma del fin de semana -->
     <aside class="sidebar-schedule">
       <div class="schedule-card-header">
         <div class="title-with-icon">
@@ -57,7 +56,7 @@
         }
       </div>
 
-      <!-- Widget Meteo Paddock Real (Open-Meteo API) -->
+      <!-- Clima del circuito -->
       <div class="meteo-widget">
         <div class="meteo-header">
           <span>Clima</span>
@@ -89,10 +88,8 @@
     </aside>
 
     @if (auth.authenticated()) {
-      <!-- ================= MODO AUTENTICADO: LAYOUT COMPLETO ================= -->
-      <!-- Columna Central: Countdown, Botón CTA y Trazado SVG Real -->
+      <!-- Modo autenticado -->
       <main class="center-stage">
-        <!-- Countdown Banner -->
         <div class="countdown-banner">
           <div class="countdown-left">
             <div class="timer-title">
@@ -129,7 +126,6 @@
           </div>
         </div>
 
-        <!-- Vector Circuit Display SVG (Trazado Oficial Real Homologado) -->
         <div class="circuit-display-card">
           <div class="circuit-card-header">
             <div>
@@ -144,11 +140,8 @@
 
           <div class="circuit-svg-wrapper">
             <svg [attr.viewBox]="circuit().viewBox || '0 0 500 500'" class="track-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <!-- Trazado de base ancho -->
               <path [attr.d]="circuit().svgPath" stroke="rgba(255,255,255,0.18)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
-              <!-- Trazado principal blanco nítido -->
               <path [attr.d]="circuit().svgPath" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
-              <!-- Resplandor en cyan de telemetría -->
               <path [attr.d]="circuit().svgPath" class="track-glow" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
             </svg>
             <div class="drs-detection-pill">TRAZADO HOMOLOGADO: <strong>{{ circuit().name }}</strong></div>
@@ -163,9 +156,8 @@
         </div>
       </main>
 
-      <!-- Columna Derecha: Sidebar de Usuario -->
+      <!-- Panel de usuario y posiciones -->
       <aside class="sidebar-user">
-        <!-- Tarjeta de Usuario Autenticado -->
         <div class="user-pred-card">
           <div class="card-head">
             <span>MI PRONÓSTICO</span>
@@ -202,7 +194,6 @@
           <a routerLink="/dashboard" class="btn-user-dashboard">Ir a mi Panel Completo</a>
         </div>
 
-        <!-- Mini Leaderboard Real de Usuarios -->
         <div class="league-preview-card">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem;">
             <h4 style="margin: 0;">Tabla de jugadores global</h4>
@@ -236,10 +227,8 @@
         </div>
       </aside>
     } @else {
-      <!-- ================= MODO INVITADO (RECIÉN INGRESA) ================= -->
-      <!-- Columna Central: Información de las predicciones (Foto 2 + Sistema de puntos) -->
+      <!-- Modo invitado -->
       <main class="center-stage guest-center">
-        <!-- Landing Informativa: Funcionamiento y Detalle de la Plataforma (Modo Invitado) -->
         <div class="landing-welcome-card">
           <div class="welcome-header">
             <div class="welcome-tag-badge">
@@ -272,7 +261,6 @@
           </div>
         </div>
 
-        <!-- Tarjeta de Reglamento de Puntos -->
         <div class="scoring-preview-card">
           <div class="card-head">
             <span>SISTEMA DE PUNTOS</span>
@@ -291,9 +279,8 @@
         </div>
       </main>
 
-      <!-- Columna Derecha: Información del circuito y la cuenta regresiva -->
+      <!-- Circuito y cuenta regresiva -->
       <aside class="sidebar-right-circuit">
-        <!-- Vector Circuit Display SVG (Trazado Oficial Real Homologado) -->
         <div class="circuit-display-card">
           <div class="circuit-card-header">
             <div>
@@ -308,11 +295,8 @@
 
           <div class="circuit-svg-wrapper">
             <svg [attr.viewBox]="circuit().viewBox || '0 0 500 500'" class="track-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <!-- Trazado de base ancho -->
               <path [attr.d]="circuit().svgPath" stroke="rgba(255,255,255,0.18)" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
-              <!-- Trazado principal blanco nítido -->
               <path [attr.d]="circuit().svgPath" stroke="#ffffff" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
-              <!-- Resplandor en cyan de telemetría -->
               <path [attr.d]="circuit().svgPath" class="track-glow" stroke="var(--cyan)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
             </svg>
             <div class="drs-detection-pill">TRAZADO HOMOLOGADO: <strong>{{ circuit().name }}</strong></div>
@@ -326,7 +310,6 @@
           </div>
         </div>
 
-        <!-- Countdown Banner -->
         <div class="countdown-banner guest-countdown-banner">
           <div class="countdown-full">
             <div class="timer-title">
@@ -344,9 +327,8 @@
     }
   </div>
 
-  <!-- Sección Head-to-Head: Duelo Dinámico Oficial de la Fecha y Selector de Duplas -->
+  <!-- Duelo de pilotos -->
   <section class="duel-section">
-    <!-- SELECTOR DE ESCUDERÍAS / DUPLAS F1 2026 -->
     <div class="team-selector-card">
       <div class="team-selector-header">
         <div class="ts-badge-row">
@@ -359,7 +341,6 @@
         </p>
       </div>
 
-      <!-- Barra horizontal scrolleable de pills por escudería -->
       <div class="teams-filter-bar custom-scrollbar" role="tablist" aria-label="Seleccionar escudería">
         @for (team of teamOptions; track team.id) {
           <button 
@@ -380,7 +361,6 @@
         }
       </div>
 
-      <!-- Conmutador de modo de estadísticas (Temporada actual vs Trayectoria histórica) -->
       <div class="stats-mode-bar">
         <div class="mode-toggles">
           <button 
@@ -406,7 +386,6 @@
       </div>
     </div>
 
-    <!-- CABECERA DEL DUELO SELECCIONADO -->
     <div class="duel-header" [style.--team-accent]="activeTeam().color">
       <div class="duel-badge">
         {{ isCurrentRoundMatchupTeam(activeTeam().id) ? 'DUELO OFICIAL DE LA FECHA' : 'COMPARATIVA INTRA-EQUIPO' }} // {{ activeTeam().name | uppercase }}
@@ -427,7 +406,6 @@
     </div>
 
     <div class="duel-battle-grid">
-      <!-- Columna Piloto 1 -->
       <div class="driver-battle-side d1-side" [style.border-color]="duelDriver1().teamColor + '40'">
         <div class="driver-meta">
           <span class="team-tag">{{ driver1TeamDetails().fullName }}</span>
@@ -494,7 +472,6 @@
         </div>
       </div>
 
-      <!-- Centro: Barras de Comparativa y Votos -->
       <div class="battle-center-metrics">
         <div class="metric-title">TELEMETRÍA COMPARADA INTRA-EQUIPO</div>
         <div class="compare-bar-group">
@@ -533,7 +510,6 @@
           </div>
         </div>
 
-        <!-- Barra de Votos Comunidad Apex -->
         <div class="community-vote-box">
           <div class="vote-title-row">
             <span>VOTO COMUNIDAD APEX</span>
@@ -551,7 +527,6 @@
         </div>
       </div>
 
-      <!-- Columna Piloto 2 -->
       <div class="driver-battle-side d2-side" [style.border-color]="duelDriver2().teamColor + '40'">
         <div class="driver-meta">
           <span class="team-tag">{{ driver2TeamDetails().fullName }}</span>

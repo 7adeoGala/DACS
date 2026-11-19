@@ -103,7 +103,6 @@ export class ApiService {
     return retry<T>({
       count: 4,
       delay: (error, retryCount) => {
-        // En 429 (Too Many Requests), no reintentar en ráfaga para evitar penalización de rate limit
         if (error.status === 429) {
           console.warn('[ApexPredict] Rate limit alcanzado (HTTP 429). Se preserva la cuota del servidor.');
           throw error;
@@ -123,14 +122,11 @@ export class ApiService {
 
   wakeServices(): void {
     if (typeof window === 'undefined') return;
-    // 1. Despertar BFF y Domain Service en cadena (backendping despierta ambos)
     this.http.get(`${this.base}/backendping`).pipe(catchError(() => of(null))).subscribe();
 
-    // 2. Despertar Keycloak inmediatamente en segundo plano con endpoints JSON
     fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}/.well-known/openid-configuration`).catch(() => {});
     fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}`, { mode: 'no-cors' }).catch(() => {});
 
-    // 3. Despertar conector F1 a través del BFF (el frontend nunca accede directo al conector)
     this.http.get(`${this.base}/conectorping`).pipe(catchError(() => of(null))).subscribe();
   }
 
@@ -150,7 +146,6 @@ export class ApiService {
       const raw = localStorage.getItem(generalKey);
       if (!raw) return null;
       const pred: PredictionDetail = JSON.parse(raw);
-      // Si la predicción en caché pertenece a otra carrera anterior y tenemos sessionId activo, ignorar
       if (sessionId && pred?.sessionId && pred.sessionId !== sessionId) {
         return null;
       }
@@ -499,7 +494,6 @@ export class ApiService {
         if (pred && (pred.predictionId || (pred.podium && pred.podium.length > 0))) {
           this.setCachedPrediction(pred, username);
         } else {
-          // Si no hay pronóstico para la carrera actual, no conservar en caché pronósticos viejos
           this.clearCachedPrediction(username);
         }
       }),
@@ -534,7 +528,6 @@ export class ApiService {
     safetyCarCount: number;
     dnfCount: number;
   }) {
-    // 1. Podio (1 hit = 3 pts, 2 hits = 7 pts, 3 hits = 10 pts)
     let podiumHits = 0;
     const userPodium = p.podium || [];
     for (let i = 0; i < 3 && i < userPodium.length && i < official.podium.length; i++) {
@@ -544,19 +537,15 @@ export class ApiService {
     }
     const podiumPoints = podiumHits === 3 ? 10 : (podiumHits === 2 ? 7 : (podiumHits === 1 ? 3 : 0));
 
-    // 2. Pole (4 pts)
     const poleHit = !!(p.polePositionDriverId && p.polePositionDriverId.trim().toLowerCase() === official.polePositionDriverId.trim().toLowerCase());
     const polePoints = poleHit ? 4 : 0;
 
-    // 3. Duelo (3 pts)
     const duelHit = !!(p.duelDriverPick && p.duelDriverPick.trim().toLowerCase() === official.duelWinnerId.trim().toLowerCase());
     const duelPoints = duelHit ? 3 : 0;
 
-    // 4. Safety Car (6 pts)
     const safetyCarHit = p.safetyCarCount != null && Number(p.safetyCarCount) === official.safetyCarCount;
     const safetyCarPoints = safetyCarHit ? 6 : 0;
 
-    // 5. DNFs (6 pts)
     const dnfHit = p.dnfCount != null && Number(p.dnfCount) === official.dnfCount;
     const dnfPoints = dnfHit ? 6 : 0;
 

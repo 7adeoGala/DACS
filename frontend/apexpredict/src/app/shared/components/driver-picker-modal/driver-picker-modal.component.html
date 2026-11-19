@@ -1,9 +1,8 @@
 @if (isOpen()) {
   <div class="driver-picker-backdrop" (click)="close()">
-    <!-- stopPropagation evita que el modal se cierre al hacer clic adentro -->
     <div class="driver-picker-modal" (click)="$event.stopPropagation()">
       
-      <!-- CABECERA DEL MODAL -->
+      <!-- Encabezado del modal -->
       <div class="picker-header">
         <div class="header-titles">
           <div class="slot-badge-row">
@@ -21,7 +20,7 @@
         <button type="button" class="picker-close-btn" (click)="close()" aria-label="Cerrar modal">✕</button>
       </div>
 
-      <!-- BARRA DE BÚSQUEDA Y ATAJOS -->
+      <!-- Buscador -->
       <div class="picker-search-bar">
         <svg class="search-icon-svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-dim); margin-right: 4px;">
           <circle cx="11" cy="11" r="8"/>
@@ -41,7 +40,7 @@
         </div>
       </div>
 
-      <!-- FILTRO HORIZONTAL POR ESCUDERÍA -->
+      <!-- Filtro por escudería -->
       <div class="teams-filter-bar">
         <button 
           type="button" 
@@ -62,7 +61,7 @@
         }
       </div>
 
-      <!-- GRILLA DE PILOTOS SCROLLEABLE -->
+      <!-- Grilla de pilotos -->
       <div class="picker-grid-scroll">
         @if (filteredDrivers().length > 0) {
           <div class="picker-drivers-grid">
@@ -87,7 +86,6 @@
                   <div class="dtc-name">{{ d.name }}</div>
                 </div>
 
-                <!-- INDICADORES DINÁMICOS DE ACCIÓN / AUTO-SWAP -->
                 <div class="dtc-action">
                   @if (isCurrentInSlot(d.id)) {
                     <span class="status-chip current">Seleccionado (Clic para quitar)</span>
@@ -116,7 +114,7 @@
         }
       </div>
 
-      <!-- FOOTER DEL MODAL -->
+      <!-- Pie del modal -->
       <div class="picker-footer-info">
         <div class="rules-hint">
           <span class="hint-bullet">●</span>

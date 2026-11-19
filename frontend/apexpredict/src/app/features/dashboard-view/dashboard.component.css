@@ -171,7 +171,7 @@
     .rule-card-pts.dnf { color: #f43f5e; }
     .rule-card-pts.duel { color: #10b981; }
 
-    /* CARTEL DINÁMICO DE ESTADO CON SEMÁFORO */
+    /* Estado de predicción */
     .prediction-status-card {
       display: flex;
       align-items: center;
@@ -407,9 +407,7 @@
       margin-bottom: 0.85rem;
     }
 
-    /* ================================================= */
-    /* PLANTILLA UNIFICADA DE TARJETA DE PILOTO (F1 DTC)  */
-    /* ================================================= */
+    /* Tarjeta de piloto */
     .driver-template-card {
       --driver-color: #3671c6;
       background: #0d1118;
@@ -560,7 +558,6 @@
       color: var(--cyan);
     }
 
-    /* Selector modal mode for driver template card */
     .driver-template-card.picker-mode {
       padding: 0.85rem 1rem;
     }
@@ -599,9 +596,7 @@
       color: #ffffff;
     }
 
-    /* ================================================= */
-    /* MODAL OVERLAY Y BUSCADOR DE PILOTOS               */
-    /* ================================================= */
+    /* Modal selector de pilotos */
     .driver-picker-backdrop {
       position: fixed;
       inset: 0;
@@ -800,7 +795,7 @@
       font-weight: 900;
       font-family: var(--font-mono);
     }
-    /* DUEL SPOTLIGHT CARD & SELECTOR */
+    /* Duelo de pilotos */
     .duel-spotlight-card {
       display: flex;
       flex-direction: column;
@@ -852,7 +847,6 @@
       border-color: rgba(255, 255, 255, 0.35);
       box-shadow: 0 8px 22px rgba(0, 0, 0, 0.5), 0 0 14px -2px var(--driver-team-color, rgba(255,255,255,0.2));
     }
-    /* PILOTO ELEGIDO: DESTACAMIENTO EN LA PALETA OFICIAL DE LA PÁGINA (ROJO F1) */
     .duel-driver-card.selected {
       background: linear-gradient(135deg, rgba(225, 6, 0, 0.14) 0%, rgba(225, 6, 0, 0.03) 60%, transparent 100%), #111622;
       border: 2px solid var(--red, #e10600);
@@ -863,7 +857,6 @@
       transform: translateY(-2px) scale(1.02);
       z-index: 2;
     }
-    /* PILOTO NO ELEGIDO: ATENUADO PARA DAR PROTAGONISMO AL ELEGIDO */
     .duel-driver-card.unselected {
       opacity: 0.55;
       filter: saturate(0.65);
@@ -988,7 +981,7 @@
       letter-spacing: 0.08em;
     }
 
-    /* DUEL CRITERIA PANEL */
+    /* Criterios del duelo */
     .duel-criteria-panel {
       background: rgba(10, 14, 22, 0.75);
       border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1220,7 +1213,7 @@
       justify-content: flex-end;
       margin-top: 0.5rem;
     }
-    /* LIGAS */
+    /* Ligas */
     .sub-nav-leagues {
       display: flex;
       gap: 0.75rem;
@@ -1516,7 +1509,7 @@
       color: #a7f3d0;
       font-weight: 600;
     }
-    /* TARJETAS DE HISTORIAL: PICKS Y RESULTADOS OFICIALES */
+    /* Historial */
     .history-card-picks-box, .history-card-official-box {
       margin-top: 0.75rem;
       padding: 0.65rem 0.85rem;

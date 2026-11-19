@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { createHash, randomBytes } from 'node:crypto';
 import { request } from './local-http.mjs';
 
-// Login local con el mismo flujo publico que Angular; no habilita password grant.
 export async function loginWithCode(username, password) {
   const redirectUri = 'https://dacs2026.local/apexpredict/';
   const verifier = randomBytes(32).toString('base64url');

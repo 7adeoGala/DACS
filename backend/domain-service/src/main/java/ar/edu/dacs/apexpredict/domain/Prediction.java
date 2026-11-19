@@ -55,9 +55,6 @@ public class Prediction extends BaseEntity {
 
     protected Prediction() {}
 
-    /**
-     * Constructor compatible con versión inicial (Fases anteriores / tests unitarios).
-     */
     public Prediction(LeagueMember member, Session session, List<String> podium, Instant now) {
         validateLockTime(session, now);
         validatePodium(podium);
@@ -68,9 +65,6 @@ public class Prediction extends BaseEntity {
         this.submittedAt = Objects.requireNonNull(now);
     }
 
-    /**
-     * Constructor completo para predicción ampliada con todas las reglas de puntuación.
-     */
     public Prediction(
         User user,
         Session session,
@@ -93,9 +87,6 @@ public class Prediction extends BaseEntity {
         this.submittedAt = Objects.requireNonNull(now);
     }
 
-    /**
-     * Actualiza el pronóstico existente verificando estrictamente la regla de negocio de Lock Time.
-     */
     public void updatePicks(
         List<String> podium,
         String polePositionDriverId,

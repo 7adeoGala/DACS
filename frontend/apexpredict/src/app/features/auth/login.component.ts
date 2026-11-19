@@ -12,15 +12,12 @@ import { ApiService } from '../../core/services/api.service';
   imports: [CommonModule, FormsModule, RouterLink, AuthHeaderComponent],
   template: `
     <div class="auth-layout">
-      <!-- HEADER IDÉNTICO PERSISTENTE -->
       <app-auth-header />
 
-      <!-- CONTENEDOR CENTRADO DE LA TARJETA -->
       <main class="auth-main">
         @if (isLoading()) {
-          <!-- PANTALLA DE CARGA EN EL CENTRO -->
+          <!-- Pantalla de carga -->
           <div class="auth-loading-screen">
-            <!-- ANIMACIÓN F1 QUE HACE AL USUARIO ESPERAR -->
             <div class="f1-loader-wrap">
               <div class="f1-loader-rings">
                 <div class="ring-outer"></div>
@@ -33,7 +30,6 @@ import { ApiService } from '../../core/services/api.service';
                 </div>
               </div>
 
-              <!-- 5 LUCES DE SEMÁFORO DE LARGADA F1 EN SECUENCIA -->
               <div class="f1-start-lights" aria-hidden="true">
                 <div class="light-unit"><span class="light-bulb bulb-1"></span></div>
                 <div class="light-unit"><span class="light-bulb bulb-2"></span></div>
@@ -43,7 +39,6 @@ import { ApiService } from '../../core/services/api.service';
               </div>
             </div>
 
-            <!-- CARTEL SOLO EN EL CENTRO -->
             <div class="loading-cartel-box">
               <span class="loading-cartel-dot"></span>
               <p class="loading-cartel-text">
@@ -143,19 +138,17 @@ import { ApiService } from '../../core/services/api.service';
                 <a routerLink="/forgot-password" class="link-muted">¿Olvidaste tu contraseña?</a>
               </div>
 
-              <!-- BOTÓN PRINCIPAL -->
               <button type="submit" class="btn-primary" [disabled]="isLoading()">
                 <span>INICIAR SESIÓN →</span>
               </button>
 
-              <!-- SEPARADOR CON GOOGLE -->
               <div class="divider-wrap">
                 <div class="divider-line"></div>
                 <span class="divider-text">O CONTINUAR CON</span>
                 <div class="divider-line"></div>
               </div>
 
-              <!-- BOTÓN GOOGLE SSO -->
+              <!-- Acceso con Google -->
               <button type="button" class="btn-google" (click)="loginWithGoogle()">
                 <svg class="google-icon" viewBox="0 0 24 24">
                   <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>

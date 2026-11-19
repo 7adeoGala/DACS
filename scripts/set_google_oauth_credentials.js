@@ -1,9 +1,3 @@
-/**
- * Script para configurar o actualizar las credenciales de Google OAuth en Keycloak
- * Uso:
- *   node scripts/set_google_oauth_credentials.js <GOOGLE_CLIENT_ID> <GOOGLE_CLIENT_SECRET>
- */
-
 const clientId = process.argv[2];
 const clientSecret = process.argv[3];
 

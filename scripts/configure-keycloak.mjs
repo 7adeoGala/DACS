@@ -5,7 +5,6 @@ import { loginWithCode } from './local-oidc.mjs';
 
 const api = await adminApi();
 const realm = JSON.parse(readFileSync(new URL('../infra/keycloak/apexpredict-realm.json', import.meta.url), 'utf8'));
-// Aplicar tambien sobre volumenes existentes: el import inicial no los actualiza.
 const settings = ['registrationAllowed', 'loginWithEmailAllowed', 'duplicateEmailsAllowed',
   'verifyEmail', 'resetPasswordAllowed', 'internationalizationEnabled', 'supportedLocales',
   'defaultLocale', 'passwordPolicy'];
@@ -36,8 +35,7 @@ console.log('Cliente Keycloak actualizado: callbacks de desarrollo, PKCE y audie
 console.log('Registro habilitado en espanol. Las cuentas nuevas reciben el rol player.');
 
 if (process.argv.includes('--demo')) {
-  // Declarar el marcador: Keycloak filtra atributos no incluidos en el perfil.
-  // Solo administradores pueden verlo o editarlo; no aparece en el registro.
+
   const profile = (await api('/users/profile')).json();
   const marker = { name: 'apexpredict-dev', displayName: 'Cuenta de pruebas ApexPredict',
     permissions: { view: ['admin'], edit: ['admin'] }, multivalued: false };
@@ -54,8 +52,7 @@ if (process.argv.includes('--demo')) {
       throw new Error(`La cuenta ${username} ya existe y no pertenece a este setup. No se modifica.`);
     }
     if (user && user.attributes?.['apexpredict-dev']?.[0] !== 'true') {
-      // Migrar las demos anteriores cuyo marcador Keycloak descarto. Exigir un
-      // login real con su secreto local antes de modificar esa identidad.
+
       const token = await loginWithCode(username, credentials[username].password);
       const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'));
       if (claims.sub !== user.id) throw new Error(`La credencial local no corresponde a ${username}.`);
@@ -67,7 +64,6 @@ if (process.argv.includes('--demo')) {
     }
     if (!user) {
       const password = credentials[username]?.password ?? randomBytes(24).toString('base64url');
-      // Guardar antes de provisionar permite retomar si se interrumpe el script.
       credentials[username] = { username, password, roles: assigned };
       writeFileSync(credentialsFile, JSON.stringify(credentials, null, 2), { mode: 0o600 });
       await api('/users', 'POST', { username, enabled: true, emailVerified: true,
@@ -85,7 +81,6 @@ if (process.argv.includes('--demo')) {
     }
     if (assigned.length) await api(`/users/${user.id}/role-mappings/realm`, 'POST',
       roles.filter(role => assigned.includes(role.name)));
-    // Esta cuenta de prueba debe seguir sin permisos, incluso con player por defecto.
     if (username === 'demo-observer') {
       const mappings = (await api(`/users/${user.id}/role-mappings/realm`)).json();
       const removed = mappings.filter(role => [defaultRole.name, 'player', 'admin'].includes(role.name));

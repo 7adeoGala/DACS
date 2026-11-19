@@ -11,7 +11,6 @@ public class JwtConfig {
     JwtDecoder jwtDecoder(@Value("${apexpredict.security.issuer}") String issuer,
                           @Value("${apexpredict.security.jwk-set-uri}") String jwkSetUri,
                           @Value("${apexpredict.security.audience}") String audience) {
-        // JWK explicito evita depender del discovery durante el arranque del proxy.
         var decoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build();
         decoder.setJwtValidator(validators(issuer, audience));
         return decoder;

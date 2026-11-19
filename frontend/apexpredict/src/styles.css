@@ -91,7 +91,7 @@ select:focus-visible {
   outline-offset: 3px;
 }
 
-/* HEADER & NAVBAR */
+/* Encabezado y barra de navegación */
 .header {
   min-height: 80px;
   border-bottom: 1px solid var(--line);
@@ -176,7 +176,7 @@ select:focus-visible {
   border-radius: 2px;
 }
 
-/* BUTTONS */
+/* Botones */
 .button {
   display: inline-flex;
   align-items: center;
@@ -235,7 +235,7 @@ select:focus-visible {
   border-color: var(--cyan);
 }
 
-/* TYPOGRAPHY & COMMONS */
+/* Tipografía y estilos base */
 .eyebrow {
   font-size: 11px;
   font-weight: 700;
@@ -289,7 +289,7 @@ h1 em {
   font-weight: 400;
 }
 
-/* SECTIONS & GRIDS */
+/* Secciones y grillas */
 .section {
   padding: 56px 5% 80px;
   max-width: 1300px;
@@ -396,7 +396,7 @@ h1 em {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* HOMEPAGE SPOTLIGHT HERO (CIRCUIT & NEXT GP) */
+/* Encabezado principal de inicio */
 .hero-spotlight {
   padding: 60px 5% 64px;
   max-width: 1300px;
@@ -512,7 +512,7 @@ h1 em {
   color: #fff;
 }
 
-/* SESSION SCHEDULE */
+/* Cronograma de sesiones */
 .schedule-list {
   display: flex;
   flex-direction: column;
@@ -546,7 +546,7 @@ h1 em {
   color: var(--text-muted);
 }
 
-/* DASHBOARD TABS */
+/* Pestañas del panel */
 .dashboard-tabs {
   display: flex;
   gap: 8px;
@@ -585,7 +585,7 @@ h1 em {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
 }
 
-/* PREDICTION BOX & FORM */
+/* Formulario de pronósticos */
 .prediction-box {
   background: var(--surface-card);
   border: 1px solid var(--line);
@@ -693,7 +693,7 @@ h1 em {
   cursor: not-allowed;
 }
 
-/* DUEL MATCHUP SELECTOR CARDS */
+/* Tarjetas de duelo */
 .duel-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -740,7 +740,7 @@ h1 em {
   border-radius: 4px;
 }
 
-/* NUMBER STEPPER INPUTS */
+/* Controles numéricos */
 .number-input-wrapper {
   display: flex;
   align-items: center;
@@ -760,7 +760,7 @@ h1 em {
   color: #fff;
 }
 
-/* PODIUM COMPONENT (TOP 3) */
+/* Podio */
 .podium-container {
   display: flex;
   justify-content: center;
@@ -827,7 +827,6 @@ h1 em {
   border-top: 2px solid;
 }
 
-/* 1ST PLACE GOLD */
 .podium-col.rank-1 .podium-avatar {
   background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
   color: #000;
@@ -842,7 +841,6 @@ h1 em {
   color: var(--gold);
 }
 
-/* 2ND PLACE SILVER */
 .podium-col.rank-2 .podium-avatar {
   background: linear-gradient(135deg, #f1f5f9 0%, #94a3b8 100%);
   color: #000;
@@ -857,7 +855,6 @@ h1 em {
   color: var(--silver);
 }
 
-/* 3RD PLACE BRONZE */
 .podium-col.rank-3 .podium-avatar {
   background: linear-gradient(135deg, #d97706 0%, #92400e 100%);
   color: #fff;
@@ -872,7 +869,7 @@ h1 em {
   color: var(--bronze);
 }
 
-/* LEADERBOARD TABLE */
+/* Tabla de posiciones */
 .leaderboard-table {
   width: 100%;
   border-collapse: separate;
@@ -914,7 +911,7 @@ h1 em {
   border-color: rgba(255, 255, 255, 0.15);
 }
 
-/* HISTORY CARDS & BREAKDOWN */
+/* Historial */
 .history-grid {
   display: flex;
   flex-direction: column;
@@ -1013,7 +1010,7 @@ h1 em {
   color: var(--text-dim);
 }
 
-/* LEAGUE SELECTOR PILLS */
+/* Selector de ligas */
 .league-selector-list {
   display: flex;
   gap: 12px;
@@ -1049,7 +1046,7 @@ h1 em {
   box-shadow: 0 0 16px var(--red-glow);
 }
 
-/* NOTICES */
+/* Avisos */
 .notice {
   margin: 20px 0;
   padding: 16px 20px;
@@ -1074,7 +1071,7 @@ h1 em {
   color: #86efac;
 }
 
-/* FOOTER */
+/* Pie de página */
 footer {
   border-top: 1px solid var(--line);
   padding: 32px 5%;
@@ -1093,7 +1090,7 @@ footer span:first-child {
   color: var(--text-muted);
 }
 
-/* RESPONSIVE DESIGN & BOOTSTRAP UTILITIES */
+/* Diseño adaptable */
 a {
   text-decoration: none !important;
 }
@@ -1103,7 +1100,6 @@ html, body {
   overflow-x: hidden;
 }
 
-/* Bootstrap Table Responsive Dark Theme */
 .table-responsive {
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
@@ -1178,7 +1174,6 @@ html, body {
   .duel-grid {
     grid-template-columns: 1fr;
   }
-  /* Optimización para pantallas de teléfonos móviles */
   .section {
     padding: 2.5rem 1rem;
   }

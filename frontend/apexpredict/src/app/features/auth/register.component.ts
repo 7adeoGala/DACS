@@ -12,15 +12,12 @@ import { environment } from '../../../environments/environment';
   imports: [CommonModule, FormsModule, RouterLink, AuthHeaderComponent],
   template: `
     <div class="auth-layout">
-      <!-- HEADER IDÉNTICO PERSISTENTE -->
       <app-auth-header />
 
-      <!-- CONTENEDOR CENTRADO DE LA TARJETA -->
       <main class="auth-main">
         @if (isLoading()) {
-          <!-- PANTALLA DE CARGA EN EL CENTRO -->
+          <!-- Pantalla de carga -->
           <div class="auth-loading-screen">
-            <!-- ANIMACIÓN F1 QUE HACE AL USUARIO ESPERAR -->
             <div class="f1-loader-wrap">
               <div class="f1-loader-rings">
                 <div class="ring-outer"></div>
@@ -33,7 +30,6 @@ import { environment } from '../../../environments/environment';
                 </div>
               </div>
 
-              <!-- 5 LUCES DE SEMÁFORO DE LARGADA F1 EN SECUENCIA -->
               <div class="f1-start-lights" aria-hidden="true">
                 <div class="light-unit"><span class="light-bulb bulb-1"></span></div>
                 <div class="light-unit"><span class="light-bulb bulb-2"></span></div>
@@ -43,7 +39,6 @@ import { environment } from '../../../environments/environment';
               </div>
             </div>
 
-            <!-- CARTEL SOLO EN EL CENTRO -->
             <div class="loading-cartel-box">
               <span class="loading-cartel-dot"></span>
               <p class="loading-cartel-text">
@@ -221,7 +216,6 @@ import { environment } from '../../../environments/environment';
                 </div>
               </div>
 
-              <!-- OPCIÓN PARA MOSTRAR/OCULTAR AMBAS CONTRASEÑAS -->
               <div class="form-options" style="margin-top: -0.35rem; margin-bottom: 0.25rem;">
                 <label class="checkbox-label" style="font-size: 0.75rem;">
                   <input 
@@ -236,14 +230,13 @@ import { environment } from '../../../environments/environment';
                 <span>REGISTRARSE →</span>
               </button>
 
-              <!-- SEPARADOR CON GOOGLE -->
               <div class="divider-wrap">
                 <div class="divider-line"></div>
                 <span class="divider-text">O CONTINUAR CON</span>
                 <div class="divider-line"></div>
               </div>
 
-              <!-- REGISTRO CON GOOGLE -->
+              <!-- Registro con Google -->
               <button type="button" class="btn-google" (click)="registerWithGoogle()">
                 <svg class="google-icon" viewBox="0 0 24 24">
                   <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.4 9 5 12 5z"/>
@@ -321,7 +314,6 @@ export class RegisterComponent implements OnInit {
     this.successMessage.set('');
 
     try {
-      // Registrar usuario mediante el flujo de registro o Keycloak
       await this.auth.registerUser({
         username: user,
         firstName: fn,

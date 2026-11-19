@@ -154,17 +154,14 @@ export class NavbarComponent implements OnInit {
 
   readonly currentUrl = signal<string>(this.router.url);
 
-  // Opciones de configuración de F1
   readonly teams = F1_TEAMS_OPTIONS;
   readonly drivers: F1Driver[] = ACTIVE_F1_DRIVERS;
 
-  // Estado del dropdown del perfil y navegación móvil
   readonly isProfileOpen = signal<boolean>(false);
   readonly isMobileNavOpen = signal<boolean>(false);
   readonly isSaving = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'success' | 'error'>('idle');
 
-  // Estado de validación de unicidad de nombre de usuario
   readonly isCheckingName = signal<boolean>(false);
   readonly isDuplicateName = signal<boolean>(false);
   readonly duplicateErrorMessage = signal<string | null>(null);
@@ -173,23 +170,19 @@ export class NavbarComponent implements OnInit {
   readonly isDisplayNameEmpty = computed(() => (this.formDisplayName() || '').trim().length === 0);
   readonly isSaveDisabled = computed(() => this.isSaving() || this.isCheckingName() || this.isDuplicateName() || this.isDisplayNameEmpty());
 
-  // Estado de los dropdowns personalizados dentro del menú
   readonly isTeamSelectOpen = signal<boolean>(false);
   readonly isDriverSelectOpen = signal<boolean>(false);
 
-  // ESTADO GUARDADO (Confirma los valores visibles en navbar y encabezado)
   readonly savedDisplayName = signal<string>(this.auth.username() || 'Piloto');
   readonly savedTeamId = signal<string>('mclaren');
   readonly savedDriverId = signal<string>('norris');
   readonly savedNotifications = signal<boolean>(true);
 
-  // ESTADO BORRADOR / FORMULARIO (Se edita sin afectar el navbar hasta presionar Guardar)
   readonly formDisplayName = signal<string>(this.auth.username() || 'Piloto');
   readonly formTeamId = signal<string>('mclaren');
   readonly formDriverId = signal<string>('norris');
   readonly formNotifications = signal<boolean>(true);
 
-  // Computados para el estado GUARDADO (visible en la píldora superior y badge confirmado)
   readonly savedTeam = computed(() => {
     const tid = this.savedTeamId() === 'sauber' ? 'audi' : this.savedTeamId();
     return this.teams.find((t) => t.id === tid) || this.teams[0];
@@ -212,15 +205,11 @@ export class NavbarComponent implements OnInit {
     return name.slice(0, 2).toUpperCase();
   });
 
-  // Computado para el estado BORRADOR (se muestra dentro del select mientras se elige)
   readonly formTeam = computed(() => {
     const tid = this.formTeamId() === 'sauber' ? 'audi' : this.formTeamId();
     return this.teams.find((t) => t.id === tid) || this.teams[0];
   });
 
-  // ESTADO ACTIVO PARA ESTÉTICA VISUAL (Colores y badge):
-  // Si el menú está abierto, previsualiza inmediatamente el equipo seleccionado en el formulario.
-  // Si el menú se cierra sin guardar, vuelve automáticamente a los colores del equipo guardado.
   readonly activeTeam = computed(() => {
     return this.isProfileOpen() ? this.formTeam() : this.savedTeam();
   });
@@ -250,7 +239,6 @@ export class NavbarComponent implements OnInit {
       }
     });
 
-    // Reaccionar automáticamente cuando el usuario inicie sesión o cambie de cuenta
     effect(() => {
       const isAuth = this.auth.authenticated();
       const user = this.auth.username();
@@ -263,7 +251,6 @@ export class NavbarComponent implements OnInit {
       }
     });
 
-    // Sincronizar dinámicamente variable CSS global en :root para iluminación ambiental
     effect(() => {
       const color = this.activeTeam().color;
       if (typeof document !== 'undefined' && document.documentElement) {
@@ -289,7 +276,6 @@ export class NavbarComponent implements OnInit {
       this.closeMobileNav();
       return;
     }
-    // Si hace click fuera de un custom select abierto, cerrarlo
     if (!target?.closest('.custom-select-container')) {
       this.isTeamSelectOpen.set(false);
       this.isDriverSelectOpen.set(false);
@@ -376,7 +362,6 @@ export class NavbarComponent implements OnInit {
 
   openProfileMenu() {
     this.closeMobileNav();
-    // Al abrir, sincronizar el borrador con los últimos datos guardados
     this.isTeamSelectOpen.set(false);
     this.isDriverSelectOpen.set(false);
     this.formDisplayName.set(this.savedDisplayName());
@@ -390,7 +375,6 @@ export class NavbarComponent implements OnInit {
   }
 
   closeProfileMenu() {
-    // Si el usuario cierra el menú sin guardar, vuelve a los colores y datos anteriores
     this.isTeamSelectOpen.set(false);
     this.isDriverSelectOpen.set(false);
     this.formDisplayName.set(this.savedDisplayName());
@@ -435,7 +419,6 @@ export class NavbarComponent implements OnInit {
 
   onTeamSelected(teamId: string) {
     this.formTeamId.set(teamId);
-    // Si cambia de escudería en el selector, sugerir el primer piloto de ese equipo
     const teamObj = this.teams.find((t) => t.id === teamId);
     const driverOfTeam = this.drivers.find((d) => {
       if (!teamObj) return false;
@@ -452,7 +435,6 @@ export class NavbarComponent implements OnInit {
   loadProfile() {
     const username = this.auth.username();
 
-    // 1. Cargar inmediatamente desde almacenamiento local (cero retraso visual)
     const cached = this.api.getCachedProfile(username);
     if (cached) {
       if (cached.displayName) {
@@ -480,7 +462,6 @@ export class NavbarComponent implements OnInit {
       this.formDisplayName.set(username);
     }
 
-    // 2. Sincronizar en segundo plano con el servidor
     this.api.getProfile().subscribe({
       next: (profile) => {
         const name = profile.displayName || this.auth.username() || 'Piloto';
@@ -533,7 +514,6 @@ export class NavbarComponent implements OnInit {
     this.isSaving.set(true);
     this.saveStatus.set('idle');
 
-    // Sincronizar con el backend
     this.api.updateProfile({
       displayName: finalName,
       favoriteTeamId: teamId,

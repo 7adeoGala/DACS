@@ -1,7 +1,6 @@
-<!-- CONTENEDOR PRINCIPAL DEL PODIO -->
 <div class="podium-card-wrapper">
   
-  <!-- CABECERA DE LA TARJETA -->
+  <!-- Encabezado -->
   <div class="card-title-row">
     <div class="title-meta">
       <h3 class="card-title">PODIO OFICIAL DE CARRERA</h3>
@@ -16,10 +15,9 @@
     }
   </div>
 
-  <!-- GRILLA PRINCIPAL DE 3 COLUMNAS EN FORMA DE PODIO F1 (P2 - P1 - P3) -->
+  <!-- Podio P2, P1, P3 -->
   <div class="podium-grid">
 
-    <!-- P2: SEGUNDO LUGAR - IZQUIERDA -->
     <div class="podium-col silver-border slot-p2">
       <div class="podium-col-top">
         <div class="podium-col-header">
@@ -67,7 +65,6 @@
       </div>
     </div>
 
-    <!-- P1: GANADOR - CENTRO -->
     <div class="podium-col gold-border slot-p1">
       <div class="podium-col-top">
         <div class="podium-col-header">
@@ -124,7 +121,6 @@
       </div>
     </div>
 
-    <!-- P3: TERCER LUGAR - DERECHA -->
     <div class="podium-col bronze-border slot-p3">
       <div class="podium-col-top">
         <div class="podium-col-header">
@@ -176,9 +172,7 @@
 
 </div>
 
-<!-- ======================================================== -->
-<!-- MODAL FLOTANTE DE SELECCIÓN DE PILOTO                     -->
-<!-- ======================================================== -->
+<!-- Modal de selección de piloto -->
 <app-driver-picker-modal
   [isOpen]="isModalOpen()"
   [currentSlot]="activeSlot()"

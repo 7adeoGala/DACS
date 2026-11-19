@@ -12,11 +12,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Servicio base (mockeado para ejecución 100% local) de notificaciones push y por correo electrónico.
- * Actúa como recordatorio antes del Lock Time de cada carrera para que los usuarios no olviden
- * cargar o editar sus pronósticos.
- */
 @Service
 public class NotificationService {
 
@@ -39,9 +34,6 @@ public class NotificationService {
         this.predictions = predictions;
     }
 
-    /**
-     * Envía notificación mockeada (Push y Email) de recordatorio de carrera a un usuario específico.
-     */
     @Transactional
     public List<Notification> sendRaceReminder(User user, Session session, Duration timeRemaining) {
         long hours = timeRemaining.toHours();
@@ -55,7 +47,6 @@ public class NotificationService {
             session.getStartsAt()
         );
 
-        // Notificación Push Mockeada
         Notification pushNotification = new Notification(
             user, session,
             Notification.Type.RACE_REMINDER,
@@ -66,7 +57,6 @@ public class NotificationService {
         notifications.save(pushNotification);
         log.info("[MOCK PUSH NOTIFICATION] Enviado a {}: '{}' - {}", user.getDisplayName(), title, message);
 
-        // Notificación Email Mockeada (si tiene correo registrado)
         if (user.getEmail() != null && !user.getEmail().isBlank()) {
             Notification emailNotification = new Notification(
                 user, session,
@@ -83,9 +73,6 @@ public class NotificationService {
         return List.of(pushNotification);
     }
 
-    /**
-     * Dispara recordatorios para todos los usuarios que aún no cargaron pronóstico para la sesión dada.
-     */
     @Transactional
     public int dispatchRemindersForUpcomingSession(UUID sessionId) {
         Session session = sessions.findById(sessionId)

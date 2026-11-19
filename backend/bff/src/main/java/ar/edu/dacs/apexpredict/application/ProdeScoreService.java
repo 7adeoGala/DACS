@@ -7,10 +7,6 @@ import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Service;
 
-/**
- * Orquestador en el BFF que cruza las predicciones almacenadas en el servicio de dominio
- * contra los resultados oficiales reales provistos por el f1-connector.
- */
 @Service
 public class ProdeScoreService {
 
@@ -30,10 +26,8 @@ public class ProdeScoreService {
             throw new IllegalArgumentException("Ronda fuera de rango.");
         }
 
-        // 1. Obtener pronóstico del usuario desde el servicio de dominio (base de datos)
         PredictionDetail prediction = domainClient.predictionForSession(year + "-" + round);
 
-        // 2. Pedir resultados oficiales al Conector F1 (que aísla Jolpica y OpenF1)
         OfficialRaceSummary official = conectorClient.officialSummary(year, round);
 
         boolean hasPrediction = prediction != null
@@ -50,7 +44,6 @@ public class ProdeScoreService {
             return new ProdeScoreDto(year, round, sessionName, hasPrediction, hasOfficialResults, 0, null, null);
         }
 
-        // 3. Comparar y calcular puntaje según las reglas oficiales del Prode
         return compareAndCalculate(year, round, sessionName, prediction, official);
     }
 

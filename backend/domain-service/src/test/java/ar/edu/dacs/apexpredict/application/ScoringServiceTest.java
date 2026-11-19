@@ -41,21 +41,21 @@ class ScoringServiceTest {
     void perfectPredictionScores29Points() {
         var prediction = new Prediction(
             user, session,
-            List.of("norris", "verstappen", "leclerc"), // Podio 100% acertado
-            "norris",                                    // Pole acertada
-            "norris",                                    // Duelo acertado
-            2,                                           // 2 SC acertados
-            3,                                           // 3 DNF acertados
+            List.of("norris", "verstappen", "leclerc"),
+            "norris",
+            "norris",
+            2,
+            3,
             now
         );
 
         var result = new SessionResult(
             session,
             List.of("norris", "verstappen", "leclerc", "piastri", "hamilton"),
-            "norris", // Pole real
-            2,        // 2 SC reales
-            3,        // 3 DNF reales
-            "norris", // Ganador duelo
+            "norris",
+            2,
+            3,
+            "norris",
             futureStart.plusSeconds(7200)
         );
 
@@ -90,25 +90,21 @@ class ScoringServiceTest {
         );
         var matchup = new WeekendMatchup(session, "alonso", "russell");
 
-        // 1 acierto (solo P1 norris)
         var pred1 = new Prediction(user, session, List.of("norris", "hamilton", "sainz"), null, null, null, null, now);
         var b1 = scoringService.calculateScore(pred1, result, matchup);
         assertEquals(1, b1.podiumHits());
         assertEquals(3, b1.podiumPoints());
 
-        // 2 aciertos (P1 norris, P2 verstappen)
         var pred2 = new Prediction(user, session, List.of("norris", "verstappen", "sainz"), null, null, null, null, now);
         var b2 = scoringService.calculateScore(pred2, result, matchup);
         assertEquals(2, b2.podiumHits());
         assertEquals(7, b2.podiumPoints());
 
-        // 3 aciertos
         var pred3 = new Prediction(user, session, List.of("norris", "verstappen", "leclerc"), null, null, null, null, now);
         var b3 = scoringService.calculateScore(pred3, result, matchup);
         assertEquals(3, b3.podiumHits());
         assertEquals(10, b3.podiumPoints());
 
-        // 0 aciertos
         var pred0 = new Prediction(user, session, List.of("piastri", "russell", "hamilton"), null, null, null, null, now);
         var b0 = scoringService.calculateScore(pred0, result, matchup);
         assertEquals(0, b0.podiumHits());
@@ -131,7 +127,6 @@ class ScoringServiceTest {
     @DisplayName("Duelo de pilotos: 3 puntos si acierta el ganador")
     void driverDuelScoring() {
         var matchup = new WeekendMatchup(session, "piastri", "sainz");
-        // Piastri P2, Sainz P6 -> Gana Piastri
         var result = new SessionResult(
             session,
             List.of("norris", "piastri", "verstappen", "leclerc", "hamilton", "sainz"),
@@ -150,7 +145,6 @@ class ScoringServiceTest {
     void safetyCarsAndDnfsScoring() {
         var result = new SessionResult(session, List.of("a", "b", "c"), null, 1, 4, null, futureStart.plusSeconds(7200));
 
-        // Predicción con SC exacto (1) y DNF errado (2)
         var pred = new Prediction(user, session, List.of("x", "y", "z"), null, null, 1, 2, now);
         var b = scoringService.calculateScore(pred, result, null);
 

@@ -23,26 +23,20 @@ export interface PodiumSelection {
   styleUrls: ['./podium-picker.component.css']
 })
 export class PodiumPickerComponent {
-  // Lista de pilotos F1 activos
   readonly drivers = ACTIVE_F1_DRIVERS;
 
-  // Estado del podio (Signals / Models para permitir binding bidireccional)
   readonly p1DriverId = model<string>('');
   readonly p2DriverId = model<string>('');
   readonly p3DriverId = model<string>('');
 
-  // Estado del modal de selección
   readonly isModalOpen = signal<boolean>(false);
   readonly activeSlot = signal<'p1' | 'p2' | 'p3'>('p1');
   readonly searchFilter = signal<string>('');
 
-  // Evento emisor al guardar
   readonly onSavePodium = output<PodiumSelection>();
 
-  // Puntos calculados
-  readonly totalEstimatedPoints = computed(() => 25 + 18 + 15); // 58 pts
+  readonly totalEstimatedPoints = computed(() => 25 + 18 + 15);
 
-  // Pilotos filtrados en el modal
   readonly filteredDrivers = computed(() => {
     const query = this.searchFilter().trim().toLowerCase();
     if (!query) return this.drivers;
@@ -54,7 +48,6 @@ export class PodiumPickerComponent {
     );
   });
 
-  // Título legible del slot activo en el modal
   readonly activeSlotTitle = computed(() => {
     switch (this.activeSlot()) {
       case 'p1': return 'P1 Winner — Vencedor';
@@ -84,11 +77,6 @@ export class PodiumPickerComponent {
     else if (slot === 'p3') this.p3DriverId.set('');
   }
 
-  /**
-   * Lógica de Auto-intercambio (auto-swap):
-   * Si seleccionas a un piloto que ya estaba en otro puesto del podio,
-   * automáticamente intercambia su lugar con el piloto anterior.
-   */
   selectDriver(driverId: string) {
     const slot = this.activeSlot();
     if (!driverId) {
