@@ -357,11 +357,11 @@ public class PredictionService {
 
         Instant now = Instant.now();
         List<Session> raceSessions = sessions.findAll().stream()
-            .filter(s -> s.getType() == Session.Type.RACE)
+            .filter(s -> s != null && s.getType() == Session.Type.RACE)
             .sorted(Comparator
-                .comparing(Session::getStartsAt, Comparator.nullsLast(Comparator.reverseOrder()))
-                .thenComparing(Comparator.comparingInt(Session::getSeason).reversed())
-                .thenComparing(Comparator.comparingInt(Session::getRound).reversed()))
+                .comparing((Session s) -> s.getStartsAt(), Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(Comparator.comparingInt((Session s) -> s.getSeason()).reversed())
+                .thenComparing(Comparator.comparingInt((Session s) -> s.getRound()).reversed()))
             .toList();
 
         List<PredictionHistoryItem> history = new ArrayList<>();
