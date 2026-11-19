@@ -378,6 +378,12 @@ a:hover {
 
 @media (max-width: 600px) {
   .pf-v5-c-login__main {
-    padding: 1.5rem !important;
+    padding: 1.25rem 1rem !important;
+  }
+  .pf-v5-c-login__container::after {
+    text-align: center !important;
+    font-size: 0.58rem !important;
+    padding: 0 0.75rem !important;
+    line-height: 1.4 !important;
   }
 }

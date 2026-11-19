@@ -960,9 +960,9 @@
                         <th>Pos</th>
                         <th>Piloto</th>
                         <th>Escudería</th>
-                        <th>Nacionalidad</th>
-                        <th>Victorias</th>
-                        <th>Puntos Totales</th>
+                        <th class="d-none d-md-table-cell">Nacionalidad</th>
+                        <th>Vic.</th>
+                        <th>Puntos</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -976,7 +976,7 @@
                             }
                           </td>
                           <td style="color: var(--text-muted);">{{ d.team }}</td>
-                          <td class="dim">{{ d.nationality }}</td>
+                          <td class="dim d-none d-md-table-cell">{{ d.nationality }}</td>
                           <td style="font-family: var(--font-mono); font-weight: 600;">{{ d.wins }}</td>
                           <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 800;">{{ d.points }} pts</td>
                         </tr>
@@ -1008,9 +1008,9 @@
                       <tr>
                         <th>Pos</th>
                         <th>Escudería</th>
-                        <th>País / Origen</th>
-                        <th>Victorias</th>
-                        <th>Puntos Totales</th>
+                        <th class="d-none d-md-table-cell">País / Origen</th>
+                        <th>Vic.</th>
+                        <th>Puntos</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1018,7 +1018,7 @@
                         <tr>
                           <td><strong>#{{ c.position }}</strong></td>
                           <td style="color: #fff; font-weight: 700; font-size: 1rem;">{{ c.name }}</td>
-                          <td class="dim">{{ c.nationality }}</td>
+                          <td class="dim d-none d-md-table-cell">{{ c.nationality }}</td>
                           <td style="font-family: var(--font-mono); font-weight: 600;">{{ c.wins }}</td>
                           <td style="font-family: var(--font-mono); color: var(--gold); font-weight: 800;">{{ c.points }} pts</td>
                         </tr>

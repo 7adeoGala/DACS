@@ -89,6 +89,13 @@ import { Component } from '@angular/core';
       .auth-header-inner {
         padding: 0 1rem;
       }
+      .brand-title {
+        font-size: 1.15rem;
+      }
+      .brand-sub {
+        font-size: 0.5rem;
+        letter-spacing: 0.14em;
+      }
     }
   `]
 })

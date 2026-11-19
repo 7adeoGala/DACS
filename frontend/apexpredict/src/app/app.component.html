@@ -2,15 +2,17 @@
   <app-navbar />
 }
 @if (!auth.available()) {
-  <div class="notice error" role="alert" style="margin: 1rem auto; max-width: 1440px;">
-    El inicio de sesión no está disponible temporalmente. Comprobá la conexión y recargá la página.
+  <div class="container-xxl px-2 px-sm-3">
+    <div class="notice error my-3" role="alert">
+      El inicio de sesión no está disponible temporalmente. Comprobá la conexión y recargá la página.
+    </div>
   </div>
 }
 <main id="main">
   <router-outlet />
 </main>
 @if (!isAuthRoute()) {
-  <footer style="border-top: 1px solid var(--line); padding: 2rem 5%; text-align: center; color: var(--text-dim); font-size: 0.85rem; display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; background: rgba(9, 11, 14, 0.9);">
+  <footer class="px-3 py-4 d-flex flex-column flex-sm-row justify-content-center align-items-center text-center gap-2 gap-sm-4" style="border-top: 1px solid var(--line); color: var(--text-dim); font-size: 0.85rem; background: rgba(9, 11, 14, 0.9);">
     <span style="font-weight: 800; letter-spacing: 0.02em;"><span style="color: var(--red, #e10600);">//</span> <span style="color: #ffffff;">APEX</span> <span style="color: var(--red, #e10600);">PREDICT</span></span>
     <span>Plataforma oficial de pronósticos de Fórmula 1.</span>
   </footer>

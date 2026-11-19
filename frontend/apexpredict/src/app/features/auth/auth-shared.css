@@ -809,19 +809,45 @@
 }
 
 @media (max-width: 600px) {
+  .auth-main {
+    padding: 1.5rem 0.85rem;
+  }
+
   .form-row {
     grid-template-columns: 1fr;
   }
 
   .auth-card {
-    padding: 1.5rem;
+    padding: 1.35rem 1.15rem;
+    border-radius: 14px;
+  }
+
+  .card-title {
+    font-size: 1.35rem;
+  }
+
+  .form-options,
+  .secondary-actions,
+  .code-sim-content {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .otp-input-field {
+    font-size: 1.15rem !important;
+    letter-spacing: 0.25em !important;
+  }
+
+  .code-sim-digits {
+    font-size: 1.05rem;
+    letter-spacing: 0.2em;
   }
 
   .loading-cartel-box {
-    padding: 1rem 1.15rem;
+    padding: 1rem 1.1rem;
   }
 
   .loading-cartel-text {
-    font-size: 0.88rem;
+    font-size: 0.86rem;
   }
 }
