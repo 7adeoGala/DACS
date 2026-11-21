@@ -80,8 +80,8 @@ export class ForgotPasswordComponent implements OnInit {
     this.api.wakeServices();
   }
 
-  startPasswordReset() {
-    this.isLoading.set(true);
-    this.auth.openResetPassword('dashboard');
+    startPasswordReset() {
+      this.isLoading.set(true);
+      this.auth.openResetPassword('dashboard');
+    }
   }
-}

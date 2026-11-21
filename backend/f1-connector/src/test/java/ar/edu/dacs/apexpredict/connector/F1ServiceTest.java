@@ -16,6 +16,7 @@ import tools.jackson.databind.json.JsonMapper;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("null")
 class F1ServiceTest {
     private JolpicaClient client;
     private OpenF1Client openF1Client;
@@ -212,5 +213,16 @@ class F1ServiceTest {
         var summary = service.officialSummary(2026, 20);
         assertEquals(32.0, summary.weekendPoints().get("norris"));
         assertEquals(26.0, summary.weekendPoints().get("piastri"));
+    }
+
+    @Test
+    void circuitBreakerOpensAfterRepeatedFailures() {
+        when(client.getNextRace()).thenThrow(new RuntimeException("Jolpica timeout"));
+        for (int i = 0; i < 3; i++) {
+            assertThrows(F1Service.F1UnavailableException.class, () -> service.nextRace());
+        }
+        assertEquals("OPEN", service.circuitBreakerState());
+        assertThrows(F1Service.F1UnavailableException.class, () -> service.nextRace());
+        verify(client, times(3)).getNextRace();
     }
 }

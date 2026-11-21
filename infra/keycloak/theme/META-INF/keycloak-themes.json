@@ -2,7 +2,7 @@
   "themes": [
     {
       "name": "apexpredict",
-      "types": ["login"]
+      "types": ["login", "email"]
     }
   ]
 }

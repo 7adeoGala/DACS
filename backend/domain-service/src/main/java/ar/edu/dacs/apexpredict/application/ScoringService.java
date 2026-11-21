@@ -10,15 +10,22 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.Year;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@SuppressWarnings("null")
 public class ScoringService {
 
     private static final Logger log = LoggerFactory.getLogger(ScoringService.class);
@@ -31,18 +38,17 @@ public class ScoringService {
     private final String connectorBaseUrl;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newBuilder()
-        .connectTimeout(Duration.ofSeconds(4))
-        .build();
+            .connectTimeout(Duration.ofSeconds(4))
+            .build();
     private final Map<UUID, Instant> externalSyncAttempts = new ConcurrentHashMap<>();
 
     @Autowired
     public ScoringService(
-        PredictionRepository predictions,
-        SessionResultRepository results,
-        WeekendMatchupRepository matchups,
-        SessionRepository sessions,
-        @org.springframework.beans.factory.annotation.Value("${apexpredict.connector.url:https://dacs-1-jpud.onrender.com/conector}") String connectorBaseUrl
-    ) {
+            PredictionRepository predictions,
+            SessionResultRepository results,
+            WeekendMatchupRepository matchups,
+            SessionRepository sessions,
+            @Value("${apexpredict.connector.url:https://dacs-1-jpud.onrender.com/conector}") String connectorBaseUrl) {
         this.predictions = predictions;
         this.results = results;
         this.matchups = matchups;
@@ -51,18 +57,19 @@ public class ScoringService {
     }
 
     public ScoringService(
-        PredictionRepository predictions,
-        SessionResultRepository results,
-        WeekendMatchupRepository matchups,
-        SessionRepository sessions
-    ) {
+            PredictionRepository predictions,
+            SessionResultRepository results,
+            WeekendMatchupRepository matchups,
+            SessionRepository sessions) {
         this(predictions, results, matchups, sessions, "");
     }
 
     public static String normalizeDriverId(String driverId) {
-        if (driverId == null) return null;
+        if (driverId == null)
+            return null;
         String clean = driverId.trim().toLowerCase(Locale.ROOT);
-        if (clean.isEmpty()) return "";
+        if (clean.isEmpty())
+            return "";
         return switch (clean) {
             case "max_verstappen", "maxverstappen" -> "verstappen";
             case "arvid_lindblad", "arvidlindblad" -> "lindblad";
@@ -130,26 +137,26 @@ public class ScoringService {
         int total = podiumPoints + polePoints + duelPoints + safetyCarPoints + dnfPoints;
 
         return new ScoreBreakdown(
-            podiumHits,
-            podiumPoints,
-            poleHit,
-            polePoints,
-            duelHit,
-            duelPoints,
-            safetyCarHit,
-            safetyCarPoints,
-            dnfHit,
-            dnfPoints,
-            total
-        );
+                podiumHits,
+                podiumPoints,
+                poleHit,
+                polePoints,
+                duelHit,
+                duelPoints,
+                safetyCarHit,
+                safetyCarPoints,
+                dnfHit,
+                dnfPoints,
+                total);
     }
 
     @Transactional
     public List<ScoredPredictionSummary> scoreSession(UUID sessionId) {
         var session = sessions.findById(sessionId)
-            .orElseThrow(() -> new IllegalArgumentException("Sesión no encontrada: " + sessionId));
+                .orElseThrow(() -> new IllegalArgumentException("Sesión no encontrada: " + sessionId));
         var result = results.findBySessionId(sessionId)
-            .orElseThrow(() -> new IllegalStateException("No se han publicado resultados oficiales para la sesión: " + sessionId));
+                .orElseThrow(() -> new IllegalStateException(
+                        "No se han publicado resultados oficiales para la sesión: " + sessionId));
         var matchup = matchups.findBySessionId(sessionId).orElse(null);
 
         var sessionPredictions = predictions.findBySessionId(sessionId);
@@ -163,37 +170,99 @@ public class ScoringService {
 
             String userName = prediction.getUser() != null ? prediction.getUser().getDisplayName() : "Usuario";
             summaries.add(new ScoredPredictionSummary(
-                prediction.getId(),
-                prediction.getUser() != null ? prediction.getUser().getId() : null,
-                userName,
-                breakdown.totalPoints(),
-                breakdown
-            ));
+                    prediction.getId(),
+                    prediction.getUser() != null ? prediction.getUser().getId() : null,
+                    userName,
+                    breakdown.totalPoints(),
+                    breakdown));
         }
 
         log.info("Procesadas {} predicciones para la sesión {}", sessionPredictions.size(), session.getName());
         return summaries;
     }
 
-    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
+    @EventListener(ApplicationReadyEvent.class)
     @Transactional
     public void onApplicationReady() {
         try {
-            autoScoreAllCompletedSessions();
+            int currentYear = Year.now(ZoneOffset.UTC).getValue();
+            syncSeasonCalendarFromConnector(currentYear);
+            syncAndScoreCompletedSessions();
         } catch (Exception e) {
             log.error("Error en auto-score durante inicio de aplicación: {}", e.getMessage());
         }
     }
 
     @Transactional
-    public void autoScoreAllCompletedSessions() {
-        ensureFinishedSessionsSeeded();
+    public int syncSeasonCalendarFromConnector(int season) {
+        if (connectorBaseUrl == null || connectorBaseUrl.isBlank()) {
+            return 0;
+        }
+        String url = String.format("%s/calendar/%d", connectorBaseUrl, season);
+        JsonNode racesNode = fetchJson(url);
+        if (racesNode == null || !racesNode.isArray()) {
+            return 0;
+        }
+        int added = 0;
+        for (JsonNode item : racesNode) {
+            int raceSeason = item.path("season").asInt(season);
+            int round = item.path("round").asInt(0);
+            String name = item.path("name").asText("");
+            String circuit = item.path("circuit").asText("");
+            String dateStr = item.path("date").asText("");
+            String startsAtStr = item.path("startsAt").asText("");
+            if (round <= 0 || name.isBlank() || dateStr.isBlank()) {
+                continue;
+            }
+            if (sessions.findBySeasonAndRoundAndType(raceSeason, round, Session.Type.RACE).isPresent()) {
+                continue;
+            }
+            try {
+                LocalDate raceDate = LocalDate.parse(dateStr);
+                Instant startsAt = (startsAtStr != null && !startsAtStr.isBlank())
+                    ? Instant.parse(startsAtStr)
+                    : raceDate.atTime(15, 0).toInstant(ZoneOffset.UTC);
+                sessions.save(new Session(
+                    raceSeason,
+                    round,
+                    Session.Type.RACE,
+                    name,
+                    circuit.isBlank() ? "Circuito Oficial" : circuit,
+                    raceDate,
+                    startsAt
+                ));
+                added++;
+            } catch (Exception ex) {
+                log.debug("No se pudo persistir sesión {}-{}: {}", raceSeason, round, ex.getMessage());
+            }
+        }
+        if (added > 0) {
+            log.info("Calendario F1 {} sincronizado vía f1-connector: {} nuevas sesiones persistidas.", season, added);
+        }
+        return added;
+    }
 
+    @Transactional
+    public int syncAndScoreCompletedSessions() {
+        ensureLocalSeededResults();
+        int synced = syncExternalResultsForCompletedSessions();
+        autoScoreExistingResults();
+        return synced;
+    }
+
+    @Transactional
+    public void autoScoreAllCompletedSessions() {
+        ensureLocalSeededResults();
+        autoScoreExistingResults();
+    }
+
+    private void autoScoreExistingResults() {
         var allResults = results.findAll();
         var now = Instant.now();
         for (var result : allResults) {
             var session = result.getSession();
-            if (session == null) continue;
+            if (session == null)
+                continue;
             var matchup = matchups.findBySessionId(session.getId()).orElse(null);
             var sessionPredictions = predictions.findBySessionId(session.getId());
             for (var prediction : sessionPredictions) {
@@ -203,10 +272,9 @@ public class ScoringService {
                         prediction.applyScore(breakdown.totalPoints(), now);
                         predictions.save(prediction);
                         log.info("Auto-score asignado/actualizado a usuario {} en sesión {}: {} pts",
-                            prediction.getUser() != null ? prediction.getUser().getDisplayName() : "anon",
-                            session.getName(),
-                            breakdown.totalPoints()
-                        );
+                                prediction.getUser() != null ? prediction.getUser().getDisplayName() : "anon",
+                                session.getName(),
+                                breakdown.totalPoints());
                     }
                 } catch (Exception e) {
                     log.error("Error al auto-puntuar predicción {}: {}", prediction.getId(), e.getMessage());
@@ -217,62 +285,80 @@ public class ScoringService {
 
     @Transactional
     public void ensureFinishedSessionsSeeded() {
+        ensureLocalSeededResults();
+        syncExternalResultsForCompletedSessions();
+    }
+
+    private void ensureLocalSeededResults() {
         try {
             ensureOfficialResultIfMissing(
-                2026, 18,
-                List.of("antonelli", "leclerc", "verstappen", "hamilton", "norris", "hadjar", "piastri", "russell", "lawson", "gasly"),
-                "antonelli", 2, 3, "verstappen"
-            );
+                    2026, 18,
+                    List.of("antonelli", "leclerc", "verstappen", "hamilton", "norris", "hadjar", "piastri", "russell",
+                            "lawson", "gasly"),
+                    "antonelli", 2, 3, "verstappen");
             ensureOfficialResultIfMissing(
-                2026, 19,
-                List.of("verstappen", "hamilton", "antonelli", "leclerc", "norris", "russell", "lawson", "bortoleto", "hadjar", "ryo_hirakawa"),
-                "hamilton", 3, 5, "leclerc"
-            );
+                    2026, 19,
+                    List.of("verstappen", "hamilton", "antonelli", "leclerc", "norris", "russell", "lawson",
+                            "bortoleto", "hadjar", "ryo_hirakawa"),
+                    "hamilton", 3, 5, "leclerc");
             ensureOfficialResultIfMissing(
-                2026, 20,
-                List.of("norris", "verstappen", "hadjar", "russell", "antonelli", "piastri", "lawson", "leclerc", "hamilton", "hulkenberg"),
-                "norris", 0, 2, "lawson"
-            );
-
-            Instant cutoff = Instant.now().minus(Duration.ofHours(3));
-            for (Session s : sessions.findAll()) {
-                if (s.getType() != Session.Type.RACE || s.getStartsAt() == null) continue;
-                if (s.getSeason() < 2026 || s.getRound() <= 20) continue;
-                if (s.getStartsAt().isAfter(cutoff)) continue;
-                if (results.findBySessionId(s.getId()).isPresent()) continue;
-                syncCompletedSessionFromExternalApis(s);
-            }
+                    2026, 20,
+                    List.of("norris", "verstappen", "hadjar", "russell", "antonelli", "piastri", "lawson", "leclerc",
+                            "hamilton", "hulkenberg"),
+                    "norris", 0, 2, "lawson");
         } catch (Exception ex) {
             log.warn("Aviso al verificar consistencia de sesiones finalizadas: {}", ex.getMessage());
         }
     }
 
+    private int syncExternalResultsForCompletedSessions() {
+        int synced = 0;
+        try {
+            Instant cutoff = Instant.now().minus(Duration.ofHours(3));
+            for (Session s : sessions.findAll()) {
+                if (s.getType() != Session.Type.RACE || s.getStartsAt() == null)
+                    continue;
+                if (s.getSeason() < 2026 || s.getRound() <= 20)
+                    continue;
+                if (s.getStartsAt().isAfter(cutoff))
+                    continue;
+                if (results.findBySessionId(s.getId()).isPresent())
+                    continue;
+                if (syncCompletedSessionFromExternalApis(s)) {
+                    synced++;
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("Aviso al sincronizar resultados externos: {}", ex.getMessage());
+        }
+        return synced;
+    }
+
     private void ensureOfficialResultIfMissing(
-        int season,
-        int round,
-        List<String> finishers,
-        String pole,
-        int safetyCars,
-        int dnfs,
-        String duelWinner
-    ) {
+            int season,
+            int round,
+            List<String> finishers,
+            String pole,
+            int safetyCars,
+            int dnfs,
+            String duelWinner) {
         Session session = sessions.findBySeasonAndRoundAndType(season, round, Session.Type.RACE).orElse(null);
         if (session != null && results.findBySessionId(session.getId()).isEmpty()) {
             Instant publishedAt = session.getStartsAt() != null
-                ? session.getStartsAt().plus(Duration.ofHours(3))
-                : Instant.now();
+                    ? session.getStartsAt().plus(Duration.ofHours(3))
+                    : Instant.now();
             results.save(new SessionResult(session, finishers, pole, safetyCars, dnfs, duelWinner, publishedAt));
         }
     }
 
-    private void syncCompletedSessionFromExternalApis(Session session) {
+    private boolean syncCompletedSessionFromExternalApis(Session session) {
         if (connectorBaseUrl == null || connectorBaseUrl.isBlank()) {
-            return;
+            return false;
         }
         Instant now = Instant.now();
         Instant lastAttempt = externalSyncAttempts.get(session.getId());
         if (lastAttempt != null && Duration.between(lastAttempt, now).compareTo(EXTERNAL_SYNC_COOLDOWN) < 0) {
-            return;
+            return false;
         }
         externalSyncAttempts.put(session.getId(), now);
 
@@ -280,7 +366,7 @@ public class ScoringService {
             String summaryUrl = String.format("%s/results/%d/%d/official-summary",
                 connectorBaseUrl, session.getSeason(), session.getRound());
             JsonNode summaryNode = fetchJson(summaryUrl);
-            if (summaryNode == null) return;
+            if (summaryNode == null) return false;
 
             List<String> fullClassification = new ArrayList<>();
             JsonNode fullClassNode = summaryNode.path("fullClassification");
@@ -292,22 +378,23 @@ public class ScoringService {
                     }
                 }
             }
-            if (fullClassification.size() < 3) return;
+            if (fullClassification.size() < 3) return false;
 
             List<String> top10 = fullClassification.stream().limit(10).toList();
-            String pole = normalizeDriverId(summaryNode.path("polePositionDriverId").asText(null));
+            JsonNode poleNode = summaryNode.path("polePositionDriverId");
+            String pole = poleNode.isTextual() ? normalizeDriverId(poleNode.asText()) : null;
             int safetyCars = summaryNode.path("safetyCarCount").asInt(0);
             int dnfCount = summaryNode.path("dnfCount").asInt(0);
 
             Map<String, Double> weekendPoints = new HashMap<>();
             JsonNode ptsNode = summaryNode.path("weekendPoints");
             if (ptsNode.isObject()) {
-                ptsNode.fields().forEachRemaining(entry -> {
+                for (Map.Entry<String, JsonNode> entry : ptsNode.properties()) {
                     String norm = normalizeDriverId(entry.getKey());
                     if (norm != null && !norm.isBlank()) {
                         weekendPoints.put(norm, entry.getValue().asDouble(0.0));
                     }
-                });
+                }
             }
 
             String duelWinner = resolveDuelWinnerFromWeekendData(
@@ -322,17 +409,20 @@ public class ScoringService {
             results.save(new SessionResult(session, top10, pole, safetyCars, dnfCount, duelWinner, publishedAt));
             log.info("Resultados oficiales sincronizados vía f1-connector para {} (Pole: {}, SC: {}, DNF: {})",
                 session.getName(), pole, safetyCars, dnfCount);
+            return true;
         } catch (Exception ex) {
             log.warn("No se pudo sincronizar automáticamente {} vía f1-connector: {}", session.getName(), ex.getMessage());
+            return false;
         }
     }
 
+
     private String resolveDuelWinnerFromWeekendData(
-        List<String> classification,
-        Map<String, Double> weekendPoints,
-        WeekendMatchup matchup
-    ) {
-        if (matchup == null) return null;
+            List<String> classification,
+            Map<String, Double> weekendPoints,
+            WeekendMatchup matchup) {
+        if (matchup == null)
+            return null;
         String d1 = normalizeDriverId(matchup.getDriver1Id());
         String d2 = normalizeDriverId(matchup.getDriver2Id());
         if (weekendPoints != null && !weekendPoints.isEmpty()) {
@@ -348,32 +438,39 @@ public class ScoringService {
     private JsonNode fetchJson(String url) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(Duration.ofSeconds(6))
-                .GET()
-                .build();
+                    .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(6))
+                    .GET()
+                    .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300 && response.body() != null) {
                 return objectMapper.readTree(response.body());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            log.debug("No se pudo leer JSON desde {}: {}", url, ex.getMessage());
+        }
         return null;
     }
 
     private String resolveDuelWinnerFromClassification(List<String> classification, WeekendMatchup matchup) {
-        if (matchup == null || classification == null) return null;
+        if (matchup == null || classification == null)
+            return null;
         String d1 = normalizeDriverId(matchup.getDriver1Id());
         String d2 = normalizeDriverId(matchup.getDriver2Id());
         int pos1 = indexOfDriver(classification, d1);
         int pos2 = indexOfDriver(classification, d2);
-        if (pos1 >= 0 && pos2 >= 0) return pos1 < pos2 ? d1 : d2;
-        if (pos1 >= 0) return d1;
-        if (pos2 >= 0) return d2;
+        if (pos1 >= 0 && pos2 >= 0)
+            return pos1 < pos2 ? d1 : d2;
+        if (pos1 >= 0)
+            return d1;
+        if (pos2 >= 0)
+            return d2;
         return null;
     }
 
     private int calculatePodiumHits(List<String> predictedPodium, List<String> actualClassification) {
-        if (predictedPodium == null || actualClassification == null) return 0;
+        if (predictedPodium == null || actualClassification == null)
+            return 0;
         int hits = 0;
         for (int i = 0; i < 3 && i < predictedPodium.size() && i < actualClassification.size(); i++) {
             String pick = normalizeDriverId(predictedPodium.get(i));
@@ -389,38 +486,41 @@ public class ScoringService {
         if (result.getDuelWinnerDriverId() != null && !result.getDuelWinnerDriverId().isBlank()) {
             return normalizeDriverId(result.getDuelWinnerDriverId());
         }
-        if (matchup == null) return null;
+        if (matchup == null)
+            return null;
         return resolveDuelWinnerFromClassification(result.getClassification(), matchup);
     }
 
     private int indexOfDriver(List<String> list, String driverId) {
         String target = normalizeDriverId(driverId);
-        if (target == null || target.isBlank()) return -1;
+        if (target == null || target.isBlank())
+            return -1;
         for (int i = 0; i < list.size(); i++) {
-            if (target.equals(normalizeDriverId(list.get(i)))) return i;
+            if (target.equals(normalizeDriverId(list.get(i))))
+                return i;
         }
         return -1;
     }
 
     public record ScoreBreakdown(
-        int podiumHits,
-        int podiumPoints,
-        boolean poleHit,
-        int polePoints,
-        boolean duelHit,
-        int duelPoints,
-        boolean safetyCarHit,
-        int safetyCarPoints,
-        boolean dnfHit,
-        int dnfPoints,
-        int totalPoints
-    ) {}
+            int podiumHits,
+            int podiumPoints,
+            boolean poleHit,
+            int polePoints,
+            boolean duelHit,
+            int duelPoints,
+            boolean safetyCarHit,
+            int safetyCarPoints,
+            boolean dnfHit,
+            int dnfPoints,
+            int totalPoints) {
+    }
 
     public record ScoredPredictionSummary(
-        UUID predictionId,
-        UUID userId,
-        String displayName,
-        int totalPoints,
-        ScoreBreakdown breakdown
-    ) {}
+            UUID predictionId,
+            UUID userId,
+            String displayName,
+            int totalPoints,
+            ScoreBreakdown breakdown) {
+    }
 }

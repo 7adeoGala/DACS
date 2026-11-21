@@ -4,26 +4,26 @@ const keycloakUrl = (process.env.KEYCLOAK_URL || 'https://dacs-3-u0q1.onrender.c
 const adminUser = process.env.KEYCLOAK_ADMIN || 'admin';
 const adminPassword = process.env.KEYCLOAK_ADMIN_PASSWORD;
 
-if (!clientId || !clientSecret || !adminPassword) {
-  console.error('Uso: KEYCLOAK_ADMIN_PASSWORD=<pass> node scripts/set_google_oauth_credentials.js <GOOGLE_CLIENT_ID> <GOOGLE_CLIENT_SECRET>');
-  process.exit(1);
-}
+  if (!clientId || !clientSecret || !adminPassword) {
+    console.error('Uso: KEYCLOAK_ADMIN_PASSWORD=<pass> node scripts/set_google_oauth_credentials.js <GOOGLE_CLIENT_ID> <GOOGLE_CLIENT_SECRET>');
+    process.exit(1);
+  }
 
-async function main() {
-  console.log('1. Autenticando con Keycloak Master Admin...');
-  const tokenRes = await fetch(`${keycloakUrl}/realms/master/protocol/openid-connect/token`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: 'admin-cli',
-      username: adminUser,
-      password: adminPassword,
-      grant_type: 'password'
-    }).toString()
-  });
+  async function main() {
+    console.log('1. Autenticando con Keycloak Master Admin...');
+      const tokenRes = await fetch(`${keycloakUrl}/realms/master/protocol/openid-connect/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: 'admin-cli',
+          username: adminUser,
+          password: adminPassword,
+          grant_type: 'password'
+        }).toString()
+      });
 
-  if (!tokenRes.ok) {
-    console.error('Error al obtener token admin:', tokenRes.status, await tokenRes.text());
+      if(!tokenRes.ok) {
+        console.error('Error al obtener token admin:', tokenRes.status, await tokenRes.text());
     process.exit(1);
   }
 

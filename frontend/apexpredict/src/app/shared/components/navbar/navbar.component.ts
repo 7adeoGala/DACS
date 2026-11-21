@@ -5,6 +5,7 @@ import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ApiService } from '../../../core/services/api.service';
 import { F1_DRIVERS, ACTIVE_F1_DRIVERS, F1Driver } from '../../../core/models/f1-drivers.model';
+import { NotificationItem } from '../../../core/models/api.models';
 import { environment } from '../../../../environments/environment';
 
 export interface F1TeamOption {
@@ -158,6 +159,9 @@ export class NavbarComponent implements OnInit {
   readonly drivers: F1Driver[] = ACTIVE_F1_DRIVERS;
 
   readonly isProfileOpen = signal<boolean>(false);
+  readonly isNotificationsOpen = signal<boolean>(false);
+  readonly notificationsList = signal<NotificationItem[]>([]);
+  readonly isLoadingNotifications = signal<boolean>(false);
   readonly isMobileNavOpen = signal<boolean>(false);
   readonly isSaving = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'success' | 'error'>('idle');
@@ -244,7 +248,9 @@ export class NavbarComponent implements OnInit {
       const user = this.auth.username();
       if (isAuth) {
         this.loadProfile();
+        this.loadNotifications();
       } else {
+        this.notificationsList.set([]);
         const defaultName = user || 'Piloto';
         this.savedDisplayName.set(defaultName);
         this.formDisplayName.set(defaultName);
@@ -272,6 +278,10 @@ export class NavbarComponent implements OnInit {
       this.closeProfileMenu();
       return;
     }
+    if (this.isNotificationsOpen() && !this.elementRef.nativeElement.contains(target)) {
+      this.isNotificationsOpen.set(false);
+      return;
+    }
     if (this.isMobileNavOpen() && !this.elementRef.nativeElement.contains(target)) {
       this.closeMobileNav();
       return;
@@ -289,12 +299,42 @@ export class NavbarComponent implements OnInit {
       this.isDriverSelectOpen.set(false);
       return;
     }
+    if (this.isNotificationsOpen()) {
+      this.isNotificationsOpen.set(false);
+    }
     if (this.isProfileOpen()) {
       this.closeProfileMenu();
     }
     if (this.isMobileNavOpen()) {
       this.closeMobileNav();
     }
+  }
+
+  toggleNotifications(event: MouseEvent) {
+    event.stopPropagation();
+    const opening = !this.isNotificationsOpen();
+    this.isNotificationsOpen.set(opening);
+    if (opening) {
+      this.closeProfileMenu();
+      this.closeMobileNav();
+      this.loadNotifications();
+    }
+  }
+
+  loadNotifications() {
+    if (!this.auth.authenticated()) {
+      return;
+    }
+    this.isLoadingNotifications.set(true);
+    this.api.notifications().subscribe({
+      next: (items) => {
+        this.notificationsList.set(items || []);
+        this.isLoadingNotifications.set(false);
+      },
+      error: () => {
+        this.isLoadingNotifications.set(false);
+      }
+    });
   }
 
   toggleMobileNav(event: MouseEvent) {
@@ -362,6 +402,7 @@ export class NavbarComponent implements OnInit {
 
   openProfileMenu() {
     this.closeMobileNav();
+    this.isNotificationsOpen.set(false);
     this.isTeamSelectOpen.set(false);
     this.isDriverSelectOpen.set(false);
     this.formDisplayName.set(this.savedDisplayName());

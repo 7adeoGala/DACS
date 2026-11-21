@@ -3,16 +3,29 @@ package ar.edu.dacs.apexpredict.application;
 import ar.edu.dacs.apexpredict.domain.Notification;
 import ar.edu.dacs.apexpredict.domain.Session;
 import ar.edu.dacs.apexpredict.domain.User;
-import ar.edu.dacs.apexpredict.infrastructure.persistence.*;
+import ar.edu.dacs.apexpredict.infrastructure.persistence.NotificationRepository;
+import ar.edu.dacs.apexpredict.infrastructure.persistence.PredictionRepository;
+import ar.edu.dacs.apexpredict.infrastructure.persistence.SessionRepository;
+import ar.edu.dacs.apexpredict.infrastructure.persistence.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@SuppressWarnings("null")
 public class NotificationService {
 
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
@@ -21,6 +34,29 @@ public class NotificationService {
     private final UserRepository users;
     private final SessionRepository sessions;
     private final PredictionRepository predictions;
+    private final String emailWebhookUrl;
+    private final String emailApiSecret;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+        .connectTimeout(Duration.ofSeconds(4))
+        .build();
+
+    @Autowired
+    public NotificationService(
+        NotificationRepository notifications,
+        UserRepository users,
+        SessionRepository sessions,
+        PredictionRepository predictions,
+        @Value("${apexpredict.notifications.email-webhook-url:}") String emailWebhookUrl,
+        @Value("${apexpredict.notifications.email-api-secret:}") String emailApiSecret
+    ) {
+        this.notifications = notifications;
+        this.users = users;
+        this.sessions = sessions;
+        this.predictions = predictions;
+        this.emailWebhookUrl = emailWebhookUrl != null ? emailWebhookUrl.trim() : "";
+        this.emailApiSecret = emailApiSecret != null ? emailApiSecret.trim() : "";
+    }
 
     public NotificationService(
         NotificationRepository notifications,
@@ -28,10 +64,7 @@ public class NotificationService {
         SessionRepository sessions,
         PredictionRepository predictions
     ) {
-        this.notifications = notifications;
-        this.users = users;
-        this.sessions = sessions;
-        this.predictions = predictions;
+        this(notifications, users, sessions, predictions, "", "");
     }
 
     @Transactional
@@ -39,7 +72,7 @@ public class NotificationService {
         long hours = timeRemaining.toHours();
         String timeLeftStr = hours > 0 ? hours + " horas" : timeRemaining.toMinutes() + " minutos";
 
-        String title = "🏁 ¡No olvides tu pronóstico para el " + session.getName() + "!";
+        String title = "¡No olvides tu pronóstico para el " + session.getName() + "!";
         String message = String.format(
             "Hola %s: La sesión oficial inicia en aprox. %s (Lock Time: %s UTC). ¡Ingresa a ApexPredict antes de que se bloqueen las predicciones!",
             user.getDisplayName(),
@@ -55,7 +88,7 @@ public class NotificationService {
         );
         pushNotification.markAsSent();
         notifications.save(pushNotification);
-        log.info("[MOCK PUSH NOTIFICATION] Enviado a {}: '{}' - {}", user.getDisplayName(), title, message);
+        log.info("[IN-APP NOTIFICATION] Registrada para {}: '{}'", user.getDisplayName(), title);
 
         if (user.getEmail() != null && !user.getEmail().isBlank()) {
             Notification emailNotification = new Notification(
@@ -64,13 +97,63 @@ public class NotificationService {
                 Notification.Channel.EMAIL,
                 title, message
             );
-            emailNotification.markAsSent();
+            boolean delivered = deliverEmail(user.getEmail(), title, message);
+            if (delivered) {
+                emailNotification.markAsSent();
+            } else {
+                emailNotification.markAsFailed();
+            }
             notifications.save(emailNotification);
-            log.info("[MOCK EMAIL NOTIFICATION] Enviado a {}: '{}' - {}", user.getEmail(), title, message);
             return List.of(pushNotification, emailNotification);
         }
 
         return List.of(pushNotification);
+    }
+
+    private boolean deliverEmail(String to, String subject, String text) {
+        if (emailWebhookUrl.isBlank()) {
+            log.info("[EMAIL NOTIFICATION] Registrada para {} (sin webhook externo configurado): '{}'", to, subject);
+            return true;
+        }
+        try {
+            String body = objectMapper.writeValueAsString(Map.of(
+                "to", to,
+                "subject", subject,
+                "text", text
+            ));
+            HttpRequest.Builder reqBuilder = HttpRequest.newBuilder()
+                .uri(URI.create(emailWebhookUrl))
+                .timeout(Duration.ofSeconds(5))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body));
+            if (!emailApiSecret.isBlank()) {
+                reqBuilder.header("X-Api-Key", emailApiSecret);
+            }
+            HttpResponse<String> response = httpClient.send(reqBuilder.build(), HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                log.info("[EMAIL NOTIFICATION] Enviado via webhook a {}", to);
+                return true;
+            }
+            log.warn("[EMAIL NOTIFICATION] Webhook devolvió HTTP {} para {}", response.statusCode(), to);
+            return false;
+        } catch (Exception ex) {
+            log.warn("[EMAIL NOTIFICATION] Fallo al enviar email a {}: {}", to, ex.getMessage());
+            return false;
+        }
+    }
+
+    @Transactional
+    public int dispatchRemindersForSessionsStartingWithin(Duration window) {
+        Instant now = Instant.now();
+        Instant limit = now.plus(window != null ? window : Duration.ofHours(24));
+        List<Session> upcoming = sessions.findByStartsAtBetween(now, limit);
+        int totalSent = 0;
+        for (Session session : upcoming) {
+            if (session.getType() == Session.Type.RACE && session.getId() != null) {
+                totalSent += dispatchRemindersForUpcomingSession(session.getId());
+            }
+        }
+        return totalSent;
     }
 
     @Transactional
@@ -112,7 +195,10 @@ public class NotificationService {
 
     @Transactional(readOnly = true)
     public List<NotificationDto> getUserNotifications(String issuer, String subject) {
-        var user = users.findByIssuerAndSubject(issuer, subject).orElseThrow();
+        var user = users.findByIssuerAndSubject(issuer, subject).orElse(null);
+        if (user == null) {
+            return List.of();
+        }
         return notifications.findByUserOrderByCreatedAtDesc(user).stream()
             .map(n -> new NotificationDto(
                 n.getId(),

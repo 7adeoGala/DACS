@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet, Router, NavigationEnd } from '@angular/router';
 import { AuthService } from './core/auth/auth.service';
 import { ApiService } from './core/services/api.service';
+import { ErrorBannerService } from './core/http/error-banner.service';
 import { NavbarComponent } from './shared/components/navbar/navbar.component';
 
 @Component({
@@ -12,6 +13,7 @@ import { NavbarComponent } from './shared/components/navbar/navbar.component';
 })
 export class App {
   readonly auth = inject(AuthService);
+  readonly errorBanner = inject(ErrorBannerService);
   private readonly router = inject(Router);
   private readonly api = inject(ApiService);
   readonly isAuthRoute = signal(false);

@@ -19,7 +19,11 @@ import {
   JolpicaRaceResult,
   getTeammateDuoForRound,
   DynamicDriverStats,
-  F1_DRIVERS
+  F1_DRIVERS,
+  NotificationItem,
+  AdminSessionView,
+  ScoredPredictionSummary,
+  SyncSessionsResponse
 } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -607,7 +611,35 @@ export class ApiService {
     );
   }
 
+  notifications(): Observable<NotificationItem[]> {
+    return this.http.get<NotificationItem[]>(`${this.base}/notifications`).pipe(
+      this.retryOnColdStart(),
+      catchError(() => of([]))
+    );
+  }
+
   adminStatus() {
     return this.http.get<{ status: string }>(`${this.base}/admin/status`);
+  }
+
+  adminSessions(): Observable<AdminSessionView[]> {
+    return this.http.get<AdminSessionView[]>(`${this.base}/admin/sessions`).pipe(
+      this.retryOnColdStart()
+    );
+  }
+
+  syncSessions(): Observable<SyncSessionsResponse> {
+    return this.http.post<SyncSessionsResponse>(`${this.base}/admin/sessions/sync`, {});
+  }
+
+  scoreSession(sessionId: string): Observable<ScoredPredictionSummary[]> {
+    return this.http.post<ScoredPredictionSummary[]>(`${this.base}/admin/sessions/${sessionId}/score`, {});
+  }
+
+  sendSessionReminders(sessionId: string): Observable<{ sessionId: string; remindersSent: number; status: string }> {
+    return this.http.post<{ sessionId: string; remindersSent: number; status: string }>(
+      `${this.base}/admin/notifications/send-reminders/${sessionId}`,
+      {}
+    );
   }
 }

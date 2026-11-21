@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("null")
 class PredictionControllerTest {
 
     private PredictionService predictionService;
@@ -40,21 +41,19 @@ class PredictionControllerTest {
     void allowsPredictionBeforeLockTime() {
         UUID sessionId = UUID.randomUUID();
         var request = new PredictionController.SubmitPredictionDto(
-            List.of("norris", "piastri", "leclerc"),
-            "norris",
-            "norris",
-            1,
-            2
-        );
+                List.of("norris", "piastri", "leclerc"),
+                "norris",
+                "norris",
+                1,
+                2);
 
         when(predictionService.saveOrUpdatePrediction(anyString(), anyString(), eq(sessionId), any()))
-            .thenReturn(new PredictionService.PredictionDetailView(
-                UUID.randomUUID(), sessionId, "US GP", "COTA",
-                Instant.now().plusSeconds(3600), false,
-                request.podium(), request.polePositionDriverId(), request.duelDriverPick(),
-                request.safetyCarCount(), request.dnfCount(), null, Instant.now(),
-                "norris", "russell"
-            ));
+                .thenReturn(new PredictionService.PredictionDetailView(
+                        UUID.randomUUID(), sessionId, "US GP", "COTA",
+                        Instant.now().plusSeconds(3600), false,
+                        request.podium(), request.polePositionDriverId(), request.duelDriverPick(),
+                        request.safetyCarCount(), request.dnfCount(), null, Instant.now(),
+                        "norris", "russell"));
 
         var response = controller.submitPrediction(jwt, sessionId, request);
         assertNotNull(response);
@@ -91,21 +90,19 @@ class PredictionControllerTest {
     void allowsIncompleteAndEmptyPredictionSubmission() {
         UUID sessionId = UUID.randomUUID();
         var request = new PredictionController.SubmitPredictionDto(
-            List.of(),
-            null,
-            null,
-            0,
-            0
-        );
+                List.of(),
+                null,
+                null,
+                0,
+                0);
 
         when(predictionService.saveOrUpdatePrediction(anyString(), anyString(), eq(sessionId), any()))
-            .thenReturn(new PredictionService.PredictionDetailView(
-                UUID.randomUUID(), sessionId, "US GP", "COTA",
-                Instant.now().plusSeconds(3600), false,
-                List.of(), null, null,
-                0, 0, null, Instant.now(),
-                "norris", "russell"
-            ));
+                .thenReturn(new PredictionService.PredictionDetailView(
+                        UUID.randomUUID(), sessionId, "US GP", "COTA",
+                        Instant.now().plusSeconds(3600), false,
+                        List.of(), null, null,
+                        0, 0, null, Instant.now(),
+                        "norris", "russell"));
 
         var response = controller.submitPrediction(jwt, sessionId, request);
         assertNotNull(response);

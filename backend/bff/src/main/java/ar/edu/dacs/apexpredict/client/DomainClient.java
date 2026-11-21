@@ -78,6 +78,15 @@ public interface DomainClient {
     @PostMapping("/admin/notifications/send-reminders/{sessionId}")
     Map<String, Object> sendReminders(@PathVariable("sessionId") UUID sessionId);
 
+    @GetMapping("/admin/sessions")
+    List<AdminSessionView> adminSessions();
+
+    @PostMapping("/admin/sessions/sync")
+    Map<String, Object> syncSessions();
+
+    @PostMapping("/admin/sessions/{sessionId}/score")
+    List<ScoredPredictionSummary> scoreSession(@PathVariable("sessionId") UUID sessionId);
+
     @GetMapping("/admin/status")
     Map<String, String> adminStatus();
 }

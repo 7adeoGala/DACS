@@ -12,8 +12,12 @@ describe('Formulario de ligas', () => {
     const created = new Subject<League>();
     const api = {
       profile: vi.fn(() => of({ id: 'player', displayName: 'Jugador', email: null })),
+      getProfile: vi.fn(() => of({ id: 'player-id', displayName: 'Jugador', email: null })),
       leagues: vi.fn(() => of([])),
       createLeague: vi.fn(() => created),
+      editLeague: vi.fn((id: string, name: string, description?: string, password?: string) =>
+        of({ id, name, description, hasPassword: !!password, ownerId: 'player-id' })
+      ),
       nextSession: vi.fn(() => of(null)),
       currentPrediction: vi.fn(() => of(null)),
       submitPrediction: vi.fn(() => of({})),
@@ -162,6 +166,36 @@ describe('Formulario de ligas', () => {
     comp.selectedHistoryItem.set(comp.historyItems()[0]);
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('CARRERA FINALIZADA — SIN PRONÓSTICO');
+  });
+
+  it('permite al creador editar nombre, descripcion y contrasena de su liga privada', () => {
+    const { fixture, api } = setup();
+    const comp = fixture.componentInstance;
+    const ownedLeague: League = {
+      id: 'league-99',
+      name: 'Liga Original',
+      description: 'Desc inicial',
+      ownerId: 'player-id',
+      hasPassword: false,
+    };
+    comp.myLeagues.set([ownedLeague]);
+    comp.selectLeague(ownedLeague);
+    comp.leagueSubTab.set('list');
+    fixture.detectChanges();
+
+    expect(comp.isSelectedLeagueOwner()).toBe(true);
+    comp.startEditingLeague();
+    expect(comp.isEditingLeague()).toBe(true);
+
+    comp.editLeagueName = 'Liga Editada';
+    comp.editLeagueDescription = 'Nueva desc';
+    comp.editLeaguePassword = 'secret';
+    comp.saveLeagueEdit();
+
+    expect(api.editLeague).toHaveBeenCalledWith('league-99', 'Liga Editada', 'Nueva desc', 'secret');
+    expect(comp.isEditingLeague()).toBe(false);
+    expect(comp.selectedLeague()?.name).toBe('Liga Editada');
+    expect(comp.myLeagues()[0].name).toBe('Liga Editada');
   });
 });
 

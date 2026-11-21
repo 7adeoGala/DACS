@@ -4,13 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/auth/auth.service';
-import { 
+import {
   ACTIVE_F1_DRIVERS,
-  F1_DRIVERS, 
-  F1Driver, 
-  League, 
-  NextSession, 
-  LeaderboardEntry, 
+  F1_DRIVERS,
+  F1Driver,
+  League,
+  NextSession,
+  LeaderboardEntry,
   PredictionDetail,
   PredictionHistoryItem,
   JolpicaDriverStanding,
@@ -105,6 +105,24 @@ export class DashboardComponent implements OnInit {
   readonly myLeagues = signal<League[]>([]);
   readonly selectedLeague = signal<League | null>(null);
   readonly leagueLeaderboard = signal<LeaderboardEntry[]>([]);
+  readonly currentUserId = signal<string | null>(null);
+
+  readonly isSelectedLeagueOwner = computed(() => {
+    const league = this.selectedLeague();
+    if (!league) return false;
+    const uid = this.currentUserId();
+    if (uid && league.ownerId) {
+      return league.ownerId === uid;
+    }
+    const username = this.auth.username()?.trim().toLowerCase();
+    return !!(username && league.ownerName && league.ownerName.trim().toLowerCase() === username);
+  });
+
+  readonly isEditingLeague = signal(false);
+  readonly isSavingLeagueEdit = signal(false);
+  editLeagueName = '';
+  editLeagueDescription = '';
+  editLeaguePassword = '';
 
   readonly globalLeaderboard = signal<LeaderboardEntry[]>([]);
   readonly isLoadingGlobalLeaderboard = signal<boolean>(false);
@@ -139,6 +157,10 @@ export class DashboardComponent implements OnInit {
       this.loadUserLeagues();
       this.loadGlobalLeaderboard();
       this.loadHistory();
+      this.api.getProfile().subscribe({
+        next: (p) => this.currentUserId.set(p?.id || null),
+        error: () => {}
+      });
     }
     this.loadF1Standings();
 
@@ -190,7 +212,7 @@ export class DashboardComponent implements OnInit {
 
         this.loadCurrentPrediction(sess.id);
       },
-      error: () => {}
+      error: () => { }
     });
   }
 
@@ -323,6 +345,7 @@ export class DashboardComponent implements OnInit {
   selectLeague(league: League) {
     this.selectedLeague.set(league);
     this.showLeaguePassword.set(false);
+    this.isEditingLeague.set(false);
     this.api.leagueLeaderboard(league.id).subscribe({
       next: (lb) => {
         this.leagueLeaderboard.set(lb);
@@ -575,7 +598,7 @@ export class DashboardComponent implements OnInit {
       return;
     }
     if (this.isSaving() || this.isLocked()) return;
-    
+
     const sess = this.session();
     const sessionId = sess?.id || 'next';
 
@@ -664,8 +687,58 @@ export class DashboardComponent implements OnInit {
       navigator.clipboard.writeText(pwd).then(() => {
         this.copyPasswordSuccess.set(true);
         setTimeout(() => this.copyPasswordSuccess.set(false), 2000);
-      }).catch(() => {});
+      }).catch(() => { });
     }
+  }
+
+  startEditingLeague() {
+    const league = this.selectedLeague();
+    if (!league || !this.isSelectedLeagueOwner()) return;
+    this.editLeagueName = league.name || '';
+    this.editLeagueDescription = league.description || '';
+    this.editLeaguePassword = '';
+    this.leagueError.set('');
+    this.leagueSuccess.set('');
+    this.isEditingLeague.set(true);
+  }
+
+  cancelEditingLeague() {
+    this.isEditingLeague.set(false);
+    this.editLeaguePassword = '';
+  }
+
+  saveLeagueEdit() {
+    const league = this.selectedLeague();
+    const name = this.editLeagueName.trim();
+    if (!league || !name || this.isSavingLeagueEdit()) return;
+
+    this.isSavingLeagueEdit.set(true);
+    this.leagueError.set('');
+    this.leagueSuccess.set('');
+
+    const desc = this.editLeagueDescription.trim() || undefined;
+    const pwd = this.editLeaguePassword.trim() || undefined;
+
+    this.api.editLeague(league.id, name, desc, pwd).subscribe({
+      next: (updated) => {
+        this.isSavingLeagueEdit.set(false);
+        this.isEditingLeague.set(false);
+        if (pwd) {
+          updated.password = pwd;
+        }
+        this.myLeagues.update((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+        this.selectedLeague.set(updated);
+        this.editLeaguePassword = '';
+        this.leagueSuccess.set(`Liga "${updated.name}" actualizada correctamente.`);
+        setTimeout(() => this.leagueSuccess.set(''), 5000);
+      },
+      error: (err) => {
+        this.isSavingLeagueEdit.set(false);
+        this.leagueError.set(
+          err.error?.message || err.error?.description || 'No se pudo actualizar la liga.'
+        );
+      }
+    });
   }
 
   createLeague() {

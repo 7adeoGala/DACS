@@ -26,6 +26,13 @@ server:
 apexpredict:
   connector:
     url: ${F1_CONNECTOR_URL:https://dacs-1-jpud.onrender.com/conector}
+  scheduling:
+    enabled: ${SCHEDULING_ENABLED:true}
+    sync-interval-ms: ${SYNC_INTERVAL_MS:900000}
+    initial-delay-ms: ${SYNC_INITIAL_DELAY_MS:60000}
+  notifications:
+    email-webhook-url: ${EMAIL_WEBHOOK_URL:}
+    email-api-secret: ${EMAIL_API_SECRET:}
   security:
     issuer: ${KEYCLOAK_ISSUER_URI:${KEYCLOAK_ISSUER:https://dacs-3-u0q1.onrender.com/auth/realms/apexpredict}}
     jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:https://dacs-3-u0q1.onrender.com/auth/realms/apexpredict/protocol/openid-connect/certs}

@@ -16,7 +16,12 @@ public class ConnectorController {
 
     @GetMapping("/ping")
     public Map<String, String> ping() {
-        return Map.of("service", "apexpredict-f1-connector", "status", "UP");
+        String cbState = f1.circuitBreakerState();
+        return Map.of(
+            "service", "apexpredict-f1-connector",
+            "status", "UP",
+            "circuitBreaker", cbState != null ? cbState : "CLOSED"
+        );
     }
 
     @GetMapping("/calendar/{season}")

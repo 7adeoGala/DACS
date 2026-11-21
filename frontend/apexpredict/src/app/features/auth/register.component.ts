@@ -99,29 +99,29 @@ export class RegisterComponent implements OnInit {
 
   ngOnInit() {
     if (typeof window !== 'undefined') {
-      fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}`, { mode: 'no-cors' }).catch(() => {});
+      fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}`, { mode: 'no-cors' }).catch(() => { });
     }
   }
 
   async registerWithKeycloak() {
-    this.isLoading.set(true);
-    this.errorMessage.set('');
-    try {
-      await this.auth.register('dashboard');
-    } catch (err: any) {
-      this.isLoading.set(false);
-      this.errorMessage.set(err?.message || 'No se pudo iniciar el registro seguro con Keycloak.');
+      this.isLoading.set(true);
+      this.errorMessage.set('');
+      try {
+        await this.auth.register('dashboard');
+      } catch (err: any) {
+        this.isLoading.set(false);
+        this.errorMessage.set(err?.message || 'No se pudo iniciar el registro seguro con Keycloak.');
+      }
     }
-  }
 
   async registerWithGoogle() {
-    this.isLoading.set(true);
-    this.errorMessage.set('');
-    try {
-      await this.auth.loginWithGoogle('dashboard');
-    } catch (err: any) {
-      this.isLoading.set(false);
-      this.errorMessage.set(err?.message || 'No se pudo iniciar el registro con Google.');
+        this.isLoading.set(true);
+        this.errorMessage.set('');
+        try {
+          await this.auth.loginWithGoogle('dashboard');
+        } catch (err: any) {
+          this.isLoading.set(false);
+          this.errorMessage.set(err?.message || 'No se pudo iniciar el registro con Google.');
+        }
+      }
     }
-  }
-}

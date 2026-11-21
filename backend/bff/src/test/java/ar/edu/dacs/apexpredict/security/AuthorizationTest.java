@@ -192,10 +192,26 @@ class AuthorizationTest {
 
     @Test
     void adminRouteRequiresAdminRole() throws Exception {
+        UUID sid = UUID.fromString("00000000-0000-0000-0000-000000000001");
         when(domainClient.adminStatus()).thenReturn(Map.of("status", "authorized"));
+        when(domainClient.adminSessions()).thenReturn(List.of());
+        when(domainClient.syncSessions()).thenReturn(Map.of("status", "SUCCESS", "sessionsAdded", 0, "resultsSynced", 0));
+        when(domainClient.scoreSession(sid)).thenReturn(List.of());
+
         mvc.perform(get("/admin/status").header("Authorization", "Bearer admin"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("authorized"));
+
+        mvc.perform(get("/admin/sessions").header("Authorization", "Bearer player")).andExpect(status().isForbidden());
+        mvc.perform(get("/admin/sessions").header("Authorization", "Bearer admin")).andExpect(status().isOk());
+
+        mvc.perform(post("/admin/sessions/sync").header("Authorization", "Bearer player")).andExpect(status().isForbidden());
+        mvc.perform(post("/admin/sessions/sync").header("Authorization", "Bearer admin"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("SUCCESS"));
+
+        mvc.perform(post("/admin/sessions/" + sid + "/score").header("Authorization", "Bearer player")).andExpect(status().isForbidden());
+        mvc.perform(post("/admin/sessions/" + sid + "/score").header("Authorization", "Bearer admin")).andExpect(status().isOk());
     }
 
     @Test

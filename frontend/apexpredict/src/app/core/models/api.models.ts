@@ -226,6 +226,45 @@ export interface PredictionPayload {
   dnfs: number;
 }
 
+export interface NotificationItem {
+  id: string;
+  type: string;
+  channel: 'EMAIL' | 'PUSH' | string;
+  title: string;
+  message: string;
+  status: string;
+  sentAt: string | null;
+}
+
+export interface AdminSessionView {
+  id: string;
+  season: number;
+  round: number;
+  name: string;
+  circuit: string;
+  raceDate: string | null;
+  startsAt: string | null;
+  isLocked: boolean;
+  hasOfficialResult: boolean;
+  predictionsCount: number;
+  scoredCount: number;
+}
+
+export interface ScoredPredictionSummary {
+  predictionId: string;
+  userId: string | null;
+  displayName: string;
+  totalPoints: number;
+  breakdown: ScoreBreakdown;
+}
+
+export interface SyncSessionsResponse {
+  season: number;
+  sessionsAdded: number;
+  resultsSynced: number;
+  status: string;
+}
+
 export const F1_DRIVERS: DriverOption[] = [
   { id: 'norris', name: 'Lando Norris', code: 'NOR', number: 1, team: 'McLaren', teamColor: '#FF8000' },
   { id: 'verstappen', name: 'Max Verstappen', code: 'VER', number: 3, team: 'Red Bull Racing', teamColor: '#3671C6' },

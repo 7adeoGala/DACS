@@ -7,7 +7,10 @@
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
   "internationalizationEnabled": true,
-  "supportedLocales": ["es", "en"],
+  "supportedLocales": [
+    "es",
+    "en"
+  ],
   "defaultLocale": "es",
   "passwordPolicy": "length(6)",
   "resetPasswordAllowed": true,
@@ -34,16 +37,29 @@
     "password": ""
   },
   "loginTheme": "apexpredict",
-  "defaultRole": { "name": "default-roles-apexpredict" },
+  "emailTheme": "apexpredict",
+  "defaultRole": {
+    "name": "default-roles-apexpredict"
+  },
   "roles": {
     "realm": [
-      { "name": "player", "description": "Participante del prode" },
-      { "name": "admin", "description": "Administrador de ApexPredict" },
+      {
+        "name": "player",
+        "description": "Participante del prode"
+      },
+      {
+        "name": "admin",
+        "description": "Administrador de ApexPredict"
+      },
       {
         "name": "default-roles-apexpredict",
         "description": "Roles iniciales de las cuentas de ApexPredict",
         "composite": true,
-        "composites": { "realm": ["player"] }
+        "composites": {
+          "realm": [
+            "player"
+          ]
+        }
       }
     ]
   },

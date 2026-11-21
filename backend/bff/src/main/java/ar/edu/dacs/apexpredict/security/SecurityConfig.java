@@ -36,6 +36,7 @@ public class SecurityConfig {
                 .requestMatchers("/admin/**").hasRole("admin")
                 .requestMatchers("/me/**", "/leagues/**", "/scores/**").hasAnyRole("player", "admin")
                 .requestMatchers(HttpMethod.GET, "/sessions/next", "/leaderboard/global", "/notifications",
+                    "/users/check-display-name",
                     "/predictions/current", "/predictions/history", "/predictions/session/**").hasAnyRole("player", "admin")
                 .requestMatchers(HttpMethod.POST, "/predictions/session/**").hasAnyRole("player", "admin")
                 .anyRequest().denyAll())

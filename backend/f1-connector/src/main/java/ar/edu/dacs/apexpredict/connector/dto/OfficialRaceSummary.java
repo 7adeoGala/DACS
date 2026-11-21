@@ -16,6 +16,12 @@ public record OfficialRaceSummary(
     int dnfCount,
     Map<String, Double> weekendPoints
 ) {
+    public OfficialRaceSummary {
+        podiumTop10 = podiumTop10 != null ? List.copyOf(podiumTop10) : List.of();
+        fullClassification = fullClassification != null ? List.copyOf(fullClassification) : List.of();
+        weekendPoints = weekendPoints != null ? Map.copyOf(weekendPoints) : Map.of();
+    }
+
     public OfficialRaceSummary(
         int season,
         int round,

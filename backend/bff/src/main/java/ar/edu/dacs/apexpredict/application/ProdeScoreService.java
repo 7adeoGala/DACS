@@ -5,9 +5,11 @@ import ar.edu.dacs.apexpredict.client.DomainClient;
 import ar.edu.dacs.apexpredict.web.dto.*;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
+@SuppressWarnings("null")
 public class ProdeScoreService {
 
     private final DomainClient domainClient;
@@ -31,14 +33,15 @@ public class ProdeScoreService {
         OfficialRaceSummary official = conectorClient.officialSummary(year, round);
 
         boolean hasPrediction = prediction != null
-            && (prediction.predictionId() != null || (prediction.podium() != null && !prediction.podium().isEmpty()));
+                && (prediction.predictionId() != null
+                        || (prediction.podium() != null && !prediction.podium().isEmpty()));
         boolean hasOfficialResults = official != null
-            && official.podiumTop10() != null
-            && !official.podiumTop10().isEmpty();
+                && official.podiumTop10() != null
+                && !official.podiumTop10().isEmpty();
 
         String sessionName = (official != null && official.raceName() != null)
-            ? official.raceName()
-            : (prediction != null && prediction.sessionName() != null ? prediction.sessionName() : "Gran Premio");
+                ? official.raceName()
+                : (prediction != null && prediction.sessionName() != null ? prediction.sessionName() : "Gran Premio");
 
         if (!hasPrediction || !hasOfficialResults) {
             return new ProdeScoreDto(year, round, sessionName, hasPrediction, hasOfficialResults, 0, null, null);
@@ -48,15 +51,15 @@ public class ProdeScoreService {
     }
 
     ProdeScoreDto compareAndCalculate(
-        int year,
-        int round,
-        String sessionName,
-        PredictionDetail prediction,
-        OfficialRaceSummary official
-    ) {
-        List<String> actualClassification = official.fullClassification() != null && !official.fullClassification().isEmpty()
-            ? official.fullClassification()
-            : official.podiumTop10();
+            int year,
+            int round,
+            String sessionName,
+            PredictionDetail prediction,
+            OfficialRaceSummary official) {
+        List<String> actualClassification = official.fullClassification() != null
+                && !official.fullClassification().isEmpty()
+                        ? official.fullClassification()
+                        : (official.podiumTop10() != null ? official.podiumTop10() : List.of());
 
         int podiumHits = 0;
         List<String> predPodium = prediction.podium() != null ? prediction.podium() : List.of();
@@ -80,45 +83,44 @@ public class ProdeScoreService {
         int polePoints = poleHit ? 4 : 0;
 
         String duelWinner = resolveDuelWinner(
-            actualClassification,
-            official.weekendPoints(),
-            prediction.matchupDriver1(),
-            prediction.matchupDriver2()
-        );
+                actualClassification,
+                official.weekendPoints(),
+                prediction.matchupDriver1(),
+                prediction.matchupDriver2());
         String predDuel = normalizeDriverId(prediction.duelDriverPick());
         boolean duelHit = predDuel != null && !predDuel.isBlank() && predDuel.equals(duelWinner);
         int duelPoints = duelHit ? 3 : 0;
 
         boolean safetyCarHit = prediction.safetyCarCount() != null
-            && prediction.safetyCarCount().equals(official.safetyCarCount());
+                && prediction.safetyCarCount().equals(official.safetyCarCount());
         int safetyCarPoints = safetyCarHit ? 6 : 0;
 
         boolean dnfHit = prediction.dnfCount() != null
-            && prediction.dnfCount().equals(official.dnfCount());
+                && prediction.dnfCount().equals(official.dnfCount());
         int dnfPoints = dnfHit ? 6 : 0;
 
         int total = podiumPoints + polePoints + duelPoints + safetyCarPoints + dnfPoints;
 
         var breakdown = new PredictionHistoryItem.ScoreBreakdown(
-            podiumHits, podiumPoints,
-            poleHit, polePoints,
-            duelHit, duelPoints,
-            safetyCarHit, safetyCarPoints,
-            dnfHit, dnfPoints,
-            total
-        );
+                podiumHits, podiumPoints,
+                poleHit, polePoints,
+                duelHit, duelPoints,
+                safetyCarHit, safetyCarPoints,
+                dnfHit, dnfPoints,
+                total);
         var officialSummary = new ProdeScoreDto.OfficialSummary(
-            actualClassification.stream().limit(3).map(ProdeScoreService::normalizeDriverId).toList(),
-            actualPole,
-            duelWinner,
-            official.safetyCarCount(),
-            official.dnfCount()
-        );
+                actualClassification.stream().limit(3).map(ProdeScoreService::normalizeDriverId).toList(),
+                actualPole,
+                duelWinner,
+                official.safetyCarCount(),
+                official.dnfCount());
 
         return new ProdeScoreDto(year, round, sessionName, true, true, total, breakdown, officialSummary);
     }
 
-    private String resolveDuelWinner(List<String> classification, java.util.Map<String, Double> weekendPoints, String d1, String d2) {
+
+    private String resolveDuelWinner(List<String> classification, Map<String, Double> weekendPoints,
+            String d1, String d2) {
         if (d1 == null || d2 == null) {
             return null;
         }
@@ -136,14 +138,18 @@ public class ProdeScoreService {
         }
         int pos1 = indexOfDriver(classification, norm1);
         int pos2 = indexOfDriver(classification, norm2);
-        if (pos1 >= 0 && pos2 >= 0) return pos1 < pos2 ? norm1 : norm2;
-        if (pos1 >= 0) return norm1;
-        if (pos2 >= 0) return norm2;
+        if (pos1 >= 0 && pos2 >= 0)
+            return pos1 < pos2 ? norm1 : norm2;
+        if (pos1 >= 0)
+            return norm1;
+        if (pos2 >= 0)
+            return norm2;
         return null;
     }
 
-    private double lookupDriverPoints(java.util.Map<String, Double> weekendPoints, String normDriver) {
-        if (normDriver == null) return 0.0;
+    private double lookupDriverPoints(Map<String, Double> weekendPoints, String normDriver) {
+        if (normDriver == null)
+            return 0.0;
         for (var entry : weekendPoints.entrySet()) {
             if (normDriver.equals(normalizeDriverId(entry.getKey())) && entry.getValue() != null) {
                 return entry.getValue();
@@ -153,17 +159,21 @@ public class ProdeScoreService {
     }
 
     private int indexOfDriver(List<String> list, String target) {
-        if (target == null || target.isBlank()) return -1;
+        if (target == null || target.isBlank())
+            return -1;
         for (int i = 0; i < list.size(); i++) {
-            if (target.equals(normalizeDriverId(list.get(i)))) return i;
+            if (target.equals(normalizeDriverId(list.get(i))))
+                return i;
         }
         return -1;
     }
 
     public static String normalizeDriverId(String driverId) {
-        if (driverId == null) return null;
+        if (driverId == null)
+            return null;
         String clean = driverId.trim().toLowerCase(Locale.ROOT);
-        if (clean.isEmpty()) return "";
+        if (clean.isEmpty())
+            return "";
         return switch (clean) {
             case "max_verstappen", "maxverstappen" -> "verstappen";
             case "arvid_lindblad", "arvidlindblad" -> "lindblad";

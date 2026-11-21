@@ -3,13 +3,17 @@ package ar.edu.dacs.apexpredict.application;
 import ar.edu.dacs.apexpredict.domain.*;
 import ar.edu.dacs.apexpredict.infrastructure.persistence.*;
 import java.util.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@SuppressWarnings("null")
 public class PlayerService {
+    private static final Logger log = LoggerFactory.getLogger(PlayerService.class);
     private final UserRepository users;
     private final LeagueRepository leagues;
     private final LeagueMemberRepository members;
@@ -78,7 +82,9 @@ public class PlayerService {
         User user = getOrCreateUser(issuer, subject);
         try {
             scoringService.autoScoreAllCompletedSessions();
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            log.debug("Auto-score omitido en consulta: {}", ex.getMessage());
+        }
         long totalScore = predictions.sumScoreByUserId(user.getId());
         long count = predictions.countByUserId(user.getId());
         return new Profile(
@@ -232,7 +238,9 @@ public class PlayerService {
     public List<LeaderboardEntry> getGlobalLeaderboard() {
         try {
             scoringService.autoScoreAllCompletedSessions();
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            log.debug("Auto-score omitido en consulta: {}", ex.getMessage());
+        }
         var rows = predictions.getGlobalLeaderboard();
         List<LeaderboardEntry> leaderboard = new ArrayList<>();
         int currentRank = 1;
@@ -265,7 +273,9 @@ public class PlayerService {
         }
         try {
             scoringService.autoScoreAllCompletedSessions();
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            log.debug("Auto-score omitido en consulta: {}", ex.getMessage());
+        }
         var rows = predictions.getLeagueLeaderboard(leagueId);
         List<LeaderboardEntry> leaderboard = new ArrayList<>();
         int currentRank = 1;

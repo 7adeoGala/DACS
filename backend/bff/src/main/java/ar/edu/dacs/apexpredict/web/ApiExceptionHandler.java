@@ -7,6 +7,8 @@ import feign.RetryableException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,8 +16,10 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
+@SuppressWarnings("null")
 public class ApiExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
     private final ObjectMapper mapper = new ObjectMapper();
 
     @ExceptionHandler(FeignException.class)
@@ -135,7 +139,9 @@ public class ApiExceptionHandler {
                     return root.get("message").asText();
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception parseEx) {
+            log.debug("No se pudo parsear el cuerpo de error downstream: {}", parseEx.getMessage());
+        }
         return null;
     }
 }

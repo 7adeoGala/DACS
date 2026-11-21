@@ -16,12 +16,64 @@
             <a routerLink="/dashboard" [queryParams]="{ tab: 'ligas' }" [class.active]="isCurrent('ligas')">Mis Ligas</a>
             <a routerLink="/dashboard" [queryParams]="{ tab: 'posiciones' }" [class.active]="isCurrent('posiciones')">Posiciones</a>
             <a routerLink="/dashboard" [queryParams]="{ tab: 'historial' }" [class.active]="isCurrent('historial')">Historial</a>
+            @if (auth.hasRole('admin')) {
+              <a routerLink="/admin" [class.active]="currentUrl().startsWith('/admin')">Admin</a>
+            }
           </nav>
         }
 
         <!-- Perfil de usuario -->
         <div class="nav-actions">
           @if (auth.isAuthenticated()) {
+            <div class="notifications-dropdown-wrapper">
+              <button
+                type="button"
+                class="notif-trigger-btn"
+                (click)="toggleNotifications($event)"
+                aria-label="Abrir notificaciones"
+                [attr.aria-expanded]="isNotificationsOpen()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                @if (notificationsList().length > 0) {
+                  <span class="notif-badge">{{ notificationsList().length > 9 ? '9+' : notificationsList().length }}</span>
+                }
+              </button>
+
+              @if (isNotificationsOpen()) {
+                <div class="notifications-dropdown-menu" (click)="$event.stopPropagation()">
+                  <div class="notif-dropdown-header">
+                    <span class="notif-header-title">NOTIFICACIONES</span>
+                    <span class="notif-status-pill" [class.enabled]="savedNotifications()">
+                      {{ savedNotifications() ? 'Alertas activas' : 'Alertas pausadas' }}
+                    </span>
+                  </div>
+                  @if (isLoadingNotifications()) {
+                    <p class="notif-empty">Cargando avisos…</p>
+                  } @else if (notificationsList().length === 0) {
+                    <p class="notif-empty">No tenés notificaciones registradas todavía.</p>
+                  } @else {
+                    <div class="notif-list">
+                      @for (n of notificationsList(); track n.id) {
+                        <div class="notif-item">
+                          <div class="notif-item-top">
+                            <span class="notif-channel-tag">{{ n.channel }}</span>
+                            @if (n.sentAt) {
+                              <span class="notif-time">{{ n.sentAt | date:'dd/MM HH:mm' }}</span>
+                            }
+                          </div>
+                          <strong class="notif-item-title">{{ n.title }}</strong>
+                          <p class="notif-item-msg">{{ n.message }}</p>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
             <div class="profile-dropdown-wrapper">
               <button 
                 type="button" 
@@ -321,6 +373,11 @@
           <a routerLink="/dashboard" [queryParams]="{ tab: 'historial' }" [class.active]="isCurrent('historial')" (click)="closeMobileNav()" class="mobile-nav-link">
             Historial de Pronósticos
           </a>
+          @if (auth.hasRole('admin')) {
+            <a routerLink="/admin" [class.active]="currentUrl().startsWith('/admin')" (click)="closeMobileNav()" class="mobile-nav-link">
+              Administración
+            </a>
+          }
           <div class="mobile-nav-footer">
             <span class="dim" style="font-size: 0.8rem;">Puntaje acumulado:</span>
             <span class="mobile-pts-badge">{{ auth.userPoints() }} PTS</span>

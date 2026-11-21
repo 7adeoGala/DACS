@@ -10,6 +10,7 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
+@SuppressWarnings("null")
 public class RenderUrlSanitizerEnvironmentPostProcessor implements EnvironmentPostProcessor {
 
     @Override
@@ -34,9 +35,7 @@ public class RenderUrlSanitizerEnvironmentPostProcessor implements EnvironmentPo
         if (val == null || val.isBlank()) {
             val = defaultVal;
         }
-        if (val != null) {
-            String cleaned = val.replaceAll("(\\.onrender\\.com)+", ".onrender.com");
-            target.put(key, cleaned);
-        }
+        String cleaned = val.replaceAll("(\\.onrender\\.com)+", ".onrender.com");
+        target.put(key, cleaned);
     }
 }

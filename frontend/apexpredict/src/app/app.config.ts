@@ -10,6 +10,7 @@ import { provideKeycloak } from 'keycloak-angular';
 import { environment } from '../environments/environment';
 import { AuthService } from './core/auth/auth.service';
 import { authInterceptor } from './core/http/auth.interceptor';
+import { errorInterceptor } from './core/http/error.interceptor';
 
 import { routes } from './app.routes';
 
@@ -17,7 +18,7 @@ export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     provideKeycloak({ config: environment.keycloak }),
     provideAppInitializer(() => inject(AuthService).initialize()),
   ],

@@ -21,3 +21,7 @@ feign:
         connectTimeout: 5000
         readTimeout: 10000
         loggerLevel: basic
+apexpredict:
+  circuit-breaker:
+    failure-threshold: ${F1_CB_FAILURE_THRESHOLD:3}
+    open-duration-seconds: ${F1_CB_OPEN_DURATION_SECONDS:30}

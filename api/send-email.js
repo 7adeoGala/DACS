@@ -5,11 +5,11 @@ function sendTlsEmail(options) {
     const isNotification = options.type === 'notification';
 
     const user = isNotification
-      ? (process.env.NOTIF_EMAIL_USER || process.env.EMAIL_USER)
+      ?(process.env.NOTIF_EMAIL_USER || process.env.EMAIL_USER)
       : (process.env.AUTH_EMAIL_USER || process.env.EMAIL_USER);
 
     const pass = isNotification
-      ? (process.env.NOTIF_EMAIL_PASS || process.env.EMAIL_PASS)
+      ?(process.env.NOTIF_EMAIL_PASS || process.env.EMAIL_PASS)
       : (process.env.AUTH_EMAIL_PASS || process.env.EMAIL_PASS);
 
     if (!user || !pass) {
@@ -21,12 +21,12 @@ function sendTlsEmail(options) {
       : (process.env.AUTH_EMAIL_FROM_NAME || 'ApexPredict Seguridad');
 
     const to = options.to;
-    const socket = tls.connect(465, 'smtp.gmail.com', () => {});
+    const socket = tls.connect(465, 'smtp.gmail.com', () => { });
     socket.setEncoding('utf8');
 
     let step = 0;
     const timeout = setTimeout(() => {
-      try { socket.destroy(); } catch {}
+      try { socket.destroy(); } catch { }
       reject(new Error('Tiempo de espera agotado al conectar con el servidor de correo Gmail.'));
     }, 15000);
 
@@ -62,7 +62,7 @@ function sendTlsEmail(options) {
           subject = options.subject || 'Alerta de Gran Premio - ApexPredict F1';
           const title = options.title || 'Recordatorio de Pronósticos F1';
           const message = options.message || 'Se acerca el cierre del Lock Time para la próxima carrera. ¡Cargá tus pronósticos ahora!';
-          
+
           htmlContent = [
             '<div style="font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif; background: #0b0e14; color: #ffffff; padding: 32px; border-radius: 12px; max-width: 520px; margin: 20px auto; border: 1px solid #ff8000; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">',
             '<div style="text-align: center; margin-bottom: 24px;">',
@@ -167,7 +167,7 @@ module.exports = async function handler(req, res) {
 
   let body = req.body;
   if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch {}
+    try { body = JSON.parse(body); } catch { }
   }
 
   const { to, code, type, subject, title, message } = body || {};

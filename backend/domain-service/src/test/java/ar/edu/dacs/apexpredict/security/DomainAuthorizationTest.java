@@ -174,4 +174,22 @@ class DomainAuthorizationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.status").value("authorized"));
     }
+
+    @Test
+    void adminSessionsAndSyncRequireAdminRole() throws Exception {
+        String sessionId = "00000000-0000-0000-0000-000000000001";
+        mvc.perform(get("/admin/sessions")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/admin/sessions").header("Authorization", "Bearer player")).andExpect(status().isForbidden());
+        mvc.perform(get("/admin/sessions").header("Authorization", "Bearer admin")).andExpect(status().isOk());
+
+        mvc.perform(post("/admin/sessions/sync").header("Authorization", "Bearer player")).andExpect(status().isForbidden());
+        mvc.perform(post("/admin/sessions/sync").header("Authorization", "Bearer admin"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("SUCCESS"));
+
+        mvc.perform(post("/admin/sessions/" + sessionId + "/score").header("Authorization", "Bearer player"))
+            .andExpect(status().isForbidden());
+        mvc.perform(post("/admin/sessions/" + sessionId + "/score").header("Authorization", "Bearer admin"))
+            .andExpect(status().isOk());
+    }
 }

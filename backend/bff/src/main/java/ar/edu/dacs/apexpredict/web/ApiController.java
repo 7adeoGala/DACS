@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = {"https://dacs-nine.vercel.app", "http://localhost:4200", "https://localhost:4200", "https://dacs2026.local"})
 @RestController
+@SuppressWarnings("null")
 public class ApiController {
     private final DomainClient domainClient;
     private final ConectorClient conectorClient;
@@ -222,6 +223,24 @@ public class ApiController {
     @PreAuthorize("hasRole('admin')")
     public Map<String, Object> sendReminders(@PathVariable UUID sessionId) {
         return domainClient.sendReminders(sessionId);
+    }
+
+    @GetMapping("/admin/sessions")
+    @PreAuthorize("hasRole('admin')")
+    public List<AdminSessionView> adminSessions() {
+        return domainClient.adminSessions();
+    }
+
+    @PostMapping("/admin/sessions/sync")
+    @PreAuthorize("hasRole('admin')")
+    public Map<String, Object> syncSessions() {
+        return domainClient.syncSessions();
+    }
+
+    @PostMapping("/admin/sessions/{sessionId}/score")
+    @PreAuthorize("hasRole('admin')")
+    public List<ScoredPredictionSummary> scoreSession(@PathVariable UUID sessionId) {
+        return domainClient.scoreSession(sessionId);
     }
 
     @GetMapping("/admin/status")

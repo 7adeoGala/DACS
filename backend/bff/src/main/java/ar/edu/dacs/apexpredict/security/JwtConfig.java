@@ -6,6 +6,7 @@ import org.springframework.security.oauth2.core.*;
 import org.springframework.security.oauth2.jwt.*;
 
 @Configuration
+@SuppressWarnings("null")
 public class JwtConfig {
     @Bean
     JwtDecoder jwtDecoder(@Value("${apexpredict.security.issuer}") String issuer,
@@ -17,7 +18,7 @@ public class JwtConfig {
     }
 
     public static OAuth2TokenValidator<Jwt> validators(String issuer, String audience) {
-        OAuth2TokenValidator<Jwt> audienceValidator = jwt -> jwt.getAudience().contains(audience)
+        OAuth2TokenValidator<Jwt> audienceValidator = jwt -> jwt.getAudience() != null && jwt.getAudience().contains(audience)
             ? OAuth2TokenValidatorResult.success()
             : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "Invalid audience", null));
         return new DelegatingOAuth2TokenValidator<>(JwtValidators.createDefaultWithIssuer(issuer), audienceValidator);

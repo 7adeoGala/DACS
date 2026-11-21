@@ -6,12 +6,14 @@ import ar.edu.dacs.apexpredict.web.dto.OfficialRaceSummary;
 import ar.edu.dacs.apexpredict.web.dto.PredictionDetail;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("null")
 class ProdeScoreServiceTest {
 
     @Test
@@ -102,7 +104,7 @@ class ProdeScoreServiceTest {
             "norris",
             0,
             2,
-            java.util.Map.of("norris", 10.0, "piastri", 12.0)
+            Map.of("norris", 10.0, "piastri", 12.0)
         ));
 
         var score = service.calculateUserScore(2026, 20);
