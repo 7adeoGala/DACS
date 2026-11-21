@@ -81,6 +81,7 @@ public class ProdeScoreService {
 
         String duelWinner = resolveDuelWinner(
             actualClassification,
+            official.weekendPoints(),
             prediction.matchupDriver1(),
             prediction.matchupDriver2()
         );
@@ -117,18 +118,38 @@ public class ProdeScoreService {
         return new ProdeScoreDto(year, round, sessionName, true, true, total, breakdown, officialSummary);
     }
 
-    private String resolveDuelWinner(List<String> classification, String d1, String d2) {
-        if (classification == null || classification.isEmpty() || d1 == null || d2 == null) {
+    private String resolveDuelWinner(List<String> classification, java.util.Map<String, Double> weekendPoints, String d1, String d2) {
+        if (d1 == null || d2 == null) {
             return null;
         }
         String norm1 = normalizeDriverId(d1);
         String norm2 = normalizeDriverId(d2);
+        if (weekendPoints != null && !weekendPoints.isEmpty()) {
+            double pts1 = lookupDriverPoints(weekendPoints, norm1);
+            double pts2 = lookupDriverPoints(weekendPoints, norm2);
+            if (Double.compare(pts1, pts2) != 0) {
+                return pts1 > pts2 ? norm1 : norm2;
+            }
+        }
+        if (classification == null || classification.isEmpty()) {
+            return null;
+        }
         int pos1 = indexOfDriver(classification, norm1);
         int pos2 = indexOfDriver(classification, norm2);
         if (pos1 >= 0 && pos2 >= 0) return pos1 < pos2 ? norm1 : norm2;
         if (pos1 >= 0) return norm1;
         if (pos2 >= 0) return norm2;
         return null;
+    }
+
+    private double lookupDriverPoints(java.util.Map<String, Double> weekendPoints, String normDriver) {
+        if (normDriver == null) return 0.0;
+        for (var entry : weekendPoints.entrySet()) {
+            if (normDriver.equals(normalizeDriverId(entry.getKey())) && entry.getValue() != null) {
+                return entry.getValue();
+            }
+        }
+        return 0.0;
     }
 
     private int indexOfDriver(List<String> list, String target) {

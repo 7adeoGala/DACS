@@ -1,12 +1,21 @@
+const keycloakUrl = (process.env.KEYCLOAK_URL || 'https://dacs-3-u0q1.onrender.com/auth').replace(/\/+$/, '');
+const adminUser = process.env.KEYCLOAK_ADMIN || 'admin';
+const adminPassword = process.env.KEYCLOAK_ADMIN_PASSWORD;
+
+if (!adminPassword) {
+  console.error('Uso: KEYCLOAK_ADMIN_PASSWORD=<pass> node scripts/setup_google_auto_link.js');
+  process.exit(1);
+}
+
 async function main() {
   console.log('1. Autenticando con Keycloak Master Admin...');
-  const tokenRes = await fetch('https://dacs-3-u0q1.onrender.com/auth/realms/master/protocol/openid-connect/token', {
+  const tokenRes = await fetch(`${keycloakUrl}/realms/master/protocol/openid-connect/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       client_id: 'admin-cli',
-      username: 'admin',
-      password: 'Vasquito5',
+      username: adminUser,
+      password: adminPassword,
       grant_type: 'password'
     }).toString()
   });

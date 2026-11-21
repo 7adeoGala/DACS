@@ -99,7 +99,7 @@ public class PredictionController {
                 return predictionService.saveOrUpdatePrediction(jwt.getIssuer().toString(), jwt.getSubject(), sessionId, req);
             }
         } catch (IllegalStateException ex) {
-            throw new ResponseStatusException(HttpStatus.LOCKED, ex.getMessage(), ex);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, ex.getMessage(), ex);
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }

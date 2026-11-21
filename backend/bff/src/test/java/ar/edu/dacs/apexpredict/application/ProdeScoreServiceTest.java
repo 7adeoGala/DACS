@@ -66,4 +66,48 @@ class ProdeScoreServiceTest {
         assertFalse(score.breakdown().dnfHit());
         assertEquals("leclerc", score.officialResults().duelWinnerId());
     }
+
+    @Test
+    void resolvesDuelByWeekendPointsIncludingSprintBeforeRacePosition() {
+        DomainClient domainClient = mock(DomainClient.class);
+        ConectorClient conectorClient = mock(ConectorClient.class);
+        var service = new ProdeScoreService(domainClient, conectorClient);
+
+        when(domainClient.predictionForSession("2026-20")).thenReturn(new PredictionDetail(
+            UUID.randomUUID(),
+            UUID.randomUUID(),
+            "São Paulo Grand Prix",
+            "Interlagos",
+            Instant.parse("2026-11-08T17:00:00Z"),
+            true,
+            List.of("norris", "verstappen", "hadjar"),
+            "norris",
+            "piastri",
+            0,
+            2,
+            null,
+            Instant.parse("2026-11-07T12:00:00Z"),
+            "norris",
+            "piastri"
+        ));
+
+        when(conectorClient.officialSummary(2026, 20)).thenReturn(new OfficialRaceSummary(
+            2026,
+            20,
+            "São Paulo Grand Prix",
+            "Interlagos",
+            "2026-11-08",
+            List.of("norris", "piastri", "verstappen"),
+            List.of("norris", "piastri", "verstappen"),
+            "norris",
+            0,
+            2,
+            java.util.Map.of("norris", 10.0, "piastri", 12.0)
+        ));
+
+        var score = service.calculateUserScore(2026, 20);
+        assertTrue(score.breakdown().duelHit());
+        assertEquals(3, score.breakdown().duelPoints());
+        assertEquals("piastri", score.officialResults().duelWinnerId());
+    }
 }

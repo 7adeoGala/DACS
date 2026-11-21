@@ -24,6 +24,8 @@ server:
     include-message: never
     include-stacktrace: never
 apexpredict:
+  connector:
+    url: ${F1_CONNECTOR_URL:https://dacs-1-jpud.onrender.com/conector}
   security:
     issuer: ${KEYCLOAK_ISSUER_URI:${KEYCLOAK_ISSUER:https://dacs-3-u0q1.onrender.com/auth/realms/apexpredict}}
     jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:https://dacs-3-u0q1.onrender.com/auth/realms/apexpredict/protocol/openid-connect/certs}

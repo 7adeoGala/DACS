@@ -153,6 +153,23 @@ public class JolpicaDto {
         @JsonProperty("Results") List<DetailedResultDto> results
     ) {}
 
+    // --- Sprint ---
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SprintEnvelope(@JsonProperty("MRData") SprintMetadata data) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SprintMetadata(String total, @JsonProperty("RaceTable") SprintRaceTable table) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SprintRaceTable(@JsonProperty("Races") List<SprintRaceDto> races) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SprintRaceDto(
+        String season,
+        String round,
+        @JsonProperty("SprintResults") List<DetailedResultDto> sprintResults
+    ) {}
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record FastestLapDto(String rank) {}
 

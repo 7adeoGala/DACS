@@ -162,6 +162,7 @@
 
           <!-- Podio de carrera -->
           <app-podium-picker 
+            [disabled]="isLocked()"
             [(p1DriverId)]="p1DriverId"
             [(p2DriverId)]="p2DriverId"
             [(p3DriverId)]="p3DriverId"
@@ -1213,7 +1214,7 @@
               <div class="comparison-summary-bar">
                 <div>
                   <span class="dim" style="font-size: 0.82rem;">PUNTAJE OBTENIDO EN ESTE GP:</span>
-                  <div class="comp-total-pts">{{ item.score != null ? item.score : 0 }} <span style="font-size: 1rem; color: #fff;">/ 42 PTS</span></div>
+                  <div class="comp-total-pts">{{ item.score != null ? item.score : 0 }} <span style="font-size: 1rem; color: #fff;">/ 29 PTS</span></div>
                 </div>
                 <div class="comp-status-badge" [class.scored]="item.score != null || item.officialResults != null">
                   @if (!item.predictionId && item.officialResults) {

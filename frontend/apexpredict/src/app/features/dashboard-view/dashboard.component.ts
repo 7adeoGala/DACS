@@ -227,16 +227,6 @@ export class DashboardComponent implements OnInit {
     }
     const cachedLeagues = this.api.getCachedLeagues?.(user);
     if (cachedLeagues && cachedLeagues.length > 0) {
-      if (typeof localStorage !== 'undefined') {
-        for (const l of cachedLeagues) {
-          if (!l.password && l.hasPassword) {
-            const cached = localStorage.getItem('apex_lpwd_' + l.id);
-            if (cached) {
-              l.password = cached;
-            }
-          }
-        }
-      }
       this.myLeagues.set(cachedLeagues);
       if (!this.selectedLeague()) {
         this.selectedLeague.set(cachedLeagues[0]);
@@ -315,16 +305,6 @@ export class DashboardComponent implements OnInit {
     }
     this.api.leagues(this.auth.username()).subscribe({
       next: (leagues) => {
-        if (typeof localStorage !== 'undefined') {
-          for (const l of leagues) {
-            if (!l.password && l.hasPassword) {
-              const cached = localStorage.getItem('apex_lpwd_' + l.id);
-              if (cached) {
-                l.password = cached;
-              }
-            }
-          }
-        }
         this.myLeagues.set(leagues);
         if (leagues.length > 0) {
           const current = this.selectedLeague();
@@ -643,6 +623,8 @@ export class DashboardComponent implements OnInit {
           this.saveError.set('Los servidores de telemetría tardaron en responder debido al arranque inicial. Volvé a presionar "Guardar Pronóstico" ahora que el canal ya está abierto.');
         } else if (err.status === 401) {
           this.saveError.set('Tu sesión ha expirado o no estás autenticado. Por favor, iniciá sesión nuevamente para registrar tu pronóstico.');
+        } else if (err.status === 403 || err.status === 423) {
+          this.saveError.set(err.error?.description || 'Las predicciones para esta sesión se encuentran cerradas.');
         } else {
           this.saveError.set(err.error?.description || err.error?.message || 'Error al persistir el pronóstico en la base de datos.');
         }
@@ -672,12 +654,7 @@ export class DashboardComponent implements OnInit {
 
   getLeaguePassword(league?: League | null): string {
     if (!league) return '';
-    if (league.password) return league.password;
-    if (typeof localStorage !== 'undefined' && league.id) {
-      const cached = localStorage.getItem('apex_lpwd_' + league.id);
-      if (cached) return cached;
-    }
-    return '';
+    return league.password || '';
   }
 
   copyLeaguePassword() {
@@ -707,9 +684,6 @@ export class DashboardComponent implements OnInit {
         this.isCreatingLeague.set(false);
         if (pwd) {
           created.password = pwd;
-          try {
-            localStorage.setItem('apex_lpwd_' + created.id, pwd);
-          } catch {}
         }
         this.myLeagues.update((prev) => [created, ...prev]);
         this.selectLeague(created);
@@ -749,9 +723,6 @@ export class DashboardComponent implements OnInit {
         this.isJoiningLeague.set(false);
         if (pwd) {
           joined.password = pwd;
-          try {
-            localStorage.setItem('apex_lpwd_' + joined.id, pwd);
-          } catch {}
         }
         this.loadUserLeagues();
         this.selectLeague(joined);

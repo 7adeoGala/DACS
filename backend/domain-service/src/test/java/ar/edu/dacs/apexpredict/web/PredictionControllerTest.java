@@ -75,15 +75,15 @@ class PredictionControllerTest {
         );
 
         when(predictionService.saveOrUpdatePrediction(anyString(), anyString(), eq(sessionId), any()))
-            .thenThrow(new IllegalStateException("Lock Time superado: No se permiten cambios ni cargas de pronósticos una vez iniciada la sesión."));
+            .thenThrow(new IllegalStateException("Las predicciones para esta sesión se encuentran cerradas."));
 
         ResponseStatusException ex = assertThrows(
             ResponseStatusException.class,
             () -> controller.submitPrediction(jwt, sessionId, request)
         );
 
-        assertEquals(423, ex.getStatusCode().value());
-        assertTrue(ex.getReason().contains("Lock Time"));
+        assertEquals(403, ex.getStatusCode().value());
+        assertTrue(ex.getReason().contains("cerradas"));
     }
 
     @Test

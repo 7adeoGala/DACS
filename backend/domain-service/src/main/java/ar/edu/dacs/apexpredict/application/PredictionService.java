@@ -238,9 +238,6 @@ public class PredictionService {
             resolved = resolveSession(sessionId.toString());
         }
         if (resolved == null) {
-            resolved = sessions.findFirstByStartsAtAfterOrderByStartsAtAsc(Instant.now()).orElse(null);
-        }
-        if (resolved == null) {
             throw new IllegalArgumentException("Sesión no encontrada: " + sessionId);
         }
         final Session session = resolved;
@@ -248,7 +245,7 @@ public class PredictionService {
         Instant now = Instant.now();
 
         if (session.getStartsAt() == null || !now.isBefore(session.getStartsAt())) {
-            throw new IllegalStateException("Lock Time superado: No se permiten cambios ni cargas de pronósticos una vez iniciada la sesión.");
+            throw new IllegalStateException("Las predicciones para esta sesión se encuentran cerradas.");
         }
 
         WeekendMatchup matchup = matchupService.getOrGenerateMatchup(session);

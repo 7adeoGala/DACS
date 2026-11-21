@@ -28,6 +28,7 @@ public class ScoringService {
     private final SessionResultRepository results;
     private final WeekendMatchupRepository matchups;
     private final SessionRepository sessions;
+    private final String connectorBaseUrl;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final HttpClient httpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(4))
@@ -39,12 +40,23 @@ public class ScoringService {
         PredictionRepository predictions,
         SessionResultRepository results,
         WeekendMatchupRepository matchups,
-        SessionRepository sessions
+        SessionRepository sessions,
+        @org.springframework.beans.factory.annotation.Value("${apexpredict.connector.url:https://dacs-1-jpud.onrender.com/conector}") String connectorBaseUrl
     ) {
         this.predictions = predictions;
         this.results = results;
         this.matchups = matchups;
         this.sessions = sessions;
+        this.connectorBaseUrl = connectorBaseUrl != null ? connectorBaseUrl.replaceAll("/+$", "") : "";
+    }
+
+    public ScoringService(
+        PredictionRepository predictions,
+        SessionResultRepository results,
+        WeekendMatchupRepository matchups,
+        SessionRepository sessions
+    ) {
+        this(predictions, results, matchups, sessions, "");
     }
 
     public static String normalizeDriverId(String driverId) {
@@ -254,6 +266,9 @@ public class ScoringService {
     }
 
     private void syncCompletedSessionFromExternalApis(Session session) {
+        if (connectorBaseUrl == null || connectorBaseUrl.isBlank()) {
+            return;
+        }
         Instant now = Instant.now();
         Instant lastAttempt = externalSyncAttempts.get(session.getId());
         if (lastAttempt != null && Duration.between(lastAttempt, now).compareTo(EXTERNAL_SYNC_COOLDOWN) < 0) {
@@ -262,106 +277,79 @@ public class ScoringService {
         externalSyncAttempts.put(session.getId(), now);
 
         try {
-            String resultsUrl = String.format("https://api.jolpi.ca/ergast/f1/%d/%d/results.json?limit=100", session.getSeason(), session.getRound());
-            JsonNode resultsRoot = fetchJson(resultsUrl);
-            if (resultsRoot == null) return;
-
-            JsonNode races = resultsRoot.path("MRData").path("RaceTable").path("Races");
-            if (!races.isArray() || races.isEmpty()) return;
-
-            JsonNode raceResults = races.get(0).path("Results");
-            if (!raceResults.isArray() || raceResults.size() < 3) return;
+            String summaryUrl = String.format("%s/results/%d/%d/official-summary",
+                connectorBaseUrl, session.getSeason(), session.getRound());
+            JsonNode summaryNode = fetchJson(summaryUrl);
+            if (summaryNode == null) return;
 
             List<String> fullClassification = new ArrayList<>();
-            int dnfCount = 0;
-            String gridPole = null;
-            for (JsonNode entry : raceResults) {
-                String rawDriverId = entry.path("Driver").path("driverId").asText("");
-                String normDriverId = normalizeDriverId(rawDriverId);
-                if (normDriverId != null && !normDriverId.isBlank() && !fullClassification.contains(normDriverId)) {
-                    fullClassification.add(normDriverId);
-                }
-                if ("1".equals(entry.path("grid").asText(""))) {
-                    gridPole = normDriverId;
-                }
-                String status = entry.path("status").asText("").trim().toLowerCase(Locale.ROOT);
-                if (!status.isEmpty() && !status.equals("finished") && !status.equals("lapped") && !status.startsWith("+")) {
-                    dnfCount++;
+            JsonNode fullClassNode = summaryNode.path("fullClassification");
+            if (fullClassNode.isArray()) {
+                for (JsonNode item : fullClassNode) {
+                    String norm = normalizeDriverId(item.asText(""));
+                    if (norm != null && !norm.isBlank() && !fullClassification.contains(norm)) {
+                        fullClassification.add(norm);
+                    }
                 }
             }
-
-            if (fullClassification.isEmpty()) return;
+            if (fullClassification.size() < 3) return;
 
             List<String> top10 = fullClassification.stream().limit(10).toList();
-            String pole = fetchJolpicaPole(session.getSeason(), session.getRound());
-            if (pole == null || pole.isBlank()) {
-                pole = gridPole;
+            String pole = normalizeDriverId(summaryNode.path("polePositionDriverId").asText(null));
+            int safetyCars = summaryNode.path("safetyCarCount").asInt(0);
+            int dnfCount = summaryNode.path("dnfCount").asInt(0);
+
+            Map<String, Double> weekendPoints = new HashMap<>();
+            JsonNode ptsNode = summaryNode.path("weekendPoints");
+            if (ptsNode.isObject()) {
+                ptsNode.fields().forEachRemaining(entry -> {
+                    String norm = normalizeDriverId(entry.getKey());
+                    if (norm != null && !norm.isBlank()) {
+                        weekendPoints.put(norm, entry.getValue().asDouble(0.0));
+                    }
+                });
             }
 
-            String duelWinner = resolveDuelWinnerFromClassification(
+            String duelWinner = resolveDuelWinnerFromWeekendData(
                 fullClassification,
+                weekendPoints,
                 matchups.findBySessionId(session.getId()).orElse(null)
             );
-            int safetyCars = fetchOpenF1SafetyCarCount(session);
 
             Instant publishedAt = session.getStartsAt() != null
                 ? session.getStartsAt().plus(Duration.ofHours(3))
                 : now;
             results.save(new SessionResult(session, top10, pole, safetyCars, dnfCount, duelWinner, publishedAt));
-            log.info("Resultados oficiales sincronizados dinámicamente para {} (Pole: {}, SC: {}, DNF: {})",
+            log.info("Resultados oficiales sincronizados vía f1-connector para {} (Pole: {}, SC: {}, DNF: {})",
                 session.getName(), pole, safetyCars, dnfCount);
         } catch (Exception ex) {
-            log.warn("No se pudo sincronizar automáticamente {}: {}", session.getName(), ex.getMessage());
+            log.warn("No se pudo sincronizar automáticamente {} vía f1-connector: {}", session.getName(), ex.getMessage());
         }
     }
 
-    private String fetchJolpicaPole(int season, int round) {
-        String qualUrl = String.format("https://api.jolpi.ca/ergast/f1/%d/%d/qualifying.json?limit=5", season, round);
-        JsonNode root = fetchJson(qualUrl);
-        if (root == null) return null;
-        JsonNode races = root.path("MRData").path("RaceTable").path("Races");
-        if (!races.isArray() || races.isEmpty()) return null;
-        JsonNode qualResults = races.get(0).path("QualifyingResults");
-        if (!qualResults.isArray() || qualResults.isEmpty()) return null;
-        return normalizeDriverId(qualResults.get(0).path("Driver").path("driverId").asText(null));
-    }
-
-    private int fetchOpenF1SafetyCarCount(Session session) {
-        if (session.getRaceDate() == null) return 0;
-        String sessionsUrl = String.format("https://api.openf1.org/v1/sessions?year=%d&session_name=Race", session.getSeason());
-        JsonNode openSessions = fetchJson(sessionsUrl);
-        if (openSessions == null || !openSessions.isArray()) return 0;
-
-        String targetDate = session.getRaceDate().toString();
-        String sessionKey = null;
-        for (JsonNode sNode : openSessions) {
-            String dateStart = sNode.path("date_start").asText("");
-            if (dateStart.startsWith(targetDate)) {
-                sessionKey = sNode.path("session_key").asText("");
-                break;
+    private String resolveDuelWinnerFromWeekendData(
+        List<String> classification,
+        Map<String, Double> weekendPoints,
+        WeekendMatchup matchup
+    ) {
+        if (matchup == null) return null;
+        String d1 = normalizeDriverId(matchup.getDriver1Id());
+        String d2 = normalizeDriverId(matchup.getDriver2Id());
+        if (weekendPoints != null && !weekendPoints.isEmpty()) {
+            double pts1 = weekendPoints.getOrDefault(d1, 0.0);
+            double pts2 = weekendPoints.getOrDefault(d2, 0.0);
+            if (Double.compare(pts1, pts2) != 0) {
+                return pts1 > pts2 ? d1 : d2;
             }
         }
-        if (sessionKey == null || sessionKey.isBlank()) return 0;
-
-        JsonNode messages = fetchJson("https://api.openf1.org/v1/race_control?session_key=" + sessionKey);
-        if (messages == null || !messages.isArray()) return 0;
-
-        int deployments = 0;
-        for (JsonNode msg : messages) {
-            String category = msg.path("category").asText("");
-            String text = msg.path("message").asText("").toUpperCase(Locale.ROOT);
-            if ("SafetyCar".equalsIgnoreCase(category) && text.contains("DEPLOYED")) {
-                deployments++;
-            }
-        }
-        return deployments;
+        return resolveDuelWinnerFromClassification(classification, matchup);
     }
 
     private JsonNode fetchJson(String url) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .timeout(Duration.ofSeconds(5))
+                .timeout(Duration.ofSeconds(6))
                 .GET()
                 .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());

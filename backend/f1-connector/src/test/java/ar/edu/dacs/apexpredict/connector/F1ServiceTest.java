@@ -183,5 +183,34 @@ class F1ServiceTest {
         assertEquals("hamilton", summary.polePositionDriverId());
         assertEquals(2, summary.safetyCarCount());
         assertEquals(1, summary.dnfCount());
+        assertEquals(25.0, summary.weekendPoints().get("verstappen"));
+        assertEquals(18.0, summary.weekendPoints().get("hamilton"));
+    }
+
+    @Test
+    void officialSummaryMergesSprintPointsIntoWeekendPoints() {
+        var race = new JolpicaDto.DetailedRaceDto(
+            "2026", "20", "São Paulo Grand Prix", "2026-11-08",
+            new JolpicaDto.Circuit("interlagos", "Interlagos", new JolpicaDto.Location("-23.7", "-46.6", "São Paulo", "Brazil")),
+            List.of(
+                new JolpicaDto.DetailedResultDto("1", "1", "25", "71", "Finished", new JolpicaDto.Driver("norris", "NOR", "Lando", "Norris", "British"), new JolpicaDto.Constructor("McLaren"), null),
+                new JolpicaDto.DetailedResultDto("2", "2", "18", "71", "Finished", new JolpicaDto.Driver("piastri", "PIA", "Oscar", "Piastri", "Australian"), new JolpicaDto.Constructor("McLaren"), null)
+            )
+        );
+        when(client.getDetailedResults(2026, 20, 100, 0)).thenReturn(
+            new JolpicaDto.DetailedEnvelope(new JolpicaDto.DetailedMetadata("2", new JolpicaDto.DetailedRaceTable(List.of(race))))
+        );
+        when(client.getSprintResults(2026, 20, 30)).thenReturn(
+            new JolpicaDto.SprintEnvelope(new JolpicaDto.SprintMetadata("2", new JolpicaDto.SprintRaceTable(List.of(
+                new JolpicaDto.SprintRaceDto("2026", "20", List.of(
+                    new JolpicaDto.DetailedResultDto("1", "1", "8", "24", "Finished", new JolpicaDto.Driver("piastri", "PIA", "Oscar", "Piastri", "Australian"), new JolpicaDto.Constructor("McLaren"), null),
+                    new JolpicaDto.DetailedResultDto("2", "2", "7", "24", "Finished", new JolpicaDto.Driver("norris", "NOR", "Lando", "Norris", "British"), new JolpicaDto.Constructor("McLaren"), null)
+                ))
+            ))))
+        );
+
+        var summary = service.officialSummary(2026, 20);
+        assertEquals(32.0, summary.weekendPoints().get("norris"));
+        assertEquals(26.0, summary.weekendPoints().get("piastri"));
     }
 }

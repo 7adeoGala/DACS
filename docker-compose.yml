@@ -63,6 +63,7 @@ services:
       KC_HTTP_MANAGEMENT_RELATIVE_PATH: /
     volumes:
       - ./infra/keycloak/apexpredict-realm.json:/opt/keycloak/data/import/apexpredict-realm.json:ro
+      - ./infra/keycloak/theme:/opt/keycloak/themes:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -83,6 +84,7 @@ services:
       APP_DB_PASSWORD: ${DOMAIN_DB_PASSWORD:-${APP_DB_PASSWORD}}
       DB_URL: ${DB_URL:-jdbc:postgresql://postgres:5432/apexpredict}
       DB_USER: ${DB_USER:-apexpredict}
+      F1_CONNECTOR_URL: http://f1-connector:9002/conector
     volumes:
       - ./infra/certs/generated/dacs2026.local.pem:/certs/local.pem:ro
     depends_on:

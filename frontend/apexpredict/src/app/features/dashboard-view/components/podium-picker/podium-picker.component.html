@@ -8,7 +8,7 @@
         Tocá o hacé clic en cualquier posición para seleccionar al piloto desde la grilla interactiva.
       </p>
     </div>
-    @if (p1DriverId() || p2DriverId() || p3DriverId()) {
+    @if (!disabled() && (p1DriverId() || p2DriverId() || p3DriverId())) {
       <button type="button" class="btn-clear-all-podium" (click)="resetPodium()" title="Vaciar todas las posiciones del podio">
         Vaciar Podio
       </button>
@@ -16,7 +16,7 @@
   </div>
 
   <!-- Podio P2, P1, P3 -->
-  <div class="podium-grid">
+  <div class="podium-grid" [class.is-locked]="disabled()">
 
     <div class="podium-col silver-border slot-p2">
       <div class="podium-col-top">

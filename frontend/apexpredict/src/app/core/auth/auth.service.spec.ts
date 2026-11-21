@@ -9,11 +9,43 @@ function makeJwt(payload: Record<string, unknown>): string {
   return `${header}.${body}.sig`;
 }
 
+function createMemoryStorage(): Storage {
+  const store = new Map<string, string>();
+  return {
+    get length() {
+      return store.size;
+    },
+    clear: () => store.clear(),
+    getItem: (key: string) => (store.has(key) ? store.get(key)! : null),
+    key: (index: number) => Array.from(store.keys())[index] ?? null,
+    removeItem: (key: string) => {
+      store.delete(key);
+    },
+    setItem: (key: string, value: string) => {
+      store.set(key, String(value));
+    },
+  };
+}
+
 describe('AuthService', () => {
   let keycloakMock: any;
   let fetchSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    if (typeof globalThis.localStorage?.clear !== 'function') {
+      Object.defineProperty(globalThis, 'localStorage', {
+        value: createMemoryStorage(),
+        configurable: true,
+        writable: true,
+      });
+    }
+    if (typeof globalThis.sessionStorage?.clear !== 'function') {
+      Object.defineProperty(globalThis, 'sessionStorage', {
+        value: createMemoryStorage(),
+        configurable: true,
+        writable: true,
+      });
+    }
     localStorage.clear();
     sessionStorage.clear();
     keycloakMock = {
@@ -37,7 +69,7 @@ describe('AuthService', () => {
   });
 
   afterEach(() => {
-    fetchSpy.mockRestore();
+    fetchSpy?.mockRestore();
     localStorage.clear();
     sessionStorage.clear();
   });

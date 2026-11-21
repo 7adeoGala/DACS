@@ -94,6 +94,9 @@ public class NotificationService {
         int sentCount = 0;
 
         for (User user : allUsers) {
+            if (!user.isNotificationsEnabled()) {
+                continue;
+            }
             boolean alreadyPredicted = predictions.existsByUserIdAndSessionId(user.getId(), session.getId());
             boolean alreadyNotified = notifications.existsByUserAndSessionAndType(user, session, Notification.Type.RACE_REMINDER);
 

@@ -22,6 +22,10 @@ public class F1Service {
 
     private final Map<String, CacheEntry<DriverDynamicStats>> driverStatsCache = new ConcurrentHashMap<>();
     private final Map<String, CacheEntry<OfficialRaceSummary>> officialSummaryCache = new ConcurrentHashMap<>();
+    private final Map<Integer, CacheEntry<List<Race>>> calendarCache = new ConcurrentHashMap<>();
+    private final Map<String, CacheEntry<List<Finish>>> resultsCache = new ConcurrentHashMap<>();
+    private volatile CacheEntry<NextRaceInfo> nextRaceCache;
+    private volatile CacheEntry<LastRaceInfo> lastRaceCache;
     private volatile CacheEntry<List<DriverStandingInfo>> driverStandingsCache;
     private volatile CacheEntry<List<ConstructorStandingInfo>> constructorStandingsCache;
 
@@ -37,6 +41,10 @@ public class F1Service {
 
     public List<Race> calendar(int season) {
         validateSeason(season);
+        var cached = calendarCache.get(season);
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
         try {
             var collected = new ArrayList<JolpicaDto.RaceDto>();
             for (int offset = 0; offset < 1000; offset += 100) {
@@ -48,7 +56,7 @@ public class F1Service {
                 int total = Integer.parseInt(envelope.data().total());
                 if (offset + 100 >= total) break;
             }
-            return collected.stream().map(r -> new Race(
+            var result = collected.stream().map(r -> new Race(
                 Integer.parseInt(r.season()),
                 Integer.parseInt(r.round()),
                 Objects.requireNonNull(r.name()),
@@ -57,6 +65,8 @@ public class F1Service {
                 LocalDate.parse(r.date()),
                 r.time() == null ? null : Instant.parse(r.date() + "T" + r.time())
             )).toList();
+            calendarCache.put(season, CacheEntry.of(result));
+            return result;
         } catch (IllegalArgumentException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -67,6 +77,11 @@ public class F1Service {
     public List<Finish> results(int season, int round) {
         validateSeason(season);
         validateRound(round);
+        String key = season + "-" + round;
+        var cached = resultsCache.get(key);
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
         try {
             var envelope = client.getResults(season, round, 100, 0);
             if (envelope == null || envelope.data() == null || envelope.data().table() == null || envelope.data().table().races() == null) {
@@ -78,7 +93,7 @@ public class F1Service {
             }
             var firstRace = races.getFirst();
             var results = Objects.requireNonNullElse(firstRace.results(), List.<JolpicaDto.ResultDto>of());
-            return results.stream()
+            var mapped = results.stream()
                 .map(r -> new Finish(
                     Integer.parseInt(r.position()),
                     r.driver().id(),
@@ -88,6 +103,8 @@ public class F1Service {
                 ))
                 .sorted((f1, f2) -> Integer.compare(f1.position(), f2.position()))
                 .toList();
+            resultsCache.put(key, CacheEntry.of(mapped));
+            return mapped;
         } catch (IllegalArgumentException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -110,19 +127,24 @@ public class F1Service {
             }
             var races = envelope.data().table().races();
             if (races.isEmpty()) {
-                return new OfficialRaceSummary(season, round, null, null, null, List.of(), List.of(), null, 0, 0);
+                return new OfficialRaceSummary(season, round, null, null, null, List.of(), List.of(), null, 0, 0, Map.of());
             }
 
             var race = races.getFirst();
             var rawResults = Objects.requireNonNullElse(race.results(), List.<JolpicaDto.DetailedResultDto>of());
 
             List<String> fullClassification = new ArrayList<>();
+            Map<String, Double> weekendPoints = new LinkedHashMap<>();
             int dnfCount = 0;
             String gridPole = null;
             for (var r : rawResults.stream().sorted(Comparator.comparingInt(x -> safeParseInt(x.position(), 99))).toList()) {
                 String normDriver = normalizeDriverId(r.driver() != null ? r.driver().id() : null);
-                if (normDriver != null && !normDriver.isBlank() && !fullClassification.contains(normDriver)) {
-                    fullClassification.add(normDriver);
+                if (normDriver != null && !normDriver.isBlank()) {
+                    if (!fullClassification.contains(normDriver)) {
+                        fullClassification.add(normDriver);
+                    }
+                    double pts = safeParseDouble(r.points(), 0.0);
+                    weekendPoints.merge(normDriver, pts, Double::sum);
                 }
                 if ("1".equals(r.grid())) {
                     gridPole = normDriver;
@@ -132,6 +154,8 @@ public class F1Service {
                     dnfCount++;
                 }
             }
+
+            mergeSprintPoints(season, round, weekendPoints);
 
             List<String> podiumTop10 = fullClassification.stream().limit(10).toList();
             String pole = fetchPoleDriver(season, round);
@@ -150,7 +174,8 @@ public class F1Service {
                 List.copyOf(fullClassification),
                 pole,
                 safetyCarCount,
-                dnfCount
+                dnfCount,
+                Map.copyOf(weekendPoints)
             );
             officialSummaryCache.put(key, CacheEntry.of(summary));
             return summary;
@@ -162,6 +187,10 @@ public class F1Service {
     }
 
     public NextRaceInfo nextRace() {
+        var cached = nextRaceCache;
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
         try {
             var envelope = client.getNextRace();
             var races = envelope != null && envelope.data() != null && envelope.data().table() != null
@@ -175,7 +204,7 @@ public class F1Service {
             var loc = circuit != null ? circuit.location() : null;
             String startsAt = combineDateTime(r.date(), r.time(), "20:00:00Z");
 
-            return new NextRaceInfo(
+            var info = new NextRaceInfo(
                 safeParseInt(r.season(), 2026),
                 safeParseInt(r.round(), 21),
                 r.raceName(),
@@ -194,6 +223,8 @@ public class F1Service {
                 loc != null ? loc.lat() : null,
                 loc != null ? loc.lon() : null
             );
+            nextRaceCache = CacheEntry.of(info);
+            return info;
         } catch (IllegalArgumentException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -202,6 +233,10 @@ public class F1Service {
     }
 
     public LastRaceInfo lastRaceResults() {
+        var cached = lastRaceCache;
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
         try {
             var envelope = client.getLastResults(30);
             var races = envelope != null && envelope.data() != null && envelope.data().table() != null
@@ -223,13 +258,15 @@ public class F1Service {
                     r.laps()
                 ))
                 .toList();
-            return new LastRaceInfo(
+            var info = new LastRaceInfo(
                 race.raceName(),
                 safeParseInt(race.round(), 0),
                 race.circuit() != null ? race.circuit().name() : "",
                 race.date(),
                 list
             );
+            lastRaceCache = CacheEntry.of(info);
+            return info;
         } catch (Exception ex) {
             throw new F1UnavailableException("No se pudo consultar la última carrera de Formula 1.", ex);
         }
@@ -398,6 +435,24 @@ public class F1Service {
         }
     }
 
+    private void mergeSprintPoints(int season, int round, Map<String, Double> weekendPoints) {
+        try {
+            var s = client.getSprintResults(season, round, 30);
+            var races = s != null && s.data() != null && s.data().table() != null ? s.data().table().races() : null;
+            if (races == null || races.isEmpty()) return;
+            var sprintResults = races.getFirst().sprintResults();
+            if (sprintResults == null || sprintResults.isEmpty()) return;
+            for (var sr : sprintResults) {
+                String normDriver = normalizeDriverId(sr.driver() != null ? sr.driver().id() : null);
+                if (normDriver != null && !normDriver.isBlank()) {
+                    double pts = safeParseDouble(sr.points(), 0.0);
+                    weekendPoints.merge(normDriver, pts, Double::sum);
+                }
+            }
+        } catch (Exception ignored) {
+        }
+    }
+
     private String fetchPoleDriver(int season, int round) {
         try {
             var q = client.getQualifying(season, round, 5);
@@ -487,6 +542,14 @@ public class F1Service {
     private static int safeParseInt(String val, int fallback) {
         try {
             return val != null ? Integer.parseInt(val.trim()) : fallback;
+        } catch (NumberFormatException ex) {
+            return fallback;
+        }
+    }
+
+    private static double safeParseDouble(String val, double fallback) {
+        try {
+            return val != null ? Double.parseDouble(val.trim()) : fallback;
         } catch (NumberFormatException ex) {
             return fallback;
         }

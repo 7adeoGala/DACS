@@ -5,12 +5,16 @@ function sendTlsEmail(options) {
     const isNotification = options.type === 'notification';
 
     const user = isNotification
-      ? (process.env.NOTIF_EMAIL_USER || process.env.EMAIL_USER || 'tadeocdu@gmail.com')
-      : (process.env.AUTH_EMAIL_USER || process.env.EMAIL_USER || 'tadeocdu@gmail.com');
+      ? (process.env.NOTIF_EMAIL_USER || process.env.EMAIL_USER)
+      : (process.env.AUTH_EMAIL_USER || process.env.EMAIL_USER);
 
     const pass = isNotification
-      ? (process.env.NOTIF_EMAIL_PASS || process.env.EMAIL_PASS || 'wpmnkgexoasjunas')
-      : (process.env.AUTH_EMAIL_PASS || process.env.EMAIL_PASS || 'wpmnkgexoasjunas');
+      ? (process.env.NOTIF_EMAIL_PASS || process.env.EMAIL_PASS)
+      : (process.env.AUTH_EMAIL_PASS || process.env.EMAIL_PASS);
+
+    if (!user || !pass) {
+      return reject(new Error('Servicio de correo SMTP no configurado en el servidor.'));
+    }
 
     const fromName = isNotification
       ? (process.env.NOTIF_EMAIL_FROM_NAME || 'ApexPredict Alertas F1')
@@ -124,12 +128,26 @@ function sendTlsEmail(options) {
   });
 }
 
+const ALLOWED_ORIGINS = new Set([
+  'https://dacs-nine.vercel.app',
+  'https://dacs2026.local',
+  'http://localhost:4200',
+  'https://localhost:4200'
+]);
+
 module.exports = async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.has(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Api-Key');
 
   if (req.method === 'OPTIONS') {
+    if (origin && !ALLOWED_ORIGINS.has(origin)) {
+      return res.status(403).end();
+    }
     return res.status(200).end();
   }
 
@@ -139,6 +157,12 @@ module.exports = async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Método no permitido' });
+  }
+
+  const expectedSecret = process.env.EMAIL_API_SECRET;
+  const providedKey = req.headers['x-api-key'] || (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+  if (!expectedSecret || providedKey !== expectedSecret) {
+    return res.status(401).json({ error: 'No autorizado para despachar correos.' });
   }
 
   let body = req.body;

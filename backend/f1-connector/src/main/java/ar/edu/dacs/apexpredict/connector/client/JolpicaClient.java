@@ -39,6 +39,13 @@ public interface JolpicaClient {
         @RequestParam("limit") int limit
     );
 
+    @GetMapping(value = "/{season}/{round}/sprint.json", headers = "User-Agent=ApexPredict-DACS/0.1")
+    JolpicaDto.SprintEnvelope getSprintResults(
+        @PathVariable("season") int season,
+        @PathVariable("round") int round,
+        @RequestParam("limit") int limit
+    );
+
     @GetMapping(value = "/current/next.json", headers = "User-Agent=ApexPredict-DACS/0.1")
     JolpicaDto.NextRaceEnvelope getNextRace();
 
