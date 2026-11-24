@@ -184,6 +184,11 @@ public class ApiController {
         return domainClient.nextSession();
     }
 
+    @GetMapping("/sessions/next/duel-stats")
+    public DuelCommunityStats nextSessionDuelStats() {
+        return domainClient.nextSessionDuelStats();
+    }
+
     @GetMapping("/predictions/current")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PredictionDetail currentPrediction() {

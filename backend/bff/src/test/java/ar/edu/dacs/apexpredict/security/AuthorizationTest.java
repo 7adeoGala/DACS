@@ -259,6 +259,13 @@ class AuthorizationTest {
         mvc.perform(get("/f1/next"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.name").value("Las Vegas Grand Prix"));
+
+        when(domainClient.nextSessionDuelStats()).thenReturn(new DuelCommunityStats(
+            UUID.fromString("00000000-0000-0000-0000-000000000001"), "bearman", "ocon", 2, 1, 3, 67, 33
+        ));
+        mvc.perform(get("/sessions/next/duel-stats"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalVotes").value(3));
     }
 
     @Test

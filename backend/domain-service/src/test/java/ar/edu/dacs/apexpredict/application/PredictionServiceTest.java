@@ -172,5 +172,39 @@ class PredictionServiceTest {
         assertEquals(20, history.get(1).score());
         assertNotNull(history.get(1).scoreBreakdown());
     }
+
+    @Test
+    @DisplayName("Estadísticas comunitarias del duelo cuentan únicamente votos reales persistidos en BD")
+    void duelCommunityStatsReflectsRealPersistedVotes() {
+        UUID nextId = UUID.randomUUID();
+        Session nextRace = buildSession(nextId, 22, "Qatar Grand Prix", "Lusail International Circuit",
+            LocalDate.of(2026, 11, 29), Instant.now().plusSeconds(86400 * 5));
+        WeekendMatchup matchup = new WeekendMatchup(nextRace, "bearman", "ocon");
+
+        User u1 = new User(ISSUER, "u1", "P1", "p1@example.com");
+        User u2 = new User(ISSUER, "u2", "P2", "p2@example.com");
+        User u3 = new User(ISSUER, "u3", "P3", "p3@example.com");
+
+        Prediction p1 = new Prediction(u1, nextRace, List.of("norris", "verstappen", "leclerc"), "norris", "bearman", 1, 2, Instant.now());
+        Prediction p2 = new Prediction(u2, nextRace, List.of("norris", "verstappen", "leclerc"), "norris", "bearman", 1, 2, Instant.now());
+        Prediction p3 = new Prediction(u3, nextRace, List.of("norris", "verstappen", "leclerc"), "norris", "ocon", 1, 2, Instant.now());
+
+        when(sessions.findFirstByStartsAtAfterOrderByStartsAtAsc(Mockito.any())).thenReturn(Optional.of(nextRace));
+        when(matchupService.findForSession(nextId)).thenReturn(Optional.of(matchup));
+        when(predictions.findBySessionId(nextId)).thenReturn(List.of(p1, p2, p3));
+
+        var stats = predictionService.getNextSessionDuelStats();
+        assertEquals(3, stats.totalVotes());
+        assertEquals(2, stats.driver1Votes());
+        assertEquals(1, stats.driver2Votes());
+        assertEquals(67, stats.driver1Pct());
+        assertEquals(33, stats.driver2Pct());
+
+        when(predictions.findBySessionId(nextId)).thenReturn(List.of());
+        var emptyStats = predictionService.getNextSessionDuelStats();
+        assertEquals(0, emptyStats.totalVotes());
+        assertEquals(0, emptyStats.driver1Pct());
+        assertEquals(0, emptyStats.driver2Pct());
+    }
 }
 

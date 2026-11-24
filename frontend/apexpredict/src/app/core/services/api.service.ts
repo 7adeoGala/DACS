@@ -23,7 +23,8 @@ import {
   NotificationItem,
   AdminSessionView,
   ScoredPredictionSummary,
-  SyncSessionsResponse
+  SyncSessionsResponse,
+  DuelCommunityStats
 } from '../models/api.models';
 
 @Injectable({ providedIn: 'root' })
@@ -612,6 +613,13 @@ export class ApiService {
     return this.http.get<NotificationItem[]>(`${this.base}/notifications`).pipe(
       this.retryOnColdStart(),
       catchError(() => of([]))
+    );
+  }
+
+  duelCommunityStats(): Observable<DuelCommunityStats | null> {
+    return this.http.get<DuelCommunityStats>(`${this.base}/sessions/next/duel-stats`).pipe(
+      this.retryOnColdStart(),
+      catchError(() => of(null))
     );
   }
 

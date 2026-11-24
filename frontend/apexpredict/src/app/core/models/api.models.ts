@@ -265,6 +265,17 @@ export interface SyncSessionsResponse {
   status: string;
 }
 
+export interface DuelCommunityStats {
+  sessionId: string | null;
+  driver1Id: string | null;
+  driver2Id: string | null;
+  driver1Votes: number;
+  driver2Votes: number;
+  totalVotes: number;
+  driver1Pct: number;
+  driver2Pct: number;
+}
+
 export const F1_DRIVERS: DriverOption[] = [
   { id: 'norris', name: 'Lando Norris', code: 'NOR', number: 1, team: 'McLaren', teamColor: '#FF8000' },
   { id: 'verstappen', name: 'Max Verstappen', code: 'VER', number: 3, team: 'Red Bull Racing', teamColor: '#3671C6' },

@@ -98,6 +98,15 @@ class DomainAuthorizationTest {
     }
 
     @Test
+    void duelStatsIsPublic() throws Exception {
+        when(predictions.getNextSessionDuelStats()).thenReturn(new PredictionService.DuelCommunityStats(
+            UUID.fromString("00000000-0000-0000-0000-000000000001"), "bearman", "ocon", 2, 1, 3, 67, 33));
+        mvc.perform(get("/sessions/next/duel-stats"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.totalVotes").value(3));
+    }
+
+    @Test
     void unauthenticatedRouteReturns401WithDacsFormat() throws Exception {
         mvc.perform(get("/leagues"))
             .andExpect(status().isUnauthorized())

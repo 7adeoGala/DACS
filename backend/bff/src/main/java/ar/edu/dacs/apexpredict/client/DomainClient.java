@@ -57,6 +57,9 @@ public interface DomainClient {
     @GetMapping("/sessions/next")
     NextSession nextSession();
 
+    @GetMapping("/sessions/next/duel-stats")
+    DuelCommunityStats nextSessionDuelStats();
+
     @GetMapping("/predictions/current")
     PredictionDetail currentPrediction();
 

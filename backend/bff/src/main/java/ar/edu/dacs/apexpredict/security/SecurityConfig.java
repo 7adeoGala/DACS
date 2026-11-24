@@ -32,7 +32,7 @@ public class SecurityConfig {
             .sessionManagement(sessions -> sessions.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/health", "/ping", "/backendping", "/conectorping", "/calendar/**", "/results/**", "/f1/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/health", "/ping", "/backendping", "/conectorping", "/calendar/**", "/results/**", "/f1/**", "/sessions/next/duel-stats").permitAll()
                 .requestMatchers("/admin/**").hasRole("admin")
                 .requestMatchers("/me/**", "/leagues/**", "/scores/**").hasAnyRole("player", "admin")
                 .requestMatchers(HttpMethod.GET, "/sessions/next", "/leaderboard/global", "/notifications",

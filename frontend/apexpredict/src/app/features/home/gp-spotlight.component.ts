@@ -20,6 +20,7 @@ import {
   TEAM_DUOS_CATALOG,
   TeamDuoOption,
   DynamicDriverStats,
+  DuelCommunityStats,
   getTeamDuoById,
   findTeamDuoByDrivers
 } from '../../core/models/api.models';
@@ -53,30 +54,29 @@ export interface PaddockStandingUser {
 export interface TeamDetail {
   fullName: string;
   carModel: string;
-  pitRecord: string;
 }
 
 const TEAM_DETAILS: Record<string, TeamDetail> = {
-  mclaren: { fullName: 'MCLAREN FORMULA 1 TEAM', carModel: 'MCL40', pitRecord: '1.98s' },
-  'red bull': { fullName: 'ORACLE RED BULL RACING', carModel: 'RB22', pitRecord: '1.90s' },
-  ferrari: { fullName: 'SCUDERIA FERRARI HP', carModel: 'SF-26', pitRecord: '2.01s' },
-  mercedes: { fullName: 'MERCEDES-AMG PETRONAS F1 TEAM', carModel: 'W16', pitRecord: '2.05s' },
-  williams: { fullName: 'WILLIAMS RACING', carModel: 'FW47', pitRecord: '2.14s' },
-  'aston martin': { fullName: 'ASTON MARTIN ARAMCO F1 TEAM', carModel: 'AMR25', pitRecord: '2.20s' },
-  alpine: { fullName: 'BWT ALPINE F1 TEAM', carModel: 'A525', pitRecord: '2.18s' },
-  'racing bulls': { fullName: 'VISA CASH APP RB F1 TEAM', carModel: 'VCARB 02', pitRecord: '2.25s' },
-  audi: { fullName: 'AUDI F1 TEAM', carModel: 'C45', pitRecord: '2.30s' },
-  haas: { fullName: 'MONEYGRAM HAAS F1 TEAM', carModel: 'VF-25', pitRecord: '2.22s' },
-  cadillac: { fullName: 'CADILLAC FORMULA 1 TEAM', carModel: 'CAD-01', pitRecord: '2.40s' }
+  mclaren: { fullName: 'MCLAREN FORMULA 1 TEAM', carModel: 'MCL40' },
+  'red bull': { fullName: 'ORACLE RED BULL RACING', carModel: 'RB22' },
+  ferrari: { fullName: 'SCUDERIA FERRARI HP', carModel: 'SF-26' },
+  mercedes: { fullName: 'MERCEDES-AMG PETRONAS F1 TEAM', carModel: 'W16' },
+  williams: { fullName: 'WILLIAMS RACING', carModel: 'FW47' },
+  'aston martin': { fullName: 'ASTON MARTIN ARAMCO F1 TEAM', carModel: 'AMR25' },
+  alpine: { fullName: 'BWT ALPINE F1 TEAM', carModel: 'A525' },
+  'racing bulls': { fullName: 'VISA CASH APP RB F1 TEAM', carModel: 'VCARB 02' },
+  audi: { fullName: 'AUDI F1 TEAM', carModel: 'C45' },
+  haas: { fullName: 'MONEYGRAM HAAS F1 TEAM', carModel: 'VF-26' },
+  cadillac: { fullName: 'CADILLAC FORMULA 1 TEAM', carModel: 'CAD-01' }
 };
 
 function getTeamDetail(teamName?: string): TeamDetail {
-  if (!teamName) return { fullName: 'FORMULA 1 TEAM', carModel: 'F1-26', pitRecord: '2.10s' };
+  if (!teamName) return { fullName: 'FORMULA 1 TEAM', carModel: 'F1-26' };
   const lower = teamName.toLowerCase();
   for (const [key, detail] of Object.entries(TEAM_DETAILS)) {
     if (lower.includes(key)) return detail;
   }
-  return { fullName: `${teamName.toUpperCase()} F1 TEAM`, carModel: 'F1-26', pitRecord: '2.10s' };
+  return { fullName: `${teamName.toUpperCase()} F1 TEAM`, carModel: 'F1-26' };
 }
 
 @Component({
@@ -214,21 +214,28 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   });
   readonly raceD2Pct = computed(() => 100 - this.raceD1Pct());
 
-  readonly pitD1Pct = computed(() => {
-    const p1 = parseFloat(this.driver1TeamDetails().pitRecord) || 2.0;
-    const p2 = parseFloat(this.driver2TeamDetails().pitRecord) || 2.0;
-    const tot = p1 + p2;
-    return tot > 0 ? Math.round((p2 / tot) * 100) : 50;
+  readonly pointsD1Pct = computed(() => {
+    const tot = this.driver1Points() + this.driver2Points();
+    return tot > 0 ? Math.round((this.driver1Points() / tot) * 100) : 50;
   });
-  readonly pitD2Pct = computed(() => 100 - this.pitD1Pct());
+  readonly pointsD2Pct = computed(() => 100 - this.pointsD1Pct());
 
-  readonly driver1Votes = signal<number>(54);
-  readonly driver2Votes = signal<number>(46);
-  readonly totalDuelVotes = signal<string>('14.820');
+  readonly duelCommunityStats = signal<DuelCommunityStats | null>(null);
+  readonly totalDuelVotesCount = computed<number>(() => this.duelCommunityStats()?.totalVotes ?? 0);
+  readonly driver1Votes = computed<number>(() => {
+    const stats = this.duelCommunityStats();
+    if (!stats || stats.totalVotes === 0) return 50;
+    const d1 = this.duelDriver1Id().toLowerCase();
+    if (stats.driver1Id?.toLowerCase() === d1) return stats.driver1Pct;
+    if (stats.driver2Id?.toLowerCase() === d1) return stats.driver2Pct;
+    return stats.driver1Pct;
+  });
+  readonly driver2Votes = computed<number>(() => {
+    const stats = this.duelCommunityStats();
+    if (!stats || stats.totalVotes === 0) return 50;
+    return 100 - this.driver1Votes();
+  });
   readonly duelPick = signal<string | null>(null);
-
-  readonly norrisVotes = this.driver1Votes;
-  readonly verstappenVotes = this.driver2Votes;
 
   readonly circuit = computed<CircuitInfo>(() => {
     const s = this.session();
@@ -359,6 +366,12 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         if (standings && standings.length > 0) {
           this.driverStandings.set(standings);
         }
+      }
+    });
+
+    this.api.duelCommunityStats().subscribe({
+      next: (stats) => {
+        this.duelCommunityStats.set(stats);
       }
     });
 
@@ -558,11 +571,20 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
 
         let q1 = 0, q2 = 0;
         let rc1 = 0, rc2 = 0;
-        const maxCommon = Math.min((r1 || []).length, (r2 || []).length);
 
-        for (let i = 0; i < maxCommon; i++) {
-          const res1 = r1[i]?.Results?.[0];
-          const res2 = r2[i]?.Results?.[0];
+        const r2ByRound = new Map<number, any>();
+        for (const item of r2 || []) {
+          const roundNum = Number(item?.round);
+          if (Number.isFinite(roundNum) && roundNum > 0) {
+            r2ByRound.set(roundNum, item);
+          }
+        }
+
+        for (const item1 of r1 || []) {
+          const roundNum = Number(item1?.round);
+          const item2 = r2ByRound.get(roundNum);
+          const res1 = item1?.Results?.[0];
+          const res2 = item2?.Results?.[0];
           if (res1 && res2) {
             const g1 = parseInt(res1.grid, 10);
             const g2 = parseInt(res2.grid, 10);
@@ -583,13 +605,6 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         this.qualiD2.set(q2);
         this.raceD1.set(rc1);
         this.raceD2.set(rc2);
-
-        const pts1 = Math.max(1, s1.points);
-        const pts2 = Math.max(1, s2.points);
-        const tot = pts1 + pts2;
-        const v1 = Math.min(85, Math.max(15, Math.round((pts1 / tot) * 100)));
-        this.driver1Votes.set(v1);
-        this.driver2Votes.set(100 - v1);
 
         this.isLoadingStats.set(false);
       },

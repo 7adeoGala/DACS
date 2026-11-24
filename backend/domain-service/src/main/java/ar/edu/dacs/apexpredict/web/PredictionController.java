@@ -46,6 +46,11 @@ public class PredictionController {
         return next;
     }
 
+    @GetMapping("/sessions/next/duel-stats")
+    public PredictionService.DuelCommunityStats getNextSessionDuelStats() {
+        return predictionService.getNextSessionDuelStats();
+    }
+
     @GetMapping("/predictions/current")
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PredictionService.PredictionDetailView getCurrentPrediction(@AuthenticationPrincipal Jwt jwt) {

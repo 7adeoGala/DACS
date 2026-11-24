@@ -34,7 +34,7 @@ public class SecurityConfig {
             .sessionManagement(sessions -> sessions.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/ping").permitAll()
+                .requestMatchers(HttpMethod.GET, "/ping", "/sessions/next/duel-stats").permitAll()
                 .requestMatchers("/admin/**").hasRole("admin")
                 .requestMatchers("/me/**", "/leagues/**").hasAnyRole("player", "admin")
                 .requestMatchers(HttpMethod.GET, "/sessions/next", "/leaderboard/global", "/notifications",

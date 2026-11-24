@@ -517,6 +517,63 @@ public class PredictionService {
     }
 
     @Transactional(readOnly = true)
+    public DuelCommunityStats getNextSessionDuelStats() {
+        Instant now = Instant.now();
+        Session nextSession = sessions.findFirstByStartsAtAfterOrderByStartsAtAsc(now).orElse(null);
+        if (nextSession == null || nextSession.getId() == null) {
+            return new DuelCommunityStats(null, null, null, 0, 0, 0, 0, 0);
+        }
+
+        WeekendMatchup matchup = matchupService.findForSession(nextSession.getId()).orElse(null);
+        if (matchup == null) {
+            return new DuelCommunityStats(nextSession.getId(), null, null, 0, 0, 0, 0, 0);
+        }
+
+        String d1 = ScoringService.normalizeDriverId(matchup.getDriver1Id());
+        String d2 = ScoringService.normalizeDriverId(matchup.getDriver2Id());
+        int votes1 = 0;
+        int votes2 = 0;
+
+        for (Prediction p : predictions.findBySessionId(nextSession.getId())) {
+            String pick = ScoringService.normalizeDriverId(p.getDuelDriverPick());
+            if (pick == null || pick.isBlank()) {
+                continue;
+            }
+            if (pick.equals(d1)) {
+                votes1++;
+            } else if (pick.equals(d2)) {
+                votes2++;
+            }
+        }
+
+        int total = votes1 + votes2;
+        int pct1 = total > 0 ? (int) Math.round((votes1 * 100.0) / total) : 0;
+        int pct2 = total > 0 ? 100 - pct1 : 0;
+
+        return new DuelCommunityStats(
+            nextSession.getId(),
+            matchup.getDriver1Id(),
+            matchup.getDriver2Id(),
+            votes1,
+            votes2,
+            total,
+            pct1,
+            pct2
+        );
+    }
+
+    public record DuelCommunityStats(
+            UUID sessionId,
+            String driver1Id,
+            String driver2Id,
+            int driver1Votes,
+            int driver2Votes,
+            int totalVotes,
+            int driver1Pct,
+            int driver2Pct) {
+    }
+
+    @Transactional(readOnly = true)
     public List<AdminSessionView> listAdminSessions() {
         Instant now = Instant.now();
         return sessions.findAll().stream()
