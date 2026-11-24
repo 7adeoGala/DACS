@@ -304,4 +304,32 @@ class AuthorizationTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalPoints").value(29));
     }
+
+    @Test
+    void notificationMutationsRequirePlayerOrAdmin() throws Exception {
+        UUID notifId = UUID.fromString("00000000-0000-0000-0000-000000000099");
+        when(domainClient.markNotificationAsRead(notifId)).thenReturn(new NotificationView(
+            notifId, "RACE_REMINDER", "PUSH", "Aviso", "Mensaje", "SENT", Instant.now(), true, Instant.now()
+        ));
+        when(domainClient.markAllNotificationsAsRead()).thenReturn(Map.of("updated", 2, "status", "SUCCESS"));
+        when(domainClient.dismissAllNotifications()).thenReturn(Map.of("dismissed", 2, "status", "SUCCESS"));
+
+        mvc.perform(put("/notifications/" + notifId + "/read")).andExpect(status().isUnauthorized());
+        mvc.perform(put("/notifications/" + notifId + "/read").header("Authorization", "Bearer observer")).andExpect(status().isForbidden());
+        mvc.perform(put("/notifications/" + notifId + "/read").header("Authorization", "Bearer player"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.read").value(true));
+
+        mvc.perform(put("/notifications/read-all").header("Authorization", "Bearer player"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.updated").value(2));
+
+        mvc.perform(delete("/notifications/" + notifId)).andExpect(status().isUnauthorized());
+        mvc.perform(delete("/notifications/" + notifId).header("Authorization", "Bearer player"))
+            .andExpect(status().isNoContent());
+
+        mvc.perform(delete("/notifications").header("Authorization", "Bearer player"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.dismissed").value(2));
+    }
 }

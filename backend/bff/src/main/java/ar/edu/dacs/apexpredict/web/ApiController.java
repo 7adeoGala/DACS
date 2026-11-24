@@ -230,6 +230,31 @@ public class ApiController {
         return domainClient.notifications();
     }
 
+    @PutMapping("/notifications/{id}/read")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public NotificationView markNotificationAsRead(@PathVariable UUID id) {
+        return domainClient.markNotificationAsRead(id);
+    }
+
+    @PutMapping("/notifications/read-all")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public Map<String, Object> markAllNotificationsAsRead() {
+        return domainClient.markAllNotificationsAsRead();
+    }
+
+    @DeleteMapping("/notifications/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public void dismissNotification(@PathVariable UUID id) {
+        domainClient.dismissNotification(id);
+    }
+
+    @DeleteMapping("/notifications")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public Map<String, Object> dismissAllNotifications() {
+        return domainClient.dismissAllNotifications();
+    }
+
     @PostMapping("/admin/notifications/send-reminders/{sessionId}")
     @PreAuthorize("hasRole('admin')")
     public Map<String, Object> sendReminders(@PathVariable UUID sessionId) {

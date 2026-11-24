@@ -248,6 +248,8 @@ export interface NotificationItem {
   message: string;
   status: string;
   sentAt: string | null;
+  read?: boolean;
+  readAt?: string | null;
 }
 
 export interface AdminSessionView {

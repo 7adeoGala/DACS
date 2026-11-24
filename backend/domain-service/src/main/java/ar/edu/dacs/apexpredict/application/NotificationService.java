@@ -199,17 +199,80 @@ public class NotificationService {
         if (user == null) {
             return List.of();
         }
-        return notifications.findByUserOrderByCreatedAtDesc(user).stream()
-            .map(n -> new NotificationDto(
-                n.getId(),
-                n.getType().name(),
-                n.getChannel().name(),
-                n.getTitle(),
-                n.getMessage(),
-                n.getStatus().name(),
-                n.getSentAt()
-            ))
+        return notifications
+            .findByUserAndChannelAndDismissedAtIsNullOrderByCreatedAtDesc(user, Notification.Channel.PUSH)
+            .stream()
+            .map(NotificationService::toDto)
             .toList();
+    }
+
+    @Transactional
+    public NotificationDto markAsRead(String issuer, String subject, UUID notificationId) {
+        User user = users.findByIssuerAndSubject(issuer, subject)
+            .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado."));
+        Notification notification = notifications.findByIdAndUser(notificationId, user)
+            .filter(n -> !n.isDismissed())
+            .orElseThrow(() -> new IllegalArgumentException("Notificación no encontrada."));
+        notification.markAsRead();
+        return toDto(notifications.save(notification));
+    }
+
+    @Transactional
+    public int markAllAsRead(String issuer, String subject) {
+        User user = users.findByIssuerAndSubject(issuer, subject).orElse(null);
+        if (user == null) {
+            return 0;
+        }
+        List<Notification> visible = notifications
+            .findByUserAndChannelAndDismissedAtIsNullOrderByCreatedAtDesc(user, Notification.Channel.PUSH);
+        int updated = 0;
+        for (Notification n : visible) {
+            if (!n.isRead()) {
+                n.markAsRead();
+                notifications.save(n);
+                updated++;
+            }
+        }
+        return updated;
+    }
+
+    @Transactional
+    public void dismissNotification(String issuer, String subject, UUID notificationId) {
+        User user = users.findByIssuerAndSubject(issuer, subject)
+            .orElseThrow(() -> new IllegalArgumentException("Usuario no encontrado."));
+        Notification notification = notifications.findByIdAndUser(notificationId, user)
+            .orElseThrow(() -> new IllegalArgumentException("Notificación no encontrada."));
+        notification.dismiss();
+        notifications.save(notification);
+    }
+
+    @Transactional
+    public int dismissAllNotifications(String issuer, String subject) {
+        User user = users.findByIssuerAndSubject(issuer, subject).orElse(null);
+        if (user == null) {
+            return 0;
+        }
+        List<Notification> visible = notifications
+            .findByUserAndChannelAndDismissedAtIsNullOrderByCreatedAtDesc(user, Notification.Channel.PUSH);
+        for (Notification n : visible) {
+            n.dismiss();
+            notifications.save(n);
+        }
+        return visible.size();
+    }
+
+    private static NotificationDto toDto(Notification n) {
+        return new NotificationDto(
+            n.getId(),
+            n.getType().name(),
+            n.getChannel().name(),
+            n.getTitle(),
+            n.getMessage(),
+            n.getStatus().name(),
+            n.getSentAt(),
+            n.isRead(),
+            n.getReadAt()
+        );
     }
 
     public record NotificationDto(
@@ -219,6 +282,8 @@ public class NotificationService {
         String title,
         String message,
         String status,
-        Instant sentAt
+        Instant sentAt,
+        boolean read,
+        Instant readAt
     ) {}
 }

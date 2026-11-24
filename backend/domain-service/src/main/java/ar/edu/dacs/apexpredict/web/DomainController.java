@@ -181,6 +181,47 @@ public class DomainController {
         return notifications.getUserNotifications(jwt.getIssuer().toString(), jwt.getSubject());
     }
 
+    @PutMapping("/notifications/{id}/read")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public NotificationService.NotificationDto markNotificationAsRead(
+        @AuthenticationPrincipal Jwt jwt,
+        @PathVariable UUID id
+    ) {
+        try {
+            return notifications.markAsRead(jwt.getIssuer().toString(), jwt.getSubject(), id);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
+    @PutMapping("/notifications/read-all")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public Map<String, Object> markAllNotificationsAsRead(@AuthenticationPrincipal Jwt jwt) {
+        int updated = notifications.markAllAsRead(jwt.getIssuer().toString(), jwt.getSubject());
+        return Map.of("updated", updated, "status", "SUCCESS");
+    }
+
+    @DeleteMapping("/notifications/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public void dismissNotification(
+        @AuthenticationPrincipal Jwt jwt,
+        @PathVariable UUID id
+    ) {
+        try {
+            notifications.dismissNotification(jwt.getIssuer().toString(), jwt.getSubject(), id);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, ex.getMessage(), ex);
+        }
+    }
+
+    @DeleteMapping("/notifications")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public Map<String, Object> dismissAllNotifications(@AuthenticationPrincipal Jwt jwt) {
+        int dismissed = notifications.dismissAllNotifications(jwt.getIssuer().toString(), jwt.getSubject());
+        return Map.of("dismissed", dismissed, "status", "SUCCESS");
+    }
+
     @PostMapping("/admin/notifications/send-reminders/{sessionId}")
     @PreAuthorize("hasRole('admin')")
     public Map<String, Object> sendReminders(@PathVariable UUID sessionId) {

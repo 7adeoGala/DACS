@@ -41,6 +41,12 @@ public class Notification extends BaseEntity {
     @Column(name = "sent_at")
     private Instant sentAt;
 
+    @Column(name = "read_at")
+    private Instant readAt;
+
+    @Column(name = "dismissed_at")
+    private Instant dismissedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
@@ -66,6 +72,25 @@ public class Notification extends BaseEntity {
         this.status = Status.FAILED;
     }
 
+    public void markAsRead() {
+        if (this.readAt == null) {
+            this.readAt = Instant.now();
+        }
+    }
+
+    public void dismiss() {
+        Instant now = Instant.now();
+        if (this.readAt == null) {
+            this.readAt = now;
+        }
+        if (this.dismissedAt == null) {
+            this.dismissedAt = now;
+        }
+    }
+
+    public boolean isRead() { return readAt != null; }
+    public boolean isDismissed() { return dismissedAt != null; }
+
     public User getUser() { return user; }
     public Session getSession() { return session; }
     public Type getType() { return type; }
@@ -74,5 +99,7 @@ public class Notification extends BaseEntity {
     public String getMessage() { return message; }
     public Status getStatus() { return status; }
     public Instant getSentAt() { return sentAt; }
+    public Instant getReadAt() { return readAt; }
+    public Instant getDismissedAt() { return dismissedAt; }
     public Instant getCreatedAt() { return createdAt; }
 }

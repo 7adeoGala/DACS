@@ -15,6 +15,9 @@ import org.mockito.Mockito;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -55,5 +58,74 @@ class NotificationServiceTest {
 
         assertEquals(1, sent);
         verify(notifications, times(2)).save(any(Notification.class));
+    }
+
+    @Test
+    @DisplayName("Permite marcar como leida y ocultar notificaciones propias sin permitir acceso ajeno")
+    void marksReadAndDismissesOwnNotificationsOnly() {
+        var notifications = Mockito.mock(NotificationRepository.class);
+        var users = Mockito.mock(UserRepository.class);
+        var sessions = Mockito.mock(SessionRepository.class);
+        var predictions = Mockito.mock(PredictionRepository.class);
+
+        var service = new NotificationService(notifications, users, sessions, predictions);
+
+        User owner = new User("iss", "sub-owner", "Owner", "owner@example.com");
+        ReflectionTestUtils.setField(owner, "id", UUID.randomUUID());
+
+        Notification notif = new Notification(
+            owner, null, Notification.Type.RACE_REMINDER, Notification.Channel.PUSH, "Aviso", "Mensaje"
+        );
+        UUID notifId = UUID.randomUUID();
+        ReflectionTestUtils.setField(notif, "id", notifId);
+        notif.markAsSent();
+
+        when(users.findByIssuerAndSubject("iss", "sub-owner")).thenReturn(Optional.of(owner));
+        when(notifications.findByIdAndUser(notifId, owner)).thenReturn(Optional.of(notif));
+        when(notifications.save(any(Notification.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var dto = service.markAsRead("iss", "sub-owner", notifId);
+        assertTrue(dto.read());
+        assertNotNull(dto.readAt());
+
+        service.dismissNotification("iss", "sub-owner", notifId);
+        assertTrue(notif.isDismissed());
+
+        UUID foreignId = UUID.randomUUID();
+        when(notifications.findByIdAndUser(foreignId, owner)).thenReturn(Optional.empty());
+        assertThrows(IllegalArgumentException.class, () -> service.markAsRead("iss", "sub-owner", foreignId));
+        assertThrows(IllegalArgumentException.class, () -> service.dismissNotification("iss", "sub-owner", foreignId));
+    }
+
+    @Test
+    @DisplayName("Permite marcar todas como leidas y limpiar la vista completa de notificaciones")
+    void marksAllAsReadAndDismissesAll() {
+        var notifications = Mockito.mock(NotificationRepository.class);
+        var users = Mockito.mock(UserRepository.class);
+        var sessions = Mockito.mock(SessionRepository.class);
+        var predictions = Mockito.mock(PredictionRepository.class);
+
+        var service = new NotificationService(notifications, users, sessions, predictions);
+
+        User owner = new User("iss", "sub-owner", "Owner", "owner@example.com");
+        ReflectionTestUtils.setField(owner, "id", UUID.randomUUID());
+
+        Notification n1 = new Notification(owner, null, Notification.Type.RACE_REMINDER, Notification.Channel.PUSH, "A1", "M1");
+        Notification n2 = new Notification(owner, null, Notification.Type.RACE_REMINDER, Notification.Channel.PUSH, "A2", "M2");
+        n2.markAsRead();
+
+        when(users.findByIssuerAndSubject("iss", "sub-owner")).thenReturn(Optional.of(owner));
+        when(notifications.findByUserAndChannelAndDismissedAtIsNullOrderByCreatedAtDesc(owner, Notification.Channel.PUSH))
+            .thenReturn(List.of(n1, n2));
+        when(notifications.save(any(Notification.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        int updated = service.markAllAsRead("iss", "sub-owner");
+        assertEquals(1, updated);
+        assertTrue(n1.isRead());
+
+        int dismissed = service.dismissAllNotifications("iss", "sub-owner");
+        assertEquals(2, dismissed);
+        assertTrue(n1.isDismissed());
+        assertTrue(n2.isDismissed());
     }
 }

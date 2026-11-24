@@ -62,13 +62,13 @@ flowchart LR
 | --- | --- |
 | `GET /health`, `GET /ping` | Publico: estado del BFF, `backendping` y `conectorping` (incluye estado del Circuit Breaker) |
 | `GET /calendar/{season}`, `GET /results/{season}/{round}`, `GET /f1/**` | Publico: calendario, resultados, standings y estadisticas F1 |
-| `GET /me`, `PUT /me`, `PUT /me/profile`, `GET /users/check-display-name` | `player`/`admin`: gestion de perfil y preferencias de notificaciones |
-| `GET /sessions/next`, `GET /predictions/**`, `POST /predictions/session/{id}` | `player`/`admin`: pronosticos con validacion de Lock Time (HTTP 403 si cerrada) |
+| `GET /me`, `PUT /me`, `PUT /me/profile`, `PUT /me/password`, `GET /users/check-display-name` | `player`/`admin`: gestion de perfil, cambio de contrasena y preferencias de notificaciones |
+| `GET /sessions/next`, `GET /sessions/next/duel-stats`, `GET /predictions/**`, `POST /predictions/session/{id}` | `player`/`admin` (estadisticas de duelo publicas): pronosticos con validacion de Lock Time (HTTP 403 si cerrada) |
 | `GET /scores/me/{year}/{round}` | `player`/`admin`: calculo detallado de puntuacion (GP + Sprint) |
 | `GET /leagues`, `POST /leagues`, `PUT /leagues/{id}`, `POST /leagues/join/{code}`, `GET /leagues/{id}/leaderboard` | `player`/`admin`: gestion de ligas privadas y tablas |
 | `GET /leaderboard/global` | `player`/`admin`: ranking global |
-| `GET /notifications` | `player`/`admin`: bandeja in-app de notificaciones del usuario |
-| `GET /admin/status`, `GET /admin/sessions`, `POST /admin/sessions/sync`, `POST /admin/sessions/{id}/score`, `POST /admin/notifications/send-reminders/{id}` | Solo `admin`: administracion de sesiones, sincronizacion, calculo de puntajes y recordatorios |
+| `GET /notifications`, `PUT /notifications/{id}/read`, `PUT /notifications/read-all`, `DELETE /notifications/{id}`, `DELETE /notifications` | `player`/`admin`: bandeja in-app de notificaciones con lectura y eliminacion de vista |
+| `GET /admin/status`, `GET /admin/users`, `GET /admin/sessions`, `POST /admin/sessions/sync`, `POST /admin/sessions/{id}/score`, `POST /admin/notifications/send-reminders/{id}` | Solo `admin`: directorio de usuarios (solo lectura), administracion de sesiones, sincronizacion, calculo de puntajes y recordatorios |
 
 ### Variables de entorno clave
 

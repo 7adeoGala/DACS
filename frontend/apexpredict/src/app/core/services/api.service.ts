@@ -639,6 +639,22 @@ export class ApiService {
     );
   }
 
+  markNotificationAsRead(id: string): Observable<NotificationItem> {
+    return this.http.put<NotificationItem>(`${this.base}/notifications/${id}/read`, {});
+  }
+
+  markAllNotificationsAsRead(): Observable<{ updated: number; status: string }> {
+    return this.http.put<{ updated: number; status: string }>(`${this.base}/notifications/read-all`, {});
+  }
+
+  dismissNotification(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/notifications/${id}`);
+  }
+
+  dismissAllNotifications(): Observable<{ dismissed: number; status: string }> {
+    return this.http.delete<{ dismissed: number; status: string }>(`${this.base}/notifications`);
+  }
+
   duelCommunityStats(): Observable<DuelCommunityStats | null> {
     return this.http.get<DuelCommunityStats>(`${this.base}/sessions/next/duel-stats`).pipe(
       this.retryOnColdStart(),

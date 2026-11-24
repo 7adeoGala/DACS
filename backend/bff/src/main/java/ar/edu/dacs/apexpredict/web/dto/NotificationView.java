@@ -10,5 +10,7 @@ public record NotificationView(
     String title,
     String message,
     String status,
-    Instant sentAt
+    Instant sentAt,
+    boolean read,
+    Instant readAt
 ) {}

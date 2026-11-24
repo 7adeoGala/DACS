@@ -81,6 +81,18 @@ public interface DomainClient {
     @GetMapping("/notifications")
     List<NotificationView> notifications();
 
+    @PutMapping("/notifications/{id}/read")
+    NotificationView markNotificationAsRead(@PathVariable("id") UUID id);
+
+    @PutMapping("/notifications/read-all")
+    Map<String, Object> markAllNotificationsAsRead();
+
+    @DeleteMapping("/notifications/{id}")
+    void dismissNotification(@PathVariable("id") UUID id);
+
+    @DeleteMapping("/notifications")
+    Map<String, Object> dismissAllNotifications();
+
     @PostMapping("/admin/notifications/send-reminders/{sessionId}")
     Map<String, Object> sendReminders(@PathVariable("sessionId") UUID sessionId);
 

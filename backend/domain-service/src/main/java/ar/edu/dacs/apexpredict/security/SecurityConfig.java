@@ -36,8 +36,8 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/ping", "/sessions/next/duel-stats").permitAll()
                 .requestMatchers("/admin/**").hasRole("admin")
-                .requestMatchers("/me/**", "/leagues/**").hasAnyRole("player", "admin")
-                .requestMatchers(HttpMethod.GET, "/sessions/next", "/leaderboard/global", "/notifications",
+                .requestMatchers("/me/**", "/leagues/**", "/notifications", "/notifications/**").hasAnyRole("player", "admin")
+                .requestMatchers(HttpMethod.GET, "/sessions/next", "/leaderboard/global",
                     "/users/check-display-name",
                     "/predictions/current", "/predictions/history", "/predictions/session/**").hasAnyRole("player", "admin")
                 .requestMatchers(HttpMethod.POST, "/predictions/session/**").hasAnyRole("player", "admin")

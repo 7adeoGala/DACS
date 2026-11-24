@@ -160,7 +160,11 @@ export class NavbarComponent implements OnInit {
   readonly isProfileOpen = signal<boolean>(false);
   readonly isNotificationsOpen = signal<boolean>(false);
   readonly notificationsList = signal<NotificationItem[]>([]);
+  readonly unreadNotificationsCount = computed(() =>
+    this.notificationsList().filter((n) => !n.read).length
+  );
   readonly isLoadingNotifications = signal<boolean>(false);
+  readonly isMutatingNotifications = signal<boolean>(false);
   readonly isMobileNavOpen = signal<boolean>(false);
   readonly isSaving = signal<boolean>(false);
   readonly saveStatus = signal<'idle' | 'success' | 'error'>('idle');
@@ -348,6 +352,84 @@ export class NavbarComponent implements OnInit {
       },
       error: () => {
         this.isLoadingNotifications.set(false);
+      }
+    });
+  }
+
+  markNotificationAsRead(notification: NotificationItem, event?: MouseEvent) {
+    event?.stopPropagation();
+    if (notification.read) {
+      return;
+    }
+    const previous = this.notificationsList();
+    const nowIso = new Date().toISOString();
+    this.notificationsList.set(
+      previous.map((item) =>
+        item.id === notification.id ? { ...item, read: true, readAt: nowIso } : item
+      )
+    );
+    this.api.markNotificationAsRead(notification.id).subscribe({
+      next: (updated) => {
+        if (updated?.id) {
+          this.notificationsList.update((list) =>
+            list.map((item) => (item.id === updated.id ? { ...item, ...updated, read: true } : item))
+          );
+        }
+      },
+      error: () => {
+        this.notificationsList.set(previous);
+      }
+    });
+  }
+
+  markAllNotificationsAsRead(event?: MouseEvent) {
+    event?.stopPropagation();
+    if (this.unreadNotificationsCount() === 0 || this.isMutatingNotifications()) {
+      return;
+    }
+    const previous = this.notificationsList();
+    const nowIso = new Date().toISOString();
+    this.isMutatingNotifications.set(true);
+    this.notificationsList.set(
+      previous.map((item) => (item.read ? item : { ...item, read: true, readAt: nowIso }))
+    );
+    this.api.markAllNotificationsAsRead().subscribe({
+      next: () => {
+        this.isMutatingNotifications.set(false);
+      },
+      error: () => {
+        this.notificationsList.set(previous);
+        this.isMutatingNotifications.set(false);
+      }
+    });
+  }
+
+  dismissNotification(notification: NotificationItem, event?: MouseEvent) {
+    event?.stopPropagation();
+    const previous = this.notificationsList();
+    this.notificationsList.set(previous.filter((item) => item.id !== notification.id));
+    this.api.dismissNotification(notification.id).subscribe({
+      error: () => {
+        this.notificationsList.set(previous);
+      }
+    });
+  }
+
+  dismissAllNotifications(event?: MouseEvent) {
+    event?.stopPropagation();
+    if (this.notificationsList().length === 0 || this.isMutatingNotifications()) {
+      return;
+    }
+    const previous = this.notificationsList();
+    this.isMutatingNotifications.set(true);
+    this.notificationsList.set([]);
+    this.api.dismissAllNotifications().subscribe({
+      next: () => {
+        this.isMutatingNotifications.set(false);
+      },
+      error: () => {
+        this.notificationsList.set(previous);
+        this.isMutatingNotifications.set(false);
       }
     });
   }

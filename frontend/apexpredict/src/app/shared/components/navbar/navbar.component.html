@@ -37,8 +37,8 @@
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                   <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
                 </svg>
-                @if (notificationsList().length > 0) {
-                  <span class="notif-badge">{{ notificationsList().length > 9 ? '9+' : notificationsList().length }}</span>
+                @if (unreadNotificationsCount() > 0) {
+                  <span class="notif-badge">{{ unreadNotificationsCount() > 9 ? '9+' : unreadNotificationsCount() }}</span>
                 }
               </button>
 
@@ -50,19 +50,69 @@
                       {{ savedNotifications() ? 'Alertas activas' : 'Alertas pausadas' }}
                     </span>
                   </div>
+                  @if (notificationsList().length > 0) {
+                    <div class="notif-bulk-actions">
+                      @if (unreadNotificationsCount() > 0) {
+                        <button
+                          type="button"
+                          class="notif-bulk-btn"
+                          [disabled]="isMutatingNotifications()"
+                          (click)="markAllNotificationsAsRead($event)">
+                          Marcar todas leídas
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="notif-bulk-btn notif-bulk-clear"
+                        [disabled]="isMutatingNotifications()"
+                        (click)="dismissAllNotifications($event)">
+                        Limpiar vista
+                      </button>
+                    </div>
+                  }
                   @if (isLoadingNotifications()) {
                     <p class="notif-empty">Cargando avisos…</p>
                   } @else if (notificationsList().length === 0) {
-                    <p class="notif-empty">No tenés notificaciones registradas todavía.</p>
+                    <p class="notif-empty">No tenés notificaciones pendientes.</p>
                   } @else {
                     <div class="notif-list">
                       @for (n of notificationsList(); track n.id) {
-                        <div class="notif-item">
+                        <div class="notif-item" [class.is-unread]="!n.read" [class.is-read]="!!n.read">
                           <div class="notif-item-top">
-                            <span class="notif-channel-tag">{{ n.channel }}</span>
-                            @if (n.sentAt) {
-                              <span class="notif-time">{{ n.sentAt | date:'dd/MM HH:mm' }}</span>
-                            }
+                            <div class="notif-meta-left">
+                              @if (!n.read) {
+                                <span class="notif-unread-dot" aria-label="Sin leer"></span>
+                              }
+                              <span class="notif-channel-tag">{{ n.read ? 'LEÍDA' : 'NUEVA' }}</span>
+                              @if (n.sentAt) {
+                                <span class="notif-time">{{ n.sentAt | date:'dd/MM HH:mm' }}</span>
+                              }
+                            </div>
+                            <div class="notif-item-actions">
+                              @if (!n.read) {
+                                <button
+                                  type="button"
+                                  class="notif-icon-btn read-btn"
+                                  title="Marcar como leída"
+                                  aria-label="Marcar notificación como leída"
+                                  (click)="markNotificationAsRead(n, $event)">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                  </svg>
+                                </button>
+                              }
+                              <button
+                                type="button"
+                                class="notif-icon-btn delete-btn"
+                                title="Quitar de la vista"
+                                aria-label="Eliminar notificación de la vista"
+                                (click)="dismissNotification(n, $event)">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                           <strong class="notif-item-title">{{ n.title }}</strong>
                           <p class="notif-item-msg">{{ n.message }}</p>
