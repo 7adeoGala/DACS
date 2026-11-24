@@ -357,15 +357,24 @@ export class AuthService {
           throw new Error('Credenciales no válidas. Revisá tu usuario/correo y contraseña.');
         }
 
+        if (res.status === 429) {
+          throw new Error('Demasiados intentos de inicio de sesión. Esperá unos segundos e intentá nuevamente.');
+        }
+
+        const backoffMs = Math.min(4000 * attemptCount, 12000);
         statusCallback?.('Servidor de autenticación iniciándose en Render... Aguardá unos segundos.');
-        await new Promise((r) => setTimeout(r, 2500));
+        await new Promise((r) => setTimeout(r, backoffMs));
       } catch (err: any) {
         lastError = err;
-        if (err.message && err.message.includes('Credenciales no válidas')) {
+        if (
+          err.message &&
+          (err.message.includes('Credenciales no válidas') || err.message.includes('Demasiados intentos'))
+        ) {
           throw err;
         }
+        const backoffMs = Math.min(4000 * attemptCount, 12000);
         statusCallback?.('Conectando con servidores seguros... Aguardá unos segundos.');
-        await new Promise((r) => setTimeout(r, 2500));
+        await new Promise((r) => setTimeout(r, backoffMs));
       }
     }
 

@@ -127,10 +127,7 @@ export class ApiService {
   wakeServices(): void {
     if (typeof window === 'undefined') return;
     this.http.get(`${this.base}/backendping`).pipe(catchError(() => of(null))).subscribe();
-
     fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}/.well-known/openid-configuration`).catch(() => {});
-    fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}`, { mode: 'no-cors' }).catch(() => {});
-
     this.http.get(`${this.base}/conectorping`).pipe(catchError(() => of(null))).subscribe();
   }
 
