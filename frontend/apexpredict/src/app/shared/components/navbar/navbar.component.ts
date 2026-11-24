@@ -6,7 +6,6 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { ApiService } from '../../../core/services/api.service';
 import { F1_DRIVERS, ACTIVE_F1_DRIVERS, F1Driver } from '../../../core/models/f1-drivers.model';
 import { NotificationItem } from '../../../core/models/api.models';
-import { environment } from '../../../../environments/environment';
 
 export interface F1TeamOption {
   id: string;
@@ -229,12 +228,6 @@ export class NavbarComponent implements OnInit {
     return `${this.activeTeam().tag} #${this.activeDriver().number}`;
   });
 
-  readonly changePasswordUrl = computed(() => {
-    const base = `${environment.keycloak.url}/realms/${environment.keycloak.realm}/account`;
-    const referrer = encodeURIComponent(environment.keycloak.clientId);
-    return `${base}/?referrer=${referrer}#/account-security/signing-in`;
-  });
-
   constructor() {
     this.router.events.subscribe((event) => {
       if (event instanceof NavigationEnd) {
@@ -261,6 +254,28 @@ export class NavbarComponent implements OnInit {
       const color = this.activeTeam().color;
       if (typeof document !== 'undefined' && document.documentElement) {
         document.documentElement.style.setProperty('--user-team-color', color);
+      }
+    });
+
+    effect(() => {
+      const updated = this.api.profileUpdated();
+      if (!updated) return;
+      if (updated.displayName) {
+        this.savedDisplayName.set(updated.displayName);
+        this.formDisplayName.set(updated.displayName);
+      }
+      if (updated.favoriteTeamId) {
+        const teamId = updated.favoriteTeamId === 'sauber' ? 'audi' : updated.favoriteTeamId;
+        this.savedTeamId.set(teamId);
+        this.formTeamId.set(teamId);
+      }
+      if (updated.favoriteDriverId) {
+        this.savedDriverId.set(updated.favoriteDriverId);
+        this.formDriverId.set(updated.favoriteDriverId);
+      }
+      if (updated.notificationsEnabled !== undefined) {
+        this.savedNotifications.set(updated.notificationsEnabled);
+        this.formNotifications.set(updated.notificationsEnabled);
       }
     });
   }

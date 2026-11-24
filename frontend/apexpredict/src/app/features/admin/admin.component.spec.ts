@@ -8,6 +8,23 @@ describe('AdminComponent', () => {
   it('carga sesiones y permite sincronizar calendario y calcular puntajes cuando el acceso admin esta confirmado', () => {
     const apiStub = {
       adminStatus: vi.fn(() => of({ status: 'authorized' })),
+      adminUsers: vi.fn(() =>
+        of([
+          {
+            id: 'u1',
+            displayName: 'Piloto1',
+            email: 'p1@example.com',
+            firstName: 'Juan',
+            lastName: 'Perez',
+            country: 'Argentina',
+            favoriteTeamId: 'ferrari',
+            favoriteDriverId: 'leclerc',
+            notificationsEnabled: true,
+            totalScore: 19,
+            predictionsCount: 3,
+          },
+        ])
+      ),
       adminSessions: vi.fn(() =>
         of([
           {
@@ -45,6 +62,8 @@ describe('AdminComponent', () => {
 
     expect(component.isAuthorized()).toBe(true);
     expect(component.sessions().length).toBe(1);
+    expect(component.users().length).toBe(1);
+    expect(component.users()[0].displayName).toBe('Piloto1');
 
     component.syncCalendarAndResults();
     expect(apiStub.syncSessions).toHaveBeenCalledTimes(1);

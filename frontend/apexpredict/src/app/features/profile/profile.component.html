@@ -1,0 +1,232 @@
+<section class="profile-page">
+  <div class="profile-hero" [style.--accent]="selectedTeam().color">
+    <div class="hero-left">
+      <div class="profile-avatar" [style.border-color]="selectedTeam().color">
+        {{ initials() }}
+      </div>
+      <div>
+        <span class="hero-eyebrow">MI CUENTA // APEXPREDICT</span>
+        <h1>{{ displayName || auth.username() || 'Mi Perfil' }}</h1>
+        <p class="hero-meta">
+          <span>{{ totalScore() }} PTS acumulados</span>
+          <span>•</span>
+          <span>{{ predictionsCount() }} pronósticos enviados</span>
+        </p>
+      </div>
+    </div>
+    <a routerLink="/dashboard" class="button small quiet">Volver al Panel</a>
+  </div>
+
+  @if (isLoading()) {
+    <div class="profile-card">
+      <p class="dim">Cargando datos de tu cuenta…</p>
+    </div>
+  } @else {
+    <div class="profile-grid">
+      <form class="profile-card" (ngSubmit)="saveProfile()">
+        <div class="card-header-row">
+          <div>
+            <h2>Datos Personales y Preferencias</h2>
+            <p class="dim">Editá tu información visible, correo, escudería, piloto favorito y alertas.</p>
+          </div>
+        </div>
+
+        @if (profileSuccess()) {
+          <div class="alert-banner success" role="status">{{ profileSuccess() }}</div>
+        }
+        @if (profileError()) {
+          <div class="alert-banner error" role="alert">{{ profileError() }}</div>
+        }
+
+        <div class="form-grid-2">
+          <div class="form-field">
+            <label for="profileDisplayName">Nombre público / Alias *</label>
+            <input
+              id="profileDisplayName"
+              name="displayName"
+              type="text"
+              maxlength="40"
+              [ngModel]="displayName"
+              (ngModelChange)="onDisplayNameInput($event)"
+              placeholder="Ej: MaxFan2026"
+              required
+            />
+            @if (isCheckingName()) {
+              <span class="field-hint">Comprobando disponibilidad…</span>
+            } @else if (isDuplicateName()) {
+              <span class="field-error">{{ duplicateNameError() }}</span>
+            }
+          </div>
+
+          <div class="form-field">
+            <label for="profileEmail">Correo electrónico</label>
+            <input
+              id="profileEmail"
+              name="email"
+              type="email"
+              maxlength="254"
+              [(ngModel)]="email"
+              placeholder="tu-correo@ejemplo.com"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="profileFirstName">Nombre</label>
+            <input
+              id="profileFirstName"
+              name="firstName"
+              type="text"
+              maxlength="80"
+              [(ngModel)]="firstName"
+              placeholder="Tu nombre"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="profileLastName">Apellido</label>
+            <input
+              id="profileLastName"
+              name="lastName"
+              type="text"
+              maxlength="80"
+              [(ngModel)]="lastName"
+              placeholder="Tu apellido"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="profileCountry">País / Nacionalidad</label>
+            <input
+              id="profileCountry"
+              name="country"
+              type="text"
+              maxlength="80"
+              [(ngModel)]="country"
+              placeholder="Ej: Argentina"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="profileTeam">Escudería favorita</label>
+            <select id="profileTeam" name="favoriteTeamId" [(ngModel)]="favoriteTeamId">
+              @for (team of teams; track team.id) {
+                <option [value]="team.id">{{ team.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="profileDriver">Piloto favorito</label>
+            <select id="profileDriver" name="favoriteDriverId" [(ngModel)]="favoriteDriverId">
+              @for (driver of drivers; track driver.id) {
+                <option [value]="driver.id">{{ driver.name }} (#{{ driver.number }} - {{ driver.team }})</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-field toggle-field">
+            <label for="profileNotifications">Recordatorios de GP</label>
+            <label class="checkbox-row">
+              <input
+                id="profileNotifications"
+                name="notificationsEnabled"
+                type="checkbox"
+                [(ngModel)]="notificationsEnabled"
+              />
+              <span>Recibir alertas antes del cierre (Lock Time)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-field" style="margin-top: 0.75rem;">
+          <label for="profileBio">Biografía / Presentación ({{ bio.length }}/280)</label>
+          <textarea
+            id="profileBio"
+            name="bio"
+            rows="3"
+            maxlength="280"
+            [(ngModel)]="bio"
+            placeholder="Contá brevemente sobre tu equipo o estrategia en el prode…"
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="button"
+            [disabled]="isSavingProfile() || isCheckingName() || isDuplicateName() || !displayName.trim()"
+          >
+            {{ isSavingProfile() ? 'Guardando cambios…' : 'Guardar Perfil' }}
+          </button>
+        </div>
+      </form>
+
+      <form class="profile-card security-card" (ngSubmit)="savePassword()">
+        <div class="card-header-row">
+          <div>
+            <h2>Seguridad y Contraseña</h2>
+            <p class="dim">Actualizá tu contraseña directamente desde ApexPredict sin salir de la aplicación.</p>
+          </div>
+        </div>
+
+        @if (passwordSuccess()) {
+          <div class="alert-banner success" role="status">{{ passwordSuccess() }}</div>
+        }
+        @if (passwordError()) {
+          <div class="alert-banner error" role="alert">{{ passwordError() }}</div>
+        }
+
+        <div class="form-field">
+          <label for="currentPassword">Contraseña actual *</label>
+          <input
+            id="currentPassword"
+            name="currentPassword"
+            type="password"
+            autocomplete="current-password"
+            [(ngModel)]="currentPassword"
+            placeholder="Tu contraseña actual"
+            required
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="newPassword">Nueva contraseña *</label>
+          <input
+            id="newPassword"
+            name="newPassword"
+            type="password"
+            autocomplete="new-password"
+            minlength="6"
+            [(ngModel)]="newPassword"
+            placeholder="Mínimo 6 caracteres"
+            required
+          />
+        </div>
+
+        <div class="form-field">
+          <label for="confirmPassword">Confirmar nueva contraseña *</label>
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autocomplete="new-password"
+            minlength="6"
+            [(ngModel)]="confirmPassword"
+            placeholder="Repetí tu nueva contraseña"
+            required
+          />
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="submit"
+            class="button"
+            [disabled]="isSavingPassword() || !currentPassword || !newPassword || !confirmPassword"
+          >
+            {{ isSavingPassword() ? 'Actualizando…' : 'Actualizar Contraseña' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+</section>

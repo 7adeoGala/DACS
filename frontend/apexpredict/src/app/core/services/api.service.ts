@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, catchError, map, of, switchMap, timeout, retry, timer, tap, shareReplay } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -7,6 +7,7 @@ import {
   League,
   Profile,
   UpdateProfileRequest,
+  ChangePasswordRequest,
   Race,
   NextSession,
   PredictionDetail,
@@ -31,6 +32,7 @@ import {
 export class ApiService {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl;
+  readonly profileUpdated = signal<Profile | null>(null);
 
   calendar(season: number): Observable<Race[]> {
     return this.http.get<Race[]>(`${this.base}/calendar/${season}`).pipe(
@@ -79,8 +81,13 @@ export class ApiService {
 
   updateProfile(payload: UpdateProfileRequest): Observable<Profile> {
     return this.http.put<Profile>(`${this.base}/me/profile`, payload).pipe(
-      this.retryOnColdStart<Profile>()
+      this.retryOnColdStart<Profile>(),
+      tap((updated) => this.profileUpdated.set(updated))
     );
+  }
+
+  changePassword(payload: ChangePasswordRequest): Observable<{ status: string; message: string }> {
+    return this.http.put<{ status: string; message: string }>(`${this.base}/me/password`, payload);
   }
 
   checkDisplayName(name: string): Observable<{ available: boolean; name: string }> {
@@ -625,6 +632,12 @@ export class ApiService {
 
   adminStatus() {
     return this.http.get<{ status: string }>(`${this.base}/admin/status`);
+  }
+
+  adminUsers(): Observable<Profile[]> {
+    return this.http.get<Profile[]>(`${this.base}/admin/users`).pipe(
+      this.retryOnColdStart()
+    );
   }
 
   adminSessions(): Observable<AdminSessionView[]> {

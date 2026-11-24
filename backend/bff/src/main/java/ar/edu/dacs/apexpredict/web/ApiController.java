@@ -117,8 +117,14 @@ public class ApiController {
 
     @RequestMapping(value = "/me/profile", method = {RequestMethod.PATCH, RequestMethod.PUT})
     @PreAuthorize("hasAnyRole('player', 'admin')")
-    public Profile updateProfile(@RequestBody UpdateProfileRequest request) {
+    public Profile updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
         return domainClient.updateProfile(request);
+    }
+
+    @PutMapping("/me/password")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public Map<String, String> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        return domainClient.changePassword(request);
     }
 
     @GetMapping("/users/check-display-name")
@@ -246,6 +252,12 @@ public class ApiController {
     @PreAuthorize("hasRole('admin')")
     public List<ScoredPredictionSummary> scoreSession(@PathVariable UUID sessionId) {
         return domainClient.scoreSession(sessionId);
+    }
+
+    @GetMapping("/admin/users")
+    @PreAuthorize("hasRole('admin')")
+    public List<Profile> adminUsers() {
+        return domainClient.adminUsers();
     }
 
     @GetMapping("/admin/status")

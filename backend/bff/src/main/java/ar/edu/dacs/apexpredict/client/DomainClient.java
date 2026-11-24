@@ -26,6 +26,9 @@ public interface DomainClient {
     @PutMapping("/me/profile")
     Profile updateProfile(@RequestBody UpdateProfileRequest request);
 
+    @PutMapping("/me/password")
+    Map<String, String> changePassword(@RequestBody ChangePasswordRequest request);
+
     @GetMapping("/users/check-display-name")
     Map<String, Object> checkDisplayName(@RequestParam("name") String name);
 
@@ -89,6 +92,9 @@ public interface DomainClient {
 
     @PostMapping("/admin/sessions/{sessionId}/score")
     List<ScoredPredictionSummary> scoreSession(@PathVariable("sessionId") UUID sessionId);
+
+    @GetMapping("/admin/users")
+    List<Profile> adminUsers();
 
     @GetMapping("/admin/status")
     Map<String, String> adminStatus();

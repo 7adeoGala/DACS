@@ -33,6 +33,12 @@ apexpredict:
   notifications:
     email-webhook-url: ${EMAIL_WEBHOOK_URL:}
     email-api-secret: ${EMAIL_API_SECRET:}
+  keycloak-admin:
+    url: ${KEYCLOAK_ADMIN_URL:https://dacs-3-u0q1.onrender.com/auth}
+    realm: ${KEYCLOAK_REALM:apexpredict}
+    client-id: ${KEYCLOAK_CLIENT_ID:apexpredict-web}
+    username: ${KEYCLOAK_ADMIN_USER:${KEYCLOAK_ADMIN:}}
+    password: ${KEYCLOAK_ADMIN_PASSWORD:}
   security:
     issuer: ${KEYCLOAK_ISSUER_URI:${KEYCLOAK_ISSUER:https://dacs-3-u0q1.onrender.com/auth/realms/apexpredict}}
     jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:https://dacs-3-u0q1.onrender.com/auth/realms/apexpredict/protocol/openid-connect/certs}

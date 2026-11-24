@@ -133,6 +133,15 @@ class AuthorizationTest {
         mvc.perform(get("/leagues").header("Authorization", "Bearer player"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].name").value("Test League"));
+
+        when(domainClient.changePassword(any())).thenReturn(Map.of("status", "SUCCESS"));
+        String pwdBody = "{\"currentPassword\":\"oldpass\",\"newPassword\":\"newpass123\"}";
+        mvc.perform(put("/me/password").contentType("application/json").content(pwdBody))
+            .andExpect(status().isUnauthorized());
+        mvc.perform(put("/me/password").header("Authorization", "Bearer player")
+            .contentType("application/json").content(pwdBody))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("SUCCESS"));
     }
 
     @Test
@@ -212,6 +221,11 @@ class AuthorizationTest {
 
         mvc.perform(post("/admin/sessions/" + sid + "/score").header("Authorization", "Bearer player")).andExpect(status().isForbidden());
         mvc.perform(post("/admin/sessions/" + sid + "/score").header("Authorization", "Bearer admin")).andExpect(status().isOk());
+
+        when(domainClient.adminUsers()).thenReturn(List.of());
+        mvc.perform(get("/admin/users")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/admin/users").header("Authorization", "Bearer player")).andExpect(status().isForbidden());
+        mvc.perform(get("/admin/users").header("Authorization", "Bearer admin")).andExpect(status().isOk());
     }
 
     @Test

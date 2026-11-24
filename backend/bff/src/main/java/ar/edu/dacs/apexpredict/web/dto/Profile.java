@@ -6,6 +6,10 @@ public record Profile(
     UUID id,
     String displayName,
     String email,
+    String firstName,
+    String lastName,
+    String country,
+    String bio,
     String favoriteDriverId,
     String favoriteTeamId,
     boolean notificationsEnabled,
@@ -13,6 +17,6 @@ public record Profile(
     long predictionsCount
 ) {
     public Profile(UUID id, String displayName, String email) {
-        this(id, displayName, email, null, null, true, 0L, 0L);
+        this(id, displayName, email, null, null, null, null, null, null, true, 0L, 0L);
     }
 }

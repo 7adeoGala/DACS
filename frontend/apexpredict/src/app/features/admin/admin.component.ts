@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ApiService } from '../../core/services/api.service';
-import { AdminSessionView } from '../../core/models/api.models';
+import { AdminSessionView, Profile } from '../../core/models/api.models';
 
 @Component({
   standalone: true,
@@ -20,6 +20,27 @@ import { AdminSessionView } from '../../core/models/api.models';
       flex-wrap: wrap;
       gap: 1rem;
       margin-bottom: 1.5rem;
+    }
+    .admin-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+    .admin-tab-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e1;
+      border-radius: 8px;
+      padding: 0.55rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .admin-tab-btn.active {
+      background: rgba(225, 6, 0, 0.16);
+      border-color: var(--red, #e10600);
+      color: #ffffff;
     }
     .admin-card {
       background: #10141d;
@@ -47,7 +68,7 @@ import { AdminSessionView } from '../../core/models/api.models';
     .admin-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.88rem;
+      font-size: 0.86rem;
     }
     .admin-table th, .admin-table td {
       text-align: left;
@@ -86,6 +107,15 @@ import { AdminSessionView } from '../../core/models/api.models';
       gap: 0.5rem;
       flex-wrap: wrap;
     }
+    .readonly-badge {
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.14);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
   `],
   template: `
     <section class="admin-shell">
@@ -114,79 +144,159 @@ import { AdminSessionView } from '../../core/models/api.models';
       }
 
       @if (isAuthorized()) {
-        <div class="admin-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h2 style="margin: 0; font-size: 1.15rem;">Sesiones y Grandes Premios ({{ sessions().length }})</h2>
-            <button type="button" class="button small quiet" [disabled]="isLoadingSessions()" (click)="loadSessions()">
-              {{ isLoadingSessions() ? 'Actualizando…' : 'Refrescar' }}
-            </button>
-          </div>
-
-          @if (isLoadingSessions() && sessions().length === 0) {
-            <p class="dim">Cargando sesiones registradas…</p>
-          } @else if (sessions().length === 0) {
-            <p class="dim">No hay sesiones cargadas. Usá el botón de sincronización para importar el calendario.</p>
-          } @else {
-            <div style="overflow-x: auto;">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Ronda</th>
-                    <th>Gran Premio</th>
-                    <th>Lock Time (UTC)</th>
-                    <th>Estado</th>
-                    <th>Pronósticos</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @for (s of sessions(); track s.id) {
-                    <tr>
-                      <td><strong>{{ s.season }} R{{ s.round }}</strong></td>
-                      <td>
-                        <div style="color: #fff; font-weight: 600;">{{ s.name }}</div>
-                        <div class="dim" style="font-size: 0.78rem;">{{ s.circuit }}</div>
-                      </td>
-                      <td style="font-family: var(--font-mono); font-size: 0.8rem;">
-                        {{ s.startsAt ? (s.startsAt | date:'dd/MM/yyyy HH:mm':'UTC') : 'Sin fecha' }}
-                      </td>
-                      <td>
-                        @if (s.hasOfficialResult) {
-                          <span class="status-pill ready">RESULTADO OFICIAL</span>
-                        } @else if (s.isLocked) {
-                          <span class="status-pill pending">CERRADA / ESPERA FIA</span>
-                        } @else {
-                          <span class="status-pill open">ABIERTA</span>
-                        }
-                      </td>
-                      <td style="font-family: var(--font-mono);">
-                        {{ s.scoredCount }}/{{ s.predictionsCount }} puntuados
-                      </td>
-                      <td>
-                        <div class="action-group">
-                          <button
-                            type="button"
-                            class="button small"
-                            [disabled]="!s.hasOfficialResult || busySessionId() === s.id"
-                            (click)="scoreSession(s)">
-                            {{ busySessionId() === s.id ? 'Procesando…' : 'Calcular Puntajes' }}
-                          </button>
-                          <button
-                            type="button"
-                            class="button small quiet"
-                            [disabled]="s.isLocked || busySessionId() === s.id"
-                            (click)="sendReminders(s)">
-                            Enviar Recordatorios
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
+        <div class="admin-tabs">
+          <button
+            type="button"
+            class="admin-tab-btn"
+            [class.active]="activeTab() === 'sessions'"
+            (click)="activeTab.set('sessions')">
+            Sesiones y Grandes Premios ({{ sessions().length }})
+          </button>
+          <button
+            type="button"
+            class="admin-tab-btn"
+            [class.active]="activeTab() === 'users'"
+            (click)="openUsersTab()">
+            Usuarios Registrados ({{ users().length }})
+          </button>
         </div>
+
+        @if (activeTab() === 'sessions') {
+          <div class="admin-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h2 style="margin: 0; font-size: 1.15rem;">Sesiones y Grandes Premios ({{ sessions().length }})</h2>
+              <button type="button" class="button small quiet" [disabled]="isLoadingSessions()" (click)="loadSessions()">
+                {{ isLoadingSessions() ? 'Actualizando…' : 'Refrescar' }}
+              </button>
+            </div>
+
+            @if (isLoadingSessions() && sessions().length === 0) {
+              <p class="dim">Cargando sesiones registradas…</p>
+            } @else if (sessions().length === 0) {
+              <p class="dim">No hay sesiones cargadas. Usá el botón de sincronización para importar el calendario.</p>
+            } @else {
+              <div style="overflow-x: auto;">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Ronda</th>
+                      <th>Gran Premio</th>
+                      <th>Lock Time (UTC)</th>
+                      <th>Estado</th>
+                      <th>Pronósticos</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (s of sessions(); track s.id) {
+                      <tr>
+                        <td><strong>{{ s.season }} R{{ s.round }}</strong></td>
+                        <td>
+                          <div style="color: #fff; font-weight: 600;">{{ s.name }}</div>
+                          <div class="dim" style="font-size: 0.78rem;">{{ s.circuit }}</div>
+                        </td>
+                        <td style="font-family: var(--font-mono); font-size: 0.8rem;">
+                          {{ s.startsAt ? (s.startsAt | date:'dd/MM/yyyy HH:mm':'UTC') : 'Sin fecha' }}
+                        </td>
+                        <td>
+                          @if (s.hasOfficialResult) {
+                            <span class="status-pill ready">RESULTADO OFICIAL</span>
+                          } @else if (s.isLocked) {
+                            <span class="status-pill pending">CERRADA / ESPERA FIA</span>
+                          } @else {
+                            <span class="status-pill open">ABIERTA</span>
+                          }
+                        </td>
+                        <td style="font-family: var(--font-mono);">
+                          {{ s.scoredCount }}/{{ s.predictionsCount }} puntuados
+                        </td>
+                        <td>
+                          <div class="action-group">
+                            <button
+                              type="button"
+                              class="button small"
+                              [disabled]="!s.hasOfficialResult || busySessionId() === s.id"
+                              (click)="scoreSession(s)">
+                              {{ busySessionId() === s.id ? 'Procesando…' : 'Calcular Puntajes' }}
+                            </button>
+                            <button
+                              type="button"
+                              class="button small quiet"
+                              [disabled]="s.isLocked || busySessionId() === s.id"
+                              (click)="sendReminders(s)">
+                              Enviar Recordatorios
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
+
+        @if (activeTab() === 'users') {
+          <div class="admin-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem;">
+              <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                <h2 style="margin: 0; font-size: 1.15rem;">Directorio de Usuarios ({{ users().length }})</h2>
+                <span class="readonly-badge">SOLO LECTURA</span>
+              </div>
+              <button type="button" class="button small quiet" [disabled]="isLoadingUsers()" (click)="loadUsers()">
+                {{ isLoadingUsers() ? 'Actualizando…' : 'Refrescar' }}
+              </button>
+            </div>
+
+            <p class="dim" style="margin: 0 0 1rem; font-size: 0.84rem;">
+              Vista de consulta de perfiles registrados. Cada usuario edita únicamente sus propios datos desde Mi Perfil.
+            </p>
+
+            @if (isLoadingUsers() && users().length === 0) {
+              <p class="dim">Cargando usuarios registrados…</p>
+            } @else if (users().length === 0) {
+              <p class="dim">Aún no hay usuarios registrados.</p>
+            } @else {
+              <div style="overflow-x: auto;">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Alias</th>
+                      <th>Nombre y Apellido</th>
+                      <th>Correo</th>
+                      <th>País</th>
+                      <th>Equipo / Piloto</th>
+                      <th>Alertas</th>
+                      <th>Puntos / Pronósticos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (u of users(); track u.id) {
+                      <tr>
+                        <td style="color: #fff; font-weight: 600;">{{ u.displayName }}</td>
+                        <td>{{ ((u.firstName || '') + ' ' + (u.lastName || '')).trim() || '-' }}</td>
+                        <td style="font-family: var(--font-mono); font-size: 0.8rem;">{{ u.email || '-' }}</td>
+                        <td>{{ u.country || '-' }}</td>
+                        <td>{{ (u.favoriteTeamId || '-') + ' / ' + (u.favoriteDriverId || '-') }}</td>
+                        <td>
+                          @if (u.notificationsEnabled) {
+                            <span class="status-pill ready">ACTIVAS</span>
+                          } @else {
+                            <span class="status-pill pending">PAUSADAS</span>
+                          }
+                        </td>
+                        <td style="font-family: var(--font-mono);">
+                          {{ u.totalScore ?? 0 }} pts ({{ u.predictionsCount ?? 0 }})
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        }
       }
     </section>
   `,
@@ -196,8 +306,11 @@ export class AdminComponent implements OnInit {
 
   readonly status = signal('Verificando tu acceso…');
   readonly isAuthorized = signal(false);
+  readonly activeTab = signal<'sessions' | 'users'>('sessions');
   readonly sessions = signal<AdminSessionView[]>([]);
+  readonly users = signal<Profile[]>([]);
   readonly isLoadingSessions = signal(false);
+  readonly isLoadingUsers = signal(false);
   readonly isSyncing = signal(false);
   readonly busySessionId = signal<string | null>(null);
   readonly actionSuccess = signal('');
@@ -209,12 +322,34 @@ export class AdminComponent implements OnInit {
         this.isAuthorized.set(true);
         this.status.set('Acceso de administrador confirmado.');
         this.loadSessions();
+        this.loadUsers();
       },
       error: () => {
         this.isAuthorized.set(false);
         this.status.set(
           'No pudimos confirmar el acceso. Iniciá sesión con una cuenta de administrador.',
         );
+      },
+    });
+  }
+
+  openUsersTab() {
+    this.activeTab.set('users');
+    if (this.users().length === 0) {
+      this.loadUsers();
+    }
+  }
+
+  loadUsers() {
+    this.isLoadingUsers.set(true);
+    this.api.adminUsers().subscribe({
+      next: (list) => {
+        this.users.set(list || []);
+        this.isLoadingUsers.set(false);
+      },
+      error: (err) => {
+        this.isLoadingUsers.set(false);
+        this.actionError.set(err?.error?.description || 'No se pudo cargar la lista de usuarios.');
       },
     });
   }

@@ -2,9 +2,12 @@ package ar.edu.dacs.apexpredict.application;
 
 import ar.edu.dacs.apexpredict.domain.*;
 import ar.edu.dacs.apexpredict.infrastructure.persistence.*;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Size;
 import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +22,24 @@ public class PlayerService {
     private final LeagueMemberRepository members;
     private final PredictionRepository predictions;
     private final ScoringService scoringService;
+    private final KeycloakUserSyncService keycloakUserSyncService;
+
+    @Autowired
+    public PlayerService(
+        UserRepository users,
+        LeagueRepository leagues,
+        LeagueMemberRepository members,
+        PredictionRepository predictions,
+        ScoringService scoringService,
+        @Autowired(required = false) KeycloakUserSyncService keycloakUserSyncService
+    ) {
+        this.users = users;
+        this.leagues = leagues;
+        this.members = members;
+        this.predictions = predictions;
+        this.scoringService = scoringService;
+        this.keycloakUserSyncService = keycloakUserSyncService;
+    }
 
     public PlayerService(
         UserRepository users,
@@ -27,11 +48,7 @@ public class PlayerService {
         PredictionRepository predictions,
         ScoringService scoringService
     ) {
-        this.users = users;
-        this.leagues = leagues;
-        this.members = members;
-        this.predictions = predictions;
-        this.scoringService = scoringService;
+        this(users, leagues, members, predictions, scoringService, null);
     }
 
     private User getOrCreateUser(String issuer, String subject) {
@@ -87,16 +104,7 @@ public class PlayerService {
         }
         long totalScore = predictions.sumScoreByUserId(user.getId());
         long count = predictions.countByUserId(user.getId());
-        return new Profile(
-            user.getId(),
-            user.getDisplayName(),
-            user.getEmail(),
-            user.getFavoriteDriverId(),
-            user.getFavoriteTeamId(),
-            user.isNotificationsEnabled(),
-            totalScore,
-            count
-        );
+        return toProfile(user, totalScore, count);
     }
 
     @Transactional
@@ -109,25 +117,87 @@ public class PlayerService {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "El nombre de usuario '" + requestedName + "' ya está en uso por otro piloto.");
             }
         }
+        String requestedEmail = request.email() != null ? request.email().trim().toLowerCase() : null;
+        if (requestedEmail != null && !requestedEmail.isBlank()) {
+            if (!requestedEmail.contains("@") || !requestedEmail.contains(".")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El correo electrónico no tiene un formato válido.");
+            }
+            if (users.existsByEmailIgnoreCaseAndIdNot(requestedEmail, user.getId())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "El correo electrónico ya está registrado por otra cuenta.");
+            }
+        }
         user.updateProfile(
             requestedName,
+            request.email(),
+            request.firstName(),
+            request.lastName(),
+            request.country(),
+            request.bio(),
             request.favoriteDriverId(),
             request.favoriteTeamId(),
             request.notificationsEnabled()
         );
         users.save(user);
+        if (keycloakUserSyncService != null) {
+            keycloakUserSyncService.syncUserProfile(
+                subject,
+                user.getEmail(),
+                user.getFirstName(),
+                user.getLastName()
+            );
+        }
         long totalScore = predictions.sumScoreByUserId(user.getId());
         long count = predictions.countByUserId(user.getId());
+        return toProfile(user, totalScore, count);
+    }
+
+    public void changePassword(String issuer, String subject, String jwtUsername, String currentPassword, String newPassword) {
+        User user = getOrCreateUser(issuer, subject);
+        if (keycloakUserSyncService == null) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "El servicio de cambio de contraseña no está disponible.");
+        }
+        String loginId = (jwtUsername != null && !jwtUsername.isBlank())
+            ? jwtUsername
+            : (user.getEmail() != null && !user.getEmail().isBlank() ? user.getEmail() : user.getDisplayName());
+        try {
+            keycloakUserSyncService.changePassword(subject, loginId, currentPassword, newPassword);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        } catch (IllegalStateException ex) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), ex);
+        }
+    }
+
+    private Profile toProfile(User user, long totalScore, long count) {
         return new Profile(
             user.getId(),
             user.getDisplayName(),
             user.getEmail(),
+            user.getFirstName(),
+            user.getLastName(),
+            user.getCountry(),
+            user.getBio(),
             user.getFavoriteDriverId(),
             user.getFavoriteTeamId(),
             user.isNotificationsEnabled(),
             totalScore,
             count
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<Profile> listAllUsersForAdmin() {
+        return users.findAll().stream()
+            .sorted(Comparator.comparing(
+                u -> u.getDisplayName() != null ? u.getDisplayName().toLowerCase() : "",
+                Comparator.naturalOrder()
+            ))
+            .map(u -> toProfile(
+                u,
+                predictions.sumScoreByUserId(u.getId()),
+                predictions.countByUserId(u.getId())
+            ))
+            .toList();
     }
 
     @Transactional(readOnly = true)
@@ -305,6 +375,10 @@ public class PlayerService {
         UUID id,
         String displayName,
         String email,
+        String firstName,
+        String lastName,
+        String country,
+        String bio,
         String favoriteDriverId,
         String favoriteTeamId,
         boolean notificationsEnabled,
@@ -312,16 +386,25 @@ public class PlayerService {
         long predictionsCount
     ) {
         public Profile(UUID id, String displayName, String email) {
-            this(id, displayName, email, null, null, true, 0L, 0L);
+            this(id, displayName, email, null, null, null, null, null, null, true, 0L, 0L);
         }
     }
 
     public record UpdateProfileRequest(
-        String displayName,
-        String favoriteDriverId,
-        String favoriteTeamId,
+        @Size(max = 40) String displayName,
+        @Email @Size(max = 254) String email,
+        @Size(max = 80) String firstName,
+        @Size(max = 80) String lastName,
+        @Size(max = 80) String country,
+        @Size(max = 280) String bio,
+        @Size(max = 64) String favoriteDriverId,
+        @Size(max = 64) String favoriteTeamId,
         Boolean notificationsEnabled
-    ) {}
+    ) {
+        public UpdateProfileRequest(String displayName, String favoriteDriverId, String favoriteTeamId, Boolean notificationsEnabled) {
+            this(displayName, null, null, null, null, null, favoriteDriverId, favoriteTeamId, notificationsEnabled);
+        }
+    }
 
     public record LeagueView(
         UUID id,

@@ -40,6 +40,13 @@ export const routes: Routes = [
       import('./features/dashboard-view/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
+    path: 'profile',
+    title: 'Mi Perfil · ApexPredict',
+    canActivate: [requireRole('player', 'admin')],
+    loadComponent: () =>
+      import('./features/profile/profile.component').then((m) => m.ProfileComponent),
+  },
+  {
     path: 'admin',
     title: 'Administracion · ApexPredict',
     canActivate: [requireRole('admin')],

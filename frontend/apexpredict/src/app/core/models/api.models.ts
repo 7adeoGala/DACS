@@ -14,6 +14,10 @@ export interface Profile {
   id: string;
   displayName: string;
   email: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  country?: string | null;
+  bio?: string | null;
   favoriteDriverId?: string | null;
   favoriteTeamId?: string | null;
   notificationsEnabled?: boolean;
@@ -23,9 +27,19 @@ export interface Profile {
 
 export interface UpdateProfileRequest {
   displayName: string;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  country?: string | null;
+  bio?: string | null;
   favoriteDriverId?: string | null;
   favoriteTeamId?: string | null;
   notificationsEnabled?: boolean;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface League {

@@ -60,9 +60,26 @@ public class DomainController {
     @PreAuthorize("hasAnyRole('player', 'admin')")
     public PlayerService.Profile updateProfile(
         @AuthenticationPrincipal Jwt jwt,
-        @RequestBody PlayerService.UpdateProfileRequest request
+        @Valid @RequestBody PlayerService.UpdateProfileRequest request
     ) {
         return players.updateProfile(jwt.getIssuer().toString(), jwt.getSubject(), request);
+    }
+
+    @PutMapping("/me/password")
+    @PreAuthorize("hasAnyRole('player', 'admin')")
+    public Map<String, String> changePassword(
+        @AuthenticationPrincipal Jwt jwt,
+        @Valid @RequestBody ChangePasswordRequest request
+    ) {
+        String username = jwt.getClaimAsString("preferred_username");
+        players.changePassword(
+            jwt.getIssuer().toString(),
+            jwt.getSubject(),
+            username,
+            request.currentPassword(),
+            request.newPassword()
+        );
+        return Map.of("status", "SUCCESS", "message", "Contraseña actualizada correctamente.");
     }
 
     @GetMapping("/users/check-display-name")
@@ -171,6 +188,12 @@ public class DomainController {
         return Map.of("sessionId", sessionId, "remindersSent", sent, "status", "SUCCESS");
     }
 
+    @GetMapping("/admin/users")
+    @PreAuthorize("hasRole('admin')")
+    public List<PlayerService.Profile> adminUsers() {
+        return players.listAllUsersForAdmin();
+    }
+
     @GetMapping("/admin/status")
     @PreAuthorize("hasRole('admin')")
     public Map<String, String> adminStatus() {
@@ -199,5 +222,10 @@ public class DomainController {
 
     public record JoinLeagueRequest(
         @Size(max = 100) String password
+    ) {}
+
+    public record ChangePasswordRequest(
+        @NotBlank @Size(max = 128) String currentPassword,
+        @NotBlank @Size(min = 6, max = 128) String newPassword
     ) {}
 }

@@ -319,8 +319,8 @@
                   </button>
 
                   <div class="dropdown-footer">
-                    <a [href]="changePasswordUrl()" target="_blank" rel="noopener noreferrer" class="link-security" title="Cambiar contraseña">
-                      Cambiar contraseña ↗
+                    <a routerLink="/profile" (click)="closeProfileMenu()" class="link-security" title="Editar perfil completo y contraseña">
+                      Editar cuenta completa
                     </a>
                     <button type="button" class="btn-dropdown-logout" (click)="auth.logout()">
                       Cerrar Sesión
@@ -372,6 +372,9 @@
           </a>
           <a routerLink="/dashboard" [queryParams]="{ tab: 'historial' }" [class.active]="isCurrent('historial')" (click)="closeMobileNav()" class="mobile-nav-link">
             Historial de Pronósticos
+          </a>
+          <a routerLink="/profile" [class.active]="currentUrl().startsWith('/profile')" (click)="closeMobileNav()" class="mobile-nav-link">
+            Mi Perfil y Cuenta
           </a>
           @if (auth.hasRole('admin')) {
             <a routerLink="/admin" [class.active]="currentUrl().startsWith('/admin')" (click)="closeMobileNav()" class="mobile-nav-link">

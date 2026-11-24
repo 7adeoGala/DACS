@@ -123,6 +123,20 @@ class DomainAuthorizationTest {
     }
 
     @Test
+    void changePasswordRequiresPlayerOrAdmin() throws Exception {
+        String body = "{\"currentPassword\":\"oldpass\",\"newPassword\":\"newpass123\"}";
+        mvc.perform(put("/me/password").contentType("application/json").content(body))
+            .andExpect(status().isUnauthorized());
+        mvc.perform(put("/me/password").header("Authorization", "Bearer observer")
+            .contentType("application/json").content(body))
+            .andExpect(status().isForbidden());
+        mvc.perform(put("/me/password").header("Authorization", "Bearer player")
+            .contentType("application/json").content(body))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("SUCCESS"));
+    }
+
+    @Test
     void playerCannotAccessAdminRoute() throws Exception {
         mvc.perform(get("/admin/status").header("Authorization", "Bearer player"))
             .andExpect(status().isForbidden())
@@ -200,5 +214,9 @@ class DomainAuthorizationTest {
             .andExpect(status().isForbidden());
         mvc.perform(post("/admin/sessions/" + sessionId + "/score").header("Authorization", "Bearer admin"))
             .andExpect(status().isOk());
+
+        mvc.perform(get("/admin/users")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/admin/users").header("Authorization", "Bearer player")).andExpect(status().isForbidden());
+        mvc.perform(get("/admin/users").header("Authorization", "Bearer admin")).andExpect(status().isOk());
     }
 }
