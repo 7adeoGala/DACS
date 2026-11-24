@@ -5,9 +5,14 @@ import ar.edu.dacs.apexpredict.connector.client.OpenF1Client;
 import ar.edu.dacs.apexpredict.connector.dto.JolpicaDto;
 import ar.edu.dacs.apexpredict.connector.dto.OpenF1Dto;
 import ar.edu.dacs.apexpredict.connector.service.F1Service;
+import feign.FeignException;
+import feign.Request;
+import feign.RequestTemplate;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.DeserializationFeature;
@@ -224,5 +229,85 @@ class F1ServiceTest {
         assertEquals("OPEN", service.circuitBreakerState());
         assertThrows(F1Service.F1UnavailableException.class, () -> service.nextRace());
         verify(client, times(3)).getNextRace();
+    }
+
+    @Test
+    void driverStatsFallsBackToStandingsWhenRateLimitedWithoutOpeningCircuitBreaker() {
+        var standing = new JolpicaDto.DriverStandingItemDto(
+            "9", "89", "0",
+            new JolpicaDto.Driver("lawson", "LAW", "Liam", "Lawson", "New Zealander"),
+            List.of(new JolpicaDto.Constructor("RB F1 Team"))
+        );
+        when(client.getDriverStandings()).thenReturn(
+            new JolpicaDto.StandingsEnvelope(new JolpicaDto.StandingsMetadata(
+                new JolpicaDto.StandingsTable(List.of(new JolpicaDto.StandingsListDto(List.of(standing), null)))
+            ))
+        );
+        when(client.getDriverSeasonResults("lawson", 50)).thenThrow(rateLimitException());
+
+        var stats = service.driverStats("lawson");
+        assertEquals("lawson", stats.driverId());
+        assertEquals(89, stats.points());
+        assertEquals("P9", stats.standingPosition());
+        assertEquals("New Zealander", stats.nationality());
+        assertEquals("CLOSED", service.circuitBreakerState());
+    }
+
+    @Test
+    void driverStatsRetriesOnceOn429AndCachesResult() {
+        var race = new JolpicaDto.DetailedRaceDto(
+            "2026", "6", "Monaco Grand Prix", "2026-06-07",
+            null,
+            List.of(new JolpicaDto.DetailedResultDto(
+                "6", "15", "8", "78", "Finished",
+                new JolpicaDto.Driver("arvid_lindblad", "LIN", "Arvid", "Lindblad", "British"),
+                new JolpicaDto.Constructor("RB F1 Team"),
+                null
+            ))
+        );
+        var seasonEnv = new JolpicaDto.DetailedEnvelope(
+            new JolpicaDto.DetailedMetadata("1", new JolpicaDto.DetailedRaceTable(List.of(race)))
+        );
+        when(client.getDriverStandings()).thenReturn(null);
+        when(client.getDriverSeasonResults("arvid_lindblad", 50))
+            .thenThrow(rateLimitException())
+            .thenReturn(seasonEnv);
+        when(client.getDriverCareerWins("arvid_lindblad", 1))
+            .thenReturn(new JolpicaDto.DetailedEnvelope(new JolpicaDto.DetailedMetadata("0", null)));
+        when(client.getDriverCareerPoles("arvid_lindblad", 1))
+            .thenReturn(new JolpicaDto.DetailedEnvelope(new JolpicaDto.DetailedMetadata("0", null)));
+        when(client.getDriverCareerStarts("arvid_lindblad", 1))
+            .thenReturn(new JolpicaDto.DetailedEnvelope(new JolpicaDto.DetailedMetadata("21", null)));
+
+        var first = service.driverStats("lindblad");
+        var second = service.driverStats("lindblad");
+
+        assertEquals("lindblad", first.driverId());
+        assertEquals("P6", first.bestFinish());
+        assertEquals(21, first.careerStarts());
+        assertEquals(first, second);
+        assertEquals("CLOSED", service.circuitBreakerState());
+        verify(client, times(2)).getDriverSeasonResults("arvid_lindblad", 50);
+        verify(client, times(1)).getDriverCareerStarts("arvid_lindblad", 1);
+    }
+
+    @Test
+    void driverStatsThrowsUnavailableWhenNoStandingsAndProviderDown() {
+        when(client.getDriverStandings()).thenThrow(new RuntimeException("Connection refused"));
+        when(client.getDriverSeasonResults("perez", 50)).thenThrow(new RuntimeException("Connection refused"));
+
+        assertThrows(F1Service.F1UnavailableException.class, () -> service.driverStats("perez"));
+    }
+
+    private static FeignException.TooManyRequests rateLimitException() {
+        Request req = Request.create(
+            Request.HttpMethod.GET,
+            "https://api.jolpi.ca/ergast/f1/current/drivers/lawson/results.json",
+            Map.of(),
+            null,
+            StandardCharsets.UTF_8,
+            new RequestTemplate()
+        );
+        return new FeignException.TooManyRequests("Too Many Requests", req, null, Map.of());
     }
 }

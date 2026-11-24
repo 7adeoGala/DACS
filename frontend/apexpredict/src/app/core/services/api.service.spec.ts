@@ -51,4 +51,40 @@ describe('ApiService (BFF-only integration)', () => {
     expect(standings.length).toBe(1);
     expect(standings[0].driverId).toBe('antonelli');
   });
+
+  it('no reintenta 502 en estadisticas de piloto y evita cachear permanentemente el fallback fallido', async () => {
+    const firstPromise = firstValueFrom(service.getDynamicDriverStats('perez'));
+    const firstReq = httpMock.expectOne(`${environment.apiUrl}/f1/drivers/perez/stats`);
+    firstReq.flush({ status: 502, code: 'conector_502' }, { status: 502, statusText: 'Bad Gateway' });
+
+    const fallback = await firstPromise;
+    expect(fallback.driverId).toBe('perez');
+    expect(fallback.points).toBe(0);
+    expect(fallback.standingPosition).toBe('-');
+
+    const secondPromise = firstValueFrom(service.getDynamicDriverStats('perez'));
+    const secondReq = httpMock.expectOne(`${environment.apiUrl}/f1/drivers/perez/stats`);
+    secondReq.flush({
+      driverId: 'perez',
+      nationality: 'Mexican',
+      points: 12,
+      standingPosition: 'P14',
+      wins: 0,
+      podiums: 0,
+      poles: 0,
+      fastestLaps: 0,
+      dnfs: 1,
+      racesCount: 10,
+      bestFinish: 'P7',
+      careerWins: 6,
+      careerPoles: 4,
+      careerStarts: 304,
+      seasonResults: []
+    });
+
+    const recovered = await secondPromise;
+    expect(recovered.points).toBe(12);
+    expect(recovered.standingPosition).toBe('P14');
+    expect(recovered.careerWins).toBe(6);
+  });
 });

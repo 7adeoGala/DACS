@@ -111,6 +111,19 @@ export class ApiService {
     dnfCount: 3
   };
 
+  private retryDriverStats<T>() {
+    return retry<T>({
+      count: 1,
+      delay: (error) => {
+        if (error.status === 0 || error.status === 503 || error.status === 504) {
+          console.warn(`[ApexPredict] Reintentando telemetria de piloto (1/1, status: ${error.status})...`);
+          return timer(2500);
+        }
+        throw error;
+      }
+    });
+  }
+
   private retryOnColdStart<T>() {
     return retry<T>({
       count: 4,
@@ -435,7 +448,7 @@ export class ApiService {
     };
 
     const req$ = this.http.get<DynamicDriverStats>(`${this.base}/f1/drivers/${encodeURIComponent(cleanId)}/stats`).pipe(
-      this.retryOnColdStart(),
+      this.retryDriverStats(),
       map(apiStats => ({
         ...apiStats,
         driverId: cleanId,
@@ -445,27 +458,30 @@ export class ApiService {
         team: driverOpt.team,
         teamColor: driverOpt.teamColor
       })),
-      catchError(() => of({
-        driverId: cleanId,
-        name: driverOpt.name,
-        code: driverOpt.code,
-        number: driverOpt.number,
-        team: driverOpt.team,
-        teamColor: driverOpt.teamColor,
-        points: 0,
-        standingPosition: '-',
-        wins: 0,
-        podiums: 0,
-        poles: 0,
-        fastestLaps: 0,
-        dnfs: 0,
-        racesCount: 0,
-        bestFinish: '-',
-        careerWins: 0,
-        careerPoles: 0,
-        careerStarts: 0,
-        seasonResults: []
-      })),
+      catchError(() => {
+        this.driverStatsRequestCache.delete(cleanId);
+        return of({
+          driverId: cleanId,
+          name: driverOpt.name,
+          code: driverOpt.code,
+          number: driverOpt.number,
+          team: driverOpt.team,
+          teamColor: driverOpt.teamColor,
+          points: 0,
+          standingPosition: '-',
+          wins: 0,
+          podiums: 0,
+          poles: 0,
+          fastestLaps: 0,
+          dnfs: 0,
+          racesCount: 0,
+          bestFinish: '-',
+          careerWins: 0,
+          careerPoles: 0,
+          careerStarts: 0,
+          seasonResults: []
+        });
+      }),
       shareReplay(1)
     );
 

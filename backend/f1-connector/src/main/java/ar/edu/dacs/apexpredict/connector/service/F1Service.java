@@ -3,31 +3,46 @@ package ar.edu.dacs.apexpredict.connector.service;
 import ar.edu.dacs.apexpredict.connector.client.JolpicaClient;
 import ar.edu.dacs.apexpredict.connector.client.OpenF1Client;
 import ar.edu.dacs.apexpredict.connector.dto.*;
+import feign.FeignException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
 @SuppressWarnings("null")
 public class F1Service {
+    // ==================================================
+    // CONFIGURACION Y ESTADO EN MEMORIA
+    // ==================================================
     private static final Logger log = LoggerFactory.getLogger(F1Service.class);
-    private static final Duration CACHE_TTL = Duration.ofMinutes(5);
+    private static final Duration CACHE_TTL = Duration.ofMinutes(30);
+    private static final Duration CAREER_CACHE_TTL = Duration.ofHours(6);
 
     private final JolpicaClient client;
     private final OpenF1Client openF1Client;
     private final ExternalApiCircuitBreaker circuitBreaker;
+    private final long jolpicaMinIntervalMs;
+    private final long rateLimitBackoffMs;
+    private final Object jolpicaRateLock = new Object();
+    private long nextJolpicaRequestAtMs = 0L;
 
     private final Map<String, CacheEntry<DriverDynamicStats>> driverStatsCache = new ConcurrentHashMap<>();
+    private final Map<String, CacheEntry<CareerTotals>> careerTotalsCache = new ConcurrentHashMap<>();
     private final Map<String, CacheEntry<OfficialRaceSummary>> officialSummaryCache = new ConcurrentHashMap<>();
     private final Map<Integer, CacheEntry<List<Race>>> calendarCache = new ConcurrentHashMap<>();
     private final Map<String, CacheEntry<List<Finish>>> resultsCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, CompletableFuture<?>> inFlightRequests = new ConcurrentHashMap<>();
     private volatile CacheEntry<NextRaceInfo> nextRaceCache;
     private volatile CacheEntry<LastRaceInfo> lastRaceCache;
     private volatile CacheEntry<List<DriverStandingInfo>> driverStandingsCache;
@@ -37,30 +52,141 @@ public class F1Service {
     public F1Service(
         JolpicaClient client,
         @Nullable OpenF1Client openF1Client,
-        @Nullable ExternalApiCircuitBreaker circuitBreaker
+        @Nullable ExternalApiCircuitBreaker circuitBreaker,
+        @Value("${jolpica.api.min-interval-ms:320}") long jolpicaMinIntervalMs,
+        @Value("${jolpica.api.rate-limit-backoff-ms:1200}") long rateLimitBackoffMs
     ) {
         this.client = client;
         this.openF1Client = openF1Client;
         this.circuitBreaker = circuitBreaker != null
             ? circuitBreaker
             : new ExternalApiCircuitBreaker(3, 30);
+        this.jolpicaMinIntervalMs = Math.max(0L, jolpicaMinIntervalMs);
+        this.rateLimitBackoffMs = Math.max(0L, rateLimitBackoffMs);
+    }
+
+    public F1Service(
+        JolpicaClient client,
+        @Nullable OpenF1Client openF1Client,
+        @Nullable ExternalApiCircuitBreaker circuitBreaker
+    ) {
+        this(client, openF1Client, circuitBreaker, 0L, 0L);
     }
 
     public F1Service(JolpicaClient client, @Nullable OpenF1Client openF1Client) {
-        this(client, openF1Client, new ExternalApiCircuitBreaker(3, 30));
+        this(client, openF1Client, new ExternalApiCircuitBreaker(3, 30), 0L, 0L);
     }
 
     public F1Service(JolpicaClient client) {
-        this(client, null, new ExternalApiCircuitBreaker(3, 30));
+        this(client, null, new ExternalApiCircuitBreaker(3, 30), 0L, 0L);
     }
 
     public String circuitBreakerState() {
         return circuitBreaker.getState().name();
     }
 
+    // ==================================================
+    // RESILIENCIA, RATE LIMITING Y COALESCING
+    // ==================================================
+    private void paceJolpicaRequest() {
+        if (jolpicaMinIntervalMs <= 0L) {
+            return;
+        }
+        long waitMs;
+        synchronized (jolpicaRateLock) {
+            long now = System.currentTimeMillis();
+            if (now < nextJolpicaRequestAtMs) {
+                waitMs = nextJolpicaRequestAtMs - now;
+                nextJolpicaRequestAtMs += jolpicaMinIntervalMs;
+            } else {
+                waitMs = 0L;
+                nextJolpicaRequestAtMs = now + jolpicaMinIntervalMs;
+            }
+        }
+        if (waitMs > 0L) {
+            sleepQuietly(waitMs);
+        }
+    }
+
+    private <T> T callJolpica(Supplier<T> call) {
+        paceJolpicaRequest();
+        try {
+            return call.get();
+        } catch (Exception ex) {
+            if (isRateLimited(ex)) {
+                log.warn("Jolpica devolvio HTTP 429; aplicando pausa de respaldo antes de reintentar.");
+                if (rateLimitBackoffMs > 0L) {
+                    synchronized (jolpicaRateLock) {
+                        nextJolpicaRequestAtMs = Math.max(
+                            nextJolpicaRequestAtMs,
+                            System.currentTimeMillis() + rateLimitBackoffMs
+                        );
+                    }
+                    sleepQuietly(rateLimitBackoffMs);
+                }
+                paceJolpicaRequest();
+                return call.get();
+            }
+            throw ex;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T coalesce(String key, Supplier<T> loader) {
+        CompletableFuture<T> created = new CompletableFuture<>();
+        CompletableFuture<T> existing = (CompletableFuture<T>) inFlightRequests.putIfAbsent(key, created);
+        if (existing != null) {
+            return joinUnwrapped(existing);
+        }
+        try {
+            T result = loader.get();
+            created.complete(result);
+            return result;
+        } catch (Throwable ex) {
+            created.completeExceptionally(ex);
+            if (ex instanceof RuntimeException runtimeEx) {
+                throw runtimeEx;
+            }
+            throw new IllegalStateException("Error ejecutando solicitud F1.", ex);
+        } finally {
+            inFlightRequests.remove(key, created);
+        }
+    }
+
+    private static <T> T joinUnwrapped(CompletableFuture<T> future) {
+        try {
+            return future.join();
+        } catch (CompletionException ex) {
+            Throwable cause = ex.getCause();
+            if (cause instanceof RuntimeException runtimeEx) {
+                throw runtimeEx;
+            }
+            throw ex;
+        }
+    }
+
+    private static boolean isRateLimited(Throwable ex) {
+        Throwable current = ex;
+        while (current != null) {
+            if (current instanceof FeignException feignEx && feignEx.status() == 429) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private static void sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+        } catch (InterruptedException ignored) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     private <T> T executeProtected(
         CacheEntry<T> cached,
-        java.util.function.Supplier<T> upstreamCall,
+        Supplier<T> upstreamCall,
         java.util.function.Consumer<CacheEntry<T>> cacheWriter,
         String unavailableMessage
     ) {
@@ -78,13 +204,15 @@ public class F1Service {
             T result = upstreamCall.get();
             circuitBreaker.recordSuccess();
             if (result != null) {
-                cacheWriter.accept(CacheEntry.of(result));
+                cacheWriter.accept(CacheEntry.of(result, CACHE_TTL));
             }
             return result;
         } catch (IllegalArgumentException ex) {
             throw ex;
         } catch (Exception ex) {
-            circuitBreaker.recordFailure();
+            if (!isRateLimited(ex)) {
+                circuitBreaker.recordFailure();
+            }
             if (cached != null) {
                 log.warn("Falla en proveedor externo F1 ({}); devolviendo datos en cache stale.", ex.getMessage());
                 return cached.value();
@@ -93,15 +221,22 @@ public class F1Service {
         }
     }
 
+    // ==================================================
+    // CONSULTAS DE CALENDARIO Y RESULTADOS
+    // ==================================================
     public List<Race> calendar(int season) {
         validateSeason(season);
         var cached = calendarCache.get(season);
-        return executeProtected(
-            cached,
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
+        return coalesce("calendar:" + season, () -> executeProtected(
+            calendarCache.get(season),
             () -> {
                 var collected = new ArrayList<JolpicaDto.RaceDto>();
                 for (int offset = 0; offset < 1000; offset += 100) {
-                    var envelope = client.getRaces(season, 100, offset);
+                    int pageOffset = offset;
+                    var envelope = callJolpica(() -> client.getRaces(season, 100, pageOffset));
                     if (envelope == null || envelope.data() == null || envelope.data().table() == null || envelope.data().table().races() == null) {
                         throw new IllegalStateException("Respuesta F1 incompleta.");
                     }
@@ -121,7 +256,7 @@ public class F1Service {
             },
             entry -> calendarCache.put(season, entry),
             "No se pudo consultar el calendario de Formula 1."
-        );
+        ));
     }
 
     public List<Finish> results(int season, int round) {
@@ -129,10 +264,13 @@ public class F1Service {
         validateRound(round);
         String key = season + "-" + round;
         var cached = resultsCache.get(key);
-        return executeProtected(
-            cached,
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
+        return coalesce("results:" + key, () -> executeProtected(
+            resultsCache.get(key),
             () -> {
-                var envelope = client.getResults(season, round, 100, 0);
+                var envelope = callJolpica(() -> client.getResults(season, round, 100, 0));
                 if (envelope == null || envelope.data() == null || envelope.data().table() == null || envelope.data().table().races() == null) {
                     throw new IllegalStateException("Respuesta F1 incompleta.");
                 }
@@ -159,7 +297,7 @@ public class F1Service {
                 }
             },
             "No se pudo consultar los resultados de Formula 1."
-        );
+        ));
     }
 
     public OfficialRaceSummary officialSummary(int season, int round) {
@@ -167,10 +305,13 @@ public class F1Service {
         validateRound(round);
         String key = season + "-" + round;
         var cached = officialSummaryCache.get(key);
-        return executeProtected(
-            cached,
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
+        return coalesce("official-summary:" + key, () -> executeProtected(
+            officialSummaryCache.get(key),
             () -> {
-                var envelope = client.getDetailedResults(season, round, 100, 0);
+                var envelope = callJolpica(() -> client.getDetailedResults(season, round, 100, 0));
                 if (envelope == null || envelope.data() == null || envelope.data().table() == null || envelope.data().table().races() == null) {
                     throw new IllegalStateException("Respuesta F1 incompleta.");
                 }
@@ -233,14 +374,18 @@ public class F1Service {
                 }
             },
             "No se pudo obtener el resumen oficial del Gran Premio."
-        );
+        ));
     }
 
     public NextRaceInfo nextRace() {
-        return executeProtected(
+        var cached = nextRaceCache;
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
+        return coalesce("next-race", () -> executeProtected(
             nextRaceCache,
             () -> {
-                var envelope = client.getNextRace();
+                var envelope = callJolpica(client::getNextRace);
                 var races = envelope != null && envelope.data() != null && envelope.data().table() != null
                     ? envelope.data().table().races()
                     : null;
@@ -274,14 +419,18 @@ public class F1Service {
             },
             entry -> nextRaceCache = entry,
             "No se pudo consultar la próxima carrera de Formula 1."
-        );
+        ));
     }
 
     public LastRaceInfo lastRaceResults() {
-        return executeProtected(
+        var cached = lastRaceCache;
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
+        return coalesce("last-race", () -> executeProtected(
             lastRaceCache,
             () -> {
-                var envelope = client.getLastResults(30);
+                var envelope = callJolpica(() -> client.getLastResults(30));
                 var races = envelope != null && envelope.data() != null && envelope.data().table() != null
                     ? envelope.data().table().races()
                     : null;
@@ -311,14 +460,21 @@ public class F1Service {
             },
             entry -> lastRaceCache = entry,
             "No se pudo consultar la última carrera de Formula 1."
-        );
+        ));
     }
 
+    // ==================================================
+    // CAMPEONATOS Y ESTADISTICAS DE PILOTOS
+    // ==================================================
     public List<DriverStandingInfo> driverStandings() {
-        return executeProtected(
+        var cached = driverStandingsCache;
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
+        return coalesce("driver-standings", () -> executeProtected(
             driverStandingsCache,
             () -> {
-                var envelope = client.getDriverStandings();
+                var envelope = callJolpica(client::getDriverStandings);
                 var lists = envelope != null && envelope.data() != null && envelope.data().table() != null
                         ? envelope.data().table().lists()
                         : null;
@@ -347,14 +503,18 @@ public class F1Service {
                 }
             },
             "No se pudo consultar la tabla de pilotos."
-        );
+        ));
     }
 
     public List<ConstructorStandingInfo> constructorStandings() {
-        return executeProtected(
+        var cached = constructorStandingsCache;
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
+        return coalesce("constructor-standings", () -> executeProtected(
             constructorStandingsCache,
             () -> {
-                var envelope = client.getConstructorStandings();
+                var envelope = callJolpica(client::getConstructorStandings);
                 var lists = envelope != null && envelope.data() != null && envelope.data().table() != null
                         ? envelope.data().table().lists()
                         : null;
@@ -378,7 +538,7 @@ public class F1Service {
                 }
             },
             "No se pudo consultar la tabla de constructores."
-        );
+        ));
     }
 
     public DriverDynamicStats driverStats(String rawDriverId) {
@@ -386,112 +546,240 @@ public class F1Service {
             throw new IllegalArgumentException("Identificador de piloto requerido.");
         }
         String cleanId = normalizeDriverId(rawDriverId);
-        var cached = driverStatsCache.get(cleanId);
+        var fresh = driverStatsCache.get(cleanId);
+        if (fresh != null && !fresh.isExpired()) {
+            return fresh.value();
+        }
         String jolpicaId = toJolpicaDriverId(cleanId);
-        return executeProtected(
-            cached,
-            () -> {
-                List<DriverStandingInfo> standings = List.of();
-                try {
-                    standings = driverStandings();
-                } catch (Exception ex) {
-                    log.debug("Standings no disponibles para estadísticas de piloto {}: {}", cleanId, ex.getMessage());
-                }
-
-                DriverStandingInfo standing = standings.stream()
-                        .filter(s -> normalizeDriverId(s.driverId()).equals(cleanId))
-                        .findFirst()
-                        .orElse(null);
-
-                int points = standing != null ? safeParseInt(standing.points(), 0) : 0;
-                String standingPos = standing != null && standing.position() != null && !standing.position().isBlank()
-                        ? "P" + standing.position()
-                        : "-";
-                int standingWins = standing != null ? safeParseInt(standing.wins(), 0) : 0;
-
-                var seasonEnvelope = client.getDriverSeasonResults(jolpicaId, 50);
-                var races = seasonEnvelope != null && seasonEnvelope.data() != null && seasonEnvelope.data().table() != null
-                        && seasonEnvelope.data().table().races() != null
-                                ? seasonEnvelope.data().table().races()
-                                : List.<JolpicaDto.DetailedRaceDto>of();
-
-                int seasonWins = 0;
-                int podiums = 0;
-                int poles = 0;
-                int fastestLaps = 0;
-                int dnfs = 0;
-                int bestPos = 999;
-                List<DriverSeasonResult> seasonResults = new ArrayList<>();
-
-                for (var race : races) {
-                    if (race.results() == null || race.results().isEmpty())
-                        continue;
-                    var res = race.results().getFirst();
-                    int pos = safeParseInt(res.position(), 0);
-                    int grid = safeParseInt(res.grid(), 0);
-                    String status = Objects.requireNonNullElse(res.status(), "");
-
-                    if (pos > 0 && pos < bestPos)
-                        bestPos = pos;
-                    if (pos == 1)
-                        seasonWins++;
-                    if (pos >= 1 && pos <= 3)
-                        podiums++;
-                    if (grid == 1)
-                        poles++;
-                    if (res.fastestLap() != null && "1".equals(res.fastestLap().rank()))
-                        fastestLaps++;
-
-                    String stLower = status.toLowerCase(Locale.ROOT);
-                    if (!stLower.isEmpty() && !stLower.equals("finished") && !stLower.equals("lapped")
-                            && !stLower.startsWith("+")) {
-                        dnfs++;
-                    }
-
-                    seasonResults.add(new DriverSeasonResult(
-                            safeParseInt(race.round(), 0),
-                            race.raceName(),
-                            pos,
-                            grid,
-                            status));
-                }
-
-                int wins = seasonWins > 0 ? seasonWins : standingWins;
-                int careerWins = safeFetchTotal(() -> client.getDriverCareerWins(jolpicaId, 1), wins);
-                int careerPoles = safeFetchTotal(() -> client.getDriverCareerPoles(jolpicaId, 1), poles);
-                int careerStarts = safeFetchTotal(() -> client.getDriverCareerStarts(jolpicaId, 1), races.size());
-
-                return new DriverDynamicStats(
-                        cleanId,
-                        standing != null ? standing.nationality() : "",
-                        points,
-                        standingPos,
-                        wins,
-                        podiums,
-                        poles,
-                        fastestLaps,
-                        dnfs,
-                        races.size(),
-                        bestPos < 999 ? "P" + bestPos : "-",
-                        careerWins,
-                        careerPoles,
-                        careerStarts,
-                        List.copyOf(seasonResults));
-            },
-            entry -> driverStatsCache.put(cleanId, entry),
-            "No se pudieron consultar estadísticas del piloto."
-        );
+        return coalesce("driver-stats:" + cleanId, () -> loadDriverStats(cleanId, jolpicaId));
     }
 
+    private DriverDynamicStats loadDriverStats(String cleanId, String jolpicaId) {
+        var cached = driverStatsCache.get(cleanId);
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
+
+        DriverStandingInfo standing = findDriverStandingQuietly(cleanId);
+
+        if (!circuitBreaker.allowRequest()) {
+            if (cached != null) {
+                log.warn("Circuit breaker OPEN: sirviendo estadisticas en cache stale para {}.", cleanId);
+                return cached.value();
+            }
+            if (standing != null) {
+                log.warn("Circuit breaker OPEN: devolviendo estadisticas parciales desde standings para {}.", cleanId);
+                return buildStandingFallbackStats(cleanId, standing);
+            }
+            throw new F1UnavailableException("No se pudieron consultar estadísticas del piloto. (Circuit Breaker activo).", null);
+        }
+
+        JolpicaDto.DetailedEnvelope seasonEnvelope;
+        try {
+            seasonEnvelope = callJolpica(() -> client.getDriverSeasonResults(jolpicaId, 50));
+            circuitBreaker.recordSuccess();
+        } catch (Exception ex) {
+            if (!isRateLimited(ex)) {
+                circuitBreaker.recordFailure();
+            }
+            if (cached != null) {
+                log.warn("Falla consultando resultados de temporada para {} ({}); usando cache stale.", cleanId, ex.getMessage());
+                return cached.value();
+            }
+            if (standing != null) {
+                log.warn("Falla consultando resultados de temporada para {} ({}); usando fallback de standings.", cleanId, ex.getMessage());
+                return buildStandingFallbackStats(cleanId, standing);
+            }
+            throw new F1UnavailableException("No se pudieron consultar estadísticas del piloto.", ex);
+        }
+
+        int points = standing != null ? safeParseInt(standing.points(), 0) : 0;
+        String standingPos = standing != null && standing.position() != null && !standing.position().isBlank()
+                ? "P" + standing.position()
+                : "-";
+        int standingWins = standing != null ? safeParseInt(standing.wins(), 0) : 0;
+
+        var races = seasonEnvelope != null && seasonEnvelope.data() != null && seasonEnvelope.data().table() != null
+                && seasonEnvelope.data().table().races() != null
+                        ? seasonEnvelope.data().table().races()
+                        : List.<JolpicaDto.DetailedRaceDto>of();
+
+        int seasonWins = 0;
+        int podiums = 0;
+        int poles = 0;
+        int fastestLaps = 0;
+        int dnfs = 0;
+        int bestPos = 999;
+        List<DriverSeasonResult> seasonResults = new ArrayList<>();
+
+        for (var race : races) {
+            if (race.results() == null || race.results().isEmpty()) {
+                continue;
+            }
+            var res = race.results().getFirst();
+            int pos = safeParseInt(res.position(), 0);
+            int grid = safeParseInt(res.grid(), 0);
+            String status = Objects.requireNonNullElse(res.status(), "");
+
+            if (pos > 0 && pos < bestPos) {
+                bestPos = pos;
+            }
+            if (pos == 1) {
+                seasonWins++;
+            }
+            if (pos >= 1 && pos <= 3) {
+                podiums++;
+            }
+            if (grid == 1) {
+                poles++;
+            }
+            if (res.fastestLap() != null && "1".equals(res.fastestLap().rank())) {
+                fastestLaps++;
+            }
+
+            String stLower = status.toLowerCase(Locale.ROOT);
+            if (!stLower.isEmpty() && !stLower.equals("finished") && !stLower.equals("lapped")
+                    && !stLower.startsWith("+")) {
+                dnfs++;
+            }
+
+            seasonResults.add(new DriverSeasonResult(
+                    safeParseInt(race.round(), 0),
+                    race.raceName(),
+                    pos,
+                    grid,
+                    status));
+        }
+
+        int wins = seasonWins > 0 ? seasonWins : standingWins;
+        CareerTotals career = fetchCareerTotals(cleanId, jolpicaId, wins, poles, races.size());
+
+        DriverDynamicStats computed = new DriverDynamicStats(
+                cleanId,
+                standing != null ? standing.nationality() : "",
+                points,
+                standingPos,
+                wins,
+                podiums,
+                poles,
+                fastestLaps,
+                dnfs,
+                races.size(),
+                bestPos < 999 ? "P" + bestPos : "-",
+                career.wins(),
+                career.poles(),
+                career.starts(),
+                List.copyOf(seasonResults));
+
+        driverStatsCache.put(cleanId, CacheEntry.of(computed, CACHE_TTL));
+        return computed;
+    }
+
+    private DriverStandingInfo findDriverStandingQuietly(String cleanId) {
+        List<DriverStandingInfo> standings = List.of();
+        try {
+            standings = driverStandings();
+        } catch (Exception ex) {
+            var stale = driverStandingsCache;
+            if (stale != null) {
+                standings = stale.value();
+            }
+            log.debug("Standings no disponibles para estadísticas de piloto {}: {}", cleanId, ex.getMessage());
+        }
+        return standings.stream()
+                .filter(s -> normalizeDriverId(s.driverId()).equals(cleanId))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private DriverDynamicStats buildStandingFallbackStats(String cleanId, DriverStandingInfo standing) {
+        int points = safeParseInt(standing.points(), 0);
+        String standingPos = standing.position() != null && !standing.position().isBlank()
+                ? "P" + standing.position()
+                : "-";
+        int wins = safeParseInt(standing.wins(), 0);
+        var cachedCareer = careerTotalsCache.get(cleanId);
+        int careerWins = cachedCareer != null ? cachedCareer.value().wins() : wins;
+        int careerPoles = cachedCareer != null ? cachedCareer.value().poles() : 0;
+        int careerStarts = cachedCareer != null ? cachedCareer.value().starts() : 0;
+        return new DriverDynamicStats(
+                cleanId,
+                standing.nationality() != null ? standing.nationality() : "",
+                points,
+                standingPos,
+                wins,
+                0,
+                0,
+                0,
+                0,
+                0,
+                "-",
+                careerWins,
+                careerPoles,
+                careerStarts,
+                List.of());
+    }
+
+    private CareerTotals fetchCareerTotals(
+        String cleanId,
+        String jolpicaId,
+        int fallbackWins,
+        int fallbackPoles,
+        int fallbackStarts
+    ) {
+        var cached = careerTotalsCache.get(cleanId);
+        if (cached != null && !cached.isExpired()) {
+            return cached.value();
+        }
+
+        int baseWins = cached != null ? cached.value().wins() : fallbackWins;
+        int basePoles = cached != null ? cached.value().poles() : fallbackPoles;
+        int baseStarts = cached != null ? cached.value().starts() : fallbackStarts;
+
+        Integer careerWins = tryFetchCareerTotal(() -> client.getDriverCareerWins(jolpicaId, 1));
+        if (careerWins == null) {
+            return new CareerTotals(baseWins, basePoles, baseStarts);
+        }
+        Integer careerPoles = tryFetchCareerTotal(() -> client.getDriverCareerPoles(jolpicaId, 1));
+        if (careerPoles == null) {
+            return new CareerTotals(careerWins, basePoles, baseStarts);
+        }
+        Integer careerStarts = tryFetchCareerTotal(() -> client.getDriverCareerStarts(jolpicaId, 1));
+        if (careerStarts == null) {
+            return new CareerTotals(careerWins, careerPoles, baseStarts);
+        }
+
+        CareerTotals totals = new CareerTotals(careerWins, careerPoles, careerStarts);
+        careerTotalsCache.put(cleanId, CacheEntry.of(totals, CAREER_CACHE_TTL));
+        return totals;
+    }
+
+    private @Nullable Integer tryFetchCareerTotal(Supplier<JolpicaDto.DetailedEnvelope> call) {
+        try {
+            var env = callJolpica(call);
+            if (env != null && env.data() != null && env.data().total() != null) {
+                return Integer.parseInt(env.data().total());
+            }
+        } catch (Exception ex) {
+            log.debug("Totales historicos omitidos temporalmente: {}", ex.getMessage());
+        }
+        return null;
+    }
+
+    // ==================================================
+    // CONSULTAS COMPLEMENTARIAS (SPRINT, QUALY, OPENF1)
+    // ==================================================
     private void mergeSprintPoints(int season, int round, Map<String, Double> weekendPoints) {
         try {
-            var s = client.getSprintResults(season, round, 30);
+            var s = callJolpica(() -> client.getSprintResults(season, round, 30));
             var races = s != null && s.data() != null && s.data().table() != null ? s.data().table().races() : null;
-            if (races == null || races.isEmpty())
+            if (races == null || races.isEmpty()) {
                 return;
+            }
             var sprintResults = races.getFirst().sprintResults();
-            if (sprintResults == null || sprintResults.isEmpty())
+            if (sprintResults == null || sprintResults.isEmpty()) {
                 return;
+            }
             for (var sr : sprintResults) {
                 String normDriver = normalizeDriverId(sr.driver() != null ? sr.driver().id() : null);
                 if (normDriver != null && !normDriver.isBlank()) {
@@ -506,13 +794,15 @@ public class F1Service {
 
     private String fetchPoleDriver(int season, int round) {
         try {
-            var q = client.getQualifying(season, round, 5);
+            var q = callJolpica(() -> client.getQualifying(season, round, 5));
             var races = q != null && q.data() != null && q.data().table() != null ? q.data().table().races() : null;
-            if (races == null || races.isEmpty())
+            if (races == null || races.isEmpty()) {
                 return null;
+            }
             var qualResults = races.getFirst().qualifyingResults();
-            if (qualResults == null || qualResults.isEmpty())
+            if (qualResults == null || qualResults.isEmpty()) {
                 return null;
+            }
             var p1 = qualResults.getFirst();
             return p1.driver() != null ? normalizeDriverId(p1.driver().id()) : null;
         } catch (Exception ignored) {
@@ -526,19 +816,22 @@ public class F1Service {
         }
         try {
             var sessions = openF1Client.getSessions(season, "Race");
-            if (sessions == null || sessions.isEmpty())
+            if (sessions == null || sessions.isEmpty()) {
                 return 0;
+            }
 
             var matched = sessions.stream()
                     .filter(s -> s.date_start() != null && s.date_start().startsWith(raceDate))
                     .findFirst()
                     .orElse(null);
-            if (matched == null)
+            if (matched == null) {
                 return 0;
+            }
 
             var messages = openF1Client.getRaceControl(matched.session_key());
-            if (messages == null)
+            if (messages == null) {
                 return 0;
+            }
             return (int) messages.stream()
                     .filter(m -> "SafetyCar".equalsIgnoreCase(m.category())
                             && m.message() != null
@@ -549,21 +842,13 @@ public class F1Service {
         }
     }
 
-    private int safeFetchTotal(java.util.function.Supplier<JolpicaDto.DetailedEnvelope> call, int fallback) {
-        try {
-            var env = call.get();
-            if (env != null && env.data() != null && env.data().total() != null) {
-                return Integer.parseInt(env.data().total());
-            }
-        } catch (Exception ex) {
-            log.debug("Usando fallback {} al consultar totales de piloto: {}", fallback, ex.getMessage());
-        }
-        return fallback;
-    }
-
+    // ==================================================
+    // UTILIDADES Y NORMALIZACION
+    // ==================================================
     public static String normalizeDriverId(String driverId) {
-        if (driverId == null)
+        if (driverId == null) {
             return null;
+        }
         String clean = driverId.trim().toLowerCase(Locale.ROOT);
         return switch (clean) {
             case "max_verstappen", "maxverstappen" -> "verstappen";
@@ -577,8 +862,9 @@ public class F1Service {
     }
 
     public static String toJolpicaDriverId(String driverId) {
-        if (driverId == null)
+        if (driverId == null) {
             return "";
+        }
         String clean = driverId.trim().toLowerCase(Locale.ROOT);
         return switch (clean) {
             case "verstappen" -> "max_verstappen";
@@ -588,15 +874,17 @@ public class F1Service {
     }
 
     private static String combineDateTime(String date, String time, String defaultTime) {
-        if (date == null || date.isBlank())
+        if (date == null || date.isBlank()) {
             return null;
+        }
         String t = (time != null && !time.isBlank()) ? time : defaultTime;
         return date + "T" + t;
     }
 
     private static String formatSessionTime(JolpicaDto.SessionTimeDto s) {
-        if (s == null || s.date() == null || s.date().isBlank())
+        if (s == null || s.date() == null || s.date().isBlank()) {
             return null;
+        }
         return combineDateTime(s.date(), s.time(), "15:00:00Z");
     }
 
@@ -628,9 +916,11 @@ public class F1Service {
         }
     }
 
+    private record CareerTotals(int wins, int poles, int starts) {}
+
     private record CacheEntry<T>(T value, Instant expiresAt) {
-        static <T> CacheEntry<T> of(T value) {
-            return new CacheEntry<>(value, Instant.now().plus(CACHE_TTL));
+        static <T> CacheEntry<T> of(T value, Duration ttl) {
+            return new CacheEntry<>(value, Instant.now().plus(ttl));
         }
 
         boolean isExpired() {

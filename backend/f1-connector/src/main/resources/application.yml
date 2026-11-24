@@ -11,6 +11,8 @@ server:
 jolpica:
   api:
     url: ${JOLPICA_API_URL:https://api.jolpi.ca/ergast/f1}
+    min-interval-ms: ${JOLPICA_MIN_INTERVAL_MS:320}
+    rate-limit-backoff-ms: ${JOLPICA_RATE_LIMIT_BACKOFF_MS:1200}
 openf1:
   api:
     url: ${OPENF1_API_URL:https://api.openf1.org/v1}

@@ -2,7 +2,7 @@ import { Component, signal, computed, inject, OnInit, OnDestroy, effect } from '
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import {
@@ -92,6 +92,7 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   public readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   private timerInterval: any;
+  private teamDuoStatsSub: Subscription | null = null;
   private targetTimeMs: number = new Date('2026-11-01T20:00:00Z').getTime();
 
   readonly session = signal<NextSession | null>(null);
@@ -358,6 +359,7 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.timerInterval) clearInterval(this.timerInterval);
+    this.teamDuoStatsSub?.unsubscribe();
   }
 
   private loadData(): void {
@@ -557,43 +559,40 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   loadTeamDuoStats(d1Id: string, d2Id: string): void {
     const clean1 = (d1Id || 'lawson').toLowerCase().trim();
     const clean2 = (d2Id || 'lindblad').toLowerCase().trim();
+    this.teamDuoStatsSub?.unsubscribe();
     this.isLoadingStats.set(true);
 
-    forkJoin({
+    this.teamDuoStatsSub = forkJoin({
       s1: this.api.getDynamicDriverStats(clean1),
-      s2: this.api.getDynamicDriverStats(clean2),
-      r1: this.api.jolpicaDriverSeasonResults(clean1),
-      r2: this.api.jolpicaDriverSeasonResults(clean2)
+      s2: this.api.getDynamicDriverStats(clean2)
     }).subscribe({
-      next: ({ s1, s2, r1, r2 }) => {
+      next: ({ s1, s2 }) => {
         this.driver1Stats.set(s1);
         this.driver2Stats.set(s2);
 
         let q1 = 0, q2 = 0;
         let rc1 = 0, rc2 = 0;
 
-        const r2ByRound = new Map<number, any>();
-        for (const item of r2 || []) {
+        const r2ByRound = new Map<number, { position: number; grid: number }>();
+        for (const item of s2.seasonResults || []) {
           const roundNum = Number(item?.round);
           if (Number.isFinite(roundNum) && roundNum > 0) {
-            r2ByRound.set(roundNum, item);
+            r2ByRound.set(roundNum, { position: Number(item.position), grid: Number(item.grid) });
           }
         }
 
-        for (const item1 of r1 || []) {
+        for (const item1 of s1.seasonResults || []) {
           const roundNum = Number(item1?.round);
           const item2 = r2ByRound.get(roundNum);
-          const res1 = item1?.Results?.[0];
-          const res2 = item2?.Results?.[0];
-          if (res1 && res2) {
-            const g1 = parseInt(res1.grid, 10);
-            const g2 = parseInt(res2.grid, 10);
+          if (item2) {
+            const g1 = Number(item1.grid);
+            const g2 = item2.grid;
             if (g1 > 0 && g2 > 0) {
               if (g1 < g2) q1++;
               else if (g2 < g1) q2++;
             }
-            const p1 = parseInt(res1.position, 10);
-            const p2 = parseInt(res2.position, 10);
+            const p1 = Number(item1.position);
+            const p2 = item2.position;
             if (p1 > 0 && p2 > 0) {
               if (p1 < p2) rc1++;
               else if (p2 < p1) rc2++;
