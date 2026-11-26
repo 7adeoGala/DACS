@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = {"https://dacs-nine.vercel.app", "http://localhost:4200", "https://localhost:4200", "https://dacs2026.local"})
 @RestController
-@SuppressWarnings("null")
 public class ApiController {
     private final DomainClient domainClient;
     private final ConectorClient conectorClient;

@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@SuppressWarnings("null")
 public class WeekendMatchupService {
 
     public record TeamDuo(String teamName, String driver1, String driver2) {}

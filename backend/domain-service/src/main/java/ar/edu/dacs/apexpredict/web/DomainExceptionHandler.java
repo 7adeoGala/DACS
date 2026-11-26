@@ -10,7 +10,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
-@SuppressWarnings("null")
 public class DomainExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)

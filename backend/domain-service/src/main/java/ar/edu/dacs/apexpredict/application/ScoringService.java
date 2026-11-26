@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@SuppressWarnings("null")
 public class ScoringService {
 
     private static final Logger log = LoggerFactory.getLogger(ScoringService.class);

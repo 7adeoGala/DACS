@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings("null")
 class PlayerServiceTest {
 
     private static final String ISSUER = "https://dacs-3-u0q1.onrender.com/auth/realms/apexpredict";

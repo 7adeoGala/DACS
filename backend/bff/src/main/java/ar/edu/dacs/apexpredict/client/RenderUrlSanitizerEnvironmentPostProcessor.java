@@ -10,7 +10,6 @@ import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@SuppressWarnings("null")
 public class RenderUrlSanitizerEnvironmentPostProcessor implements EnvironmentPostProcessor {
 
     @Override

@@ -9,7 +9,6 @@ import java.util.Map;
 import org.springframework.stereotype.Service;
 
 @Service
-@SuppressWarnings("null")
 public class ProdeScoreService {
 
     private final DomainClient domainClient;

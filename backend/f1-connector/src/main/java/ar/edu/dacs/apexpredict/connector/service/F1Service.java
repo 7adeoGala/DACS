@@ -20,7 +20,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
-@SuppressWarnings("null")
 public class F1Service {
     // Configuración y estado en memoria
     private static final Logger log = LoggerFactory.getLogger(F1Service.class);

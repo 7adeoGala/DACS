@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@SuppressWarnings("null")
 public class PredictionService {
 
     private static final Logger log = LoggerFactory.getLogger(PredictionService.class);

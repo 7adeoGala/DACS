@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@SuppressWarnings("null")
 public class DomainController {
     private final PlayerService players;
     private final NotificationService notifications;

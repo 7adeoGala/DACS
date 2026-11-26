@@ -331,38 +331,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     }
   }
 
-  private loadCurrentPrediction(sessionId?: string) {
-    if (!this.auth.authenticated()) {
-      return;
-    }
-    const targetSessionId = sessionId || this.session()?.id;
-    const request$ = targetSessionId
-      ? this.api.predictionForSession(targetSessionId, this.auth.username())
-      : this.api.currentPrediction(this.auth.username());
-
-    request$.subscribe({
-      next: (pred) => {
-        if (pred && (pred.predictionId || (pred.podium && pred.podium.length > 0))) {
-          if (targetSessionId && pred.sessionId && pred.sessionId !== targetSessionId) {
-            this.clearPredictionState();
-            return;
-          }
-          this.applyPredictionToState(pred);
-        } else {
-          this.clearPredictionState();
-        }
-      },
-      error: () => {
-        const cached = this.api.getCachedPrediction?.(this.auth.username(), targetSessionId);
-        if (cached && (cached.predictionId || (cached.podium && cached.podium.length > 0))) {
-          this.applyPredictionToState(cached);
-        } else {
-          this.clearPredictionState();
-        }
-      }
-    });
-  }
-
   private loadUserLeagues() {
     if (!this.auth.authenticated()) {
       return;

@@ -6,7 +6,6 @@ import org.springframework.security.oauth2.core.*;
 import org.springframework.security.oauth2.jwt.*;
 
 @Configuration
-@SuppressWarnings("null")
 public class JwtConfig {
     @Bean
     JwtDecoder jwtDecoder(@Value("${apexpredict.security.issuer}") String issuer,
