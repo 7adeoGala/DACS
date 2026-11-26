@@ -1,4 +1,22 @@
-<div class="gp-telemetry-container">
+@if (isLoading()) {
+  <section class="apex-page-loader" role="status" aria-live="polite" aria-busy="true">
+    <div class="apex-loader-card">
+      <div class="apex-loader-lights" aria-hidden="true">
+        <span class="loader-light"></span>
+        <span class="loader-light"></span>
+        <span class="loader-light"></span>
+        <span class="loader-light"></span>
+        <span class="loader-light"></span>
+      </div>
+      <div class="apex-loader-brand">APEXPREDICT // TELEMETRÍA F1</div>
+      <p class="apex-loader-message">{{ loadingMessage() }}</p>
+      <div class="apex-loader-track" aria-hidden="true">
+        <div class="apex-loader-bar"></div>
+      </div>
+    </div>
+  </section>
+} @else {
+<div class="gp-telemetry-container apex-stage-ready">
   <!-- Encabezado del Gran Premio -->
   <header class="gp-hero-header">
     <div class="gp-title-group">
@@ -603,3 +621,4 @@
     </div>
   </section>
 </div>
+}

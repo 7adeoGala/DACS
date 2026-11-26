@@ -2,7 +2,7 @@ import { Component, signal, computed, inject, OnInit, OnDestroy, effect } from '
 import { CommonModule, DatePipe } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
-import { forkJoin, Subscription } from 'rxjs';
+import { forkJoin, of, Subscription, catchError, finalize, map, switchMap, timeout } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import {
@@ -92,7 +92,9 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   public readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   private timerInterval: any;
+  private initialLoadSub: Subscription | null = null;
   private teamDuoStatsSub: Subscription | null = null;
+  private lastLoadedAuthKey = '';
   private targetTimeMs: number = new Date('2026-11-01T20:00:00Z').getTime();
 
   readonly session = signal<NextSession | null>(null);
@@ -102,6 +104,7 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     return !!(p && p.some(d => !!d && d.trim().length > 0));
   });
   readonly isLoading = signal<boolean>(true);
+  readonly loadingMessage = signal<string>('Conectando con telemetría oficial del Gran Premio...');
 
   readonly weather = signal<WeatherData>({
     trackTemp: '32°C',
@@ -324,94 +327,147 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       const isAuth = this.auth.authenticated();
       const username = this.auth.username();
       const sess = this.session();
+      const loading = this.isLoading();
 
-      if (isAuth) {
-        const cachedPred = this.api.getCachedPrediction?.(username, sess?.id);
-        if (cachedPred && (cachedPred.predictionId || (cachedPred.podium && cachedPred.podium.length > 0))) {
-          if (!sess || !cachedPred.sessionId || cachedPred.sessionId === sess.id) {
-            this.currentPrediction.set(cachedPred);
-            if (cachedPred.duelDriverPick) {
-              this.duelPick.set(cachedPred.duelDriverPick);
-            }
-          } else {
-            this.currentPrediction.set(null);
-            this.duelPick.set(null);
+      if (loading) {
+        return;
+      }
+
+      if (!isAuth) {
+        this.lastLoadedAuthKey = '';
+        this.currentPrediction.set(null);
+        this.duelPick.set(null);
+        return;
+      }
+
+      const authKey = `${username || ''}:${sess?.id || ''}`;
+      if (this.lastLoadedAuthKey === authKey) {
+        return;
+      }
+      this.lastLoadedAuthKey = authKey;
+
+      const cachedPred = this.api.getCachedPrediction?.(username, sess?.id);
+      if (cachedPred && (cachedPred.predictionId || (cachedPred.podium && cachedPred.podium.length > 0))) {
+        if (!sess || !cachedPred.sessionId || cachedPred.sessionId === sess.id) {
+          this.currentPrediction.set(cachedPred);
+          if (cachedPred.duelDriverPick) {
+            this.duelPick.set(cachedPred.duelDriverPick);
           }
         } else {
           this.currentPrediction.set(null);
           this.duelPick.set(null);
         }
-
-        this.loadUserPrediction(username);
-
-        this.loadLeaderboard();
+      } else {
+        this.currentPrediction.set(null);
+        this.duelPick.set(null);
       }
+
+      this.loadUserPrediction(username);
+      this.loadLeaderboard();
     });
   }
 
   ngOnInit(): void {
     this.startCountdown();
     this.loadData();
-    if (this.auth.authenticated()) {
-      this.loadLeaderboard();
-    }
   }
 
   ngOnDestroy(): void {
     if (this.timerInterval) clearInterval(this.timerInterval);
+    this.initialLoadSub?.unsubscribe();
     this.teamDuoStatsSub?.unsubscribe();
   }
 
   private loadData(): void {
-    this.api.jolpicaDriverStandings().subscribe({
-      next: (standings) => {
-        if (standings && standings.length > 0) {
-          this.driverStandings.set(standings);
-        }
-      }
-    });
+    this.initialLoadSub?.unsubscribe();
+    this.isLoading.set(true);
+    this.loadingMessage.set('Conectando con telemetría oficial del Gran Premio...');
 
-    this.api.duelCommunityStats().subscribe({
-      next: (stats) => {
-        this.duelCommunityStats.set(stats);
-      }
-    });
+    const isAuth = this.auth.authenticated();
+    const username = this.auth.username();
 
-    this.api.nextSession().subscribe({
-      next: (sessionData) => {
-        const prevSessionId = this.session()?.id;
-        this.session.set(sessionData);
-        this.isLoading.set(false);
-        this.updateCountdownFromDate(sessionData.startsAt);
-        this.fetchRealWeather(sessionData.lat, sessionData.long);
-
-        const duo = getTeammateDuoForRound(sessionData.round || 20);
+    this.initialLoadSub = this.api.nextSession(isAuth).pipe(
+      catchError(() => of(this.api.getFallbackNextSession())),
+      switchMap((sessionData) => {
+        const duo = getTeammateDuoForRound(sessionData.round || 20, sessionData.season || 2026);
         const d1 = sessionData.matchupDriver1 || duo.driver1;
         const d2 = sessionData.matchupDriver2 || duo.driver2;
         const matchTeam = findTeamDuoByDrivers(d1, d2) || getTeamDuoById('rb') || this.teamOptions[0];
+
+        this.loadingMessage.set('Sincronizando posiciones, duelos y clima del circuito...');
+
+        const prediction$ = isAuth
+          ? (sessionData.id
+            ? this.api.predictionForSession(sessionData.id, username)
+            : this.api.currentPrediction(username)
+          ).pipe(catchError(() => of(null)))
+          : of(null);
+
+        const leaderboard$ = isAuth
+          ? this.api.globalLeaderboard().pipe(catchError(() => of([] as LeaderboardEntry[])))
+          : of([] as LeaderboardEntry[]);
+
+        return forkJoin({
+          sessionData: of(sessionData),
+          matchTeam: of(matchTeam),
+          standings: this.api.jolpicaDriverStandings().pipe(catchError(() => of([] as JolpicaDriverStanding[]))),
+          duelStats: this.api.duelCommunityStats().pipe(catchError(() => of(null))),
+          s1: this.api.getDynamicDriverStats(matchTeam.driver1Id).pipe(catchError(() => of(null))),
+          s2: this.api.getDynamicDriverStats(matchTeam.driver2Id).pipe(catchError(() => of(null))),
+          weather: this.fetchRealWeather$(sessionData.lat, sessionData.long),
+          prediction: prediction$,
+          leaderboard: leaderboard$
+        });
+      }),
+      finalize(() => {
+        this.isLoading.set(false);
+      })
+    ).subscribe({
+      next: ({ sessionData, matchTeam, standings, duelStats, s1, s2, weather, prediction, leaderboard }) => {
+        const prevSessionId = this.session()?.id;
+        this.session.set(sessionData);
+        this.updateCountdownFromDate(sessionData.startsAt);
         this.selectedTeamId.set(matchTeam.id);
-        this.loadTeamDuoStats(matchTeam.driver1Id, matchTeam.driver2Id);
+
+        if (standings && standings.length > 0) {
+          this.driverStandings.set(standings);
+        }
+        this.duelCommunityStats.set(duelStats);
+
+        if (s1 && s2) {
+          this.applyTeamDuoStats(s1, s2);
+        }
+        if (weather) {
+          this.weather.set(weather);
+        }
 
         if (prevSessionId && prevSessionId !== sessionData.id) {
           this.currentPrediction.set(null);
           this.duelPick.set(null);
-          this.api.clearCachedPrediction?.(this.auth.username());
+          this.api.clearCachedPrediction?.(username);
         }
 
-        if (this.auth.authenticated()) {
-          this.loadUserPrediction(this.auth.username());
+        if (isAuth) {
+          this.lastLoadedAuthKey = `${username || ''}:${sessionData.id || ''}`;
+          if (prediction && (prediction.predictionId || (prediction.podium && prediction.podium.length > 0))) {
+            if (!prediction.sessionId || prediction.sessionId === sessionData.id) {
+              this.currentPrediction.set(prediction);
+              if (prediction.duelDriverPick) {
+                this.duelPick.set(prediction.duelDriverPick);
+              }
+            } else {
+              this.currentPrediction.set(null);
+              this.duelPick.set(null);
+            }
+          } else {
+            this.currentPrediction.set(null);
+            this.duelPick.set(null);
+          }
+
+          if (leaderboard && leaderboard.length > 0) {
+            this.populatePaddockStandings(leaderboard);
+          }
         }
-      },
-      error: () => {
-        this.isLoading.set(false);
-        const fallback = this.api.getFallbackNextSession();
-        this.session.set(fallback);
-        this.updateCountdownFromDate(fallback.startsAt);
-        this.fetchRealWeather(fallback.lat, fallback.long);
-        const fallbackDuo = getTeammateDuoForRound(fallback.round || 20);
-        const matchTeam = findTeamDuoByDrivers(fallbackDuo.driver1, fallbackDuo.driver2) || this.teamOptions[0];
-        this.selectedTeamId.set(matchTeam.id);
-        this.loadTeamDuoStats(matchTeam.driver1Id, matchTeam.driver2Id);
       }
     });
   }
@@ -567,50 +623,53 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
       s2: this.api.getDynamicDriverStats(clean2)
     }).subscribe({
       next: ({ s1, s2 }) => {
-        this.driver1Stats.set(s1);
-        this.driver2Stats.set(s2);
-
-        let q1 = 0, q2 = 0;
-        let rc1 = 0, rc2 = 0;
-
-        const r2ByRound = new Map<number, { position: number; grid: number }>();
-        for (const item of s2.seasonResults || []) {
-          const roundNum = Number(item?.round);
-          if (Number.isFinite(roundNum) && roundNum > 0) {
-            r2ByRound.set(roundNum, { position: Number(item.position), grid: Number(item.grid) });
-          }
-        }
-
-        for (const item1 of s1.seasonResults || []) {
-          const roundNum = Number(item1?.round);
-          const item2 = r2ByRound.get(roundNum);
-          if (item2) {
-            const g1 = Number(item1.grid);
-            const g2 = item2.grid;
-            if (g1 > 0 && g2 > 0) {
-              if (g1 < g2) q1++;
-              else if (g2 < g1) q2++;
-            }
-            const p1 = Number(item1.position);
-            const p2 = item2.position;
-            if (p1 > 0 && p2 > 0) {
-              if (p1 < p2) rc1++;
-              else if (p2 < p1) rc2++;
-            }
-          }
-        }
-
-        this.qualiD1.set(q1);
-        this.qualiD2.set(q2);
-        this.raceD1.set(rc1);
-        this.raceD2.set(rc2);
-
+        this.applyTeamDuoStats(s1, s2);
         this.isLoadingStats.set(false);
       },
       error: () => {
         this.isLoadingStats.set(false);
       }
     });
+  }
+
+  private applyTeamDuoStats(s1: DynamicDriverStats, s2: DynamicDriverStats): void {
+    this.driver1Stats.set(s1);
+    this.driver2Stats.set(s2);
+
+    let q1 = 0, q2 = 0;
+    let rc1 = 0, rc2 = 0;
+
+    const r2ByRound = new Map<number, { position: number; grid: number }>();
+    for (const item of s2.seasonResults || []) {
+      const roundNum = Number(item?.round);
+      if (Number.isFinite(roundNum) && roundNum > 0) {
+        r2ByRound.set(roundNum, { position: Number(item.position), grid: Number(item.grid) });
+      }
+    }
+
+    for (const item1 of s1.seasonResults || []) {
+      const roundNum = Number(item1?.round);
+      const item2 = r2ByRound.get(roundNum);
+      if (item2) {
+        const g1 = Number(item1.grid);
+        const g2 = item2.grid;
+        if (g1 > 0 && g2 > 0) {
+          if (g1 < g2) q1++;
+          else if (g2 < g1) q2++;
+        }
+        const p1 = Number(item1.position);
+        const p2 = item2.position;
+        if (p1 > 0 && p2 > 0) {
+          if (p1 < p2) rc1++;
+          else if (p2 < p1) rc2++;
+        }
+      }
+    }
+
+    this.qualiD1.set(q1);
+    this.qualiD2.set(q2);
+    this.raceD1.set(rc1);
+    this.raceD2.set(rc2);
   }
 
   loadDuelHeadToHead(d1Id: string, d2Id: string): void {
@@ -645,32 +704,31 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
     }
   }
 
-  private fetchRealWeather(lat?: string, lon?: string): void {
+  private fetchRealWeather$(lat?: string, lon?: string) {
     const latitude = lat || '30.1328';
     const longitude = lon || '-97.6411';
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,wind_direction_10m&timezone=auto`;
 
-    this.http.get<any>(url).subscribe({
-      next: (res) => {
+    return this.http.get<any>(url).pipe(
+      timeout(4000),
+      map((res): WeatherData | null => {
         const c = res?.current;
-        if (c) {
-          const temp = Math.round(c.temperature_2m);
-          const track = Math.round(temp + 8);
-          const precip = c.precipitation || 0;
-          this.weather.set({
-            airTemp: `${temp}°C`,
-            trackTemp: `${track}°C`,
-            humidity: `${c.relative_humidity_2m}%`,
-            wind: `${Math.round(c.wind_speed_10m)} km/h`,
-            rainRisk: precip > 0 ? '70%' : '10%',
-            radarStatus: precip > 0 ? 'LLUVIA EN PISTA' : 'RADAR SECO',
-            conditionDesc: precip > 0 ? 'Asfalto Húmedo' : 'Asfalto Seco C2/C3'
-          });
-        }
-      },
-      error: () => {
-      }
-    });
+        if (!c) return null;
+        const temp = Math.round(c.temperature_2m);
+        const track = Math.round(temp + 8);
+        const precip = c.precipitation || 0;
+        return {
+          airTemp: `${temp}°C`,
+          trackTemp: `${track}°C`,
+          humidity: `${c.relative_humidity_2m}%`,
+          wind: `${Math.round(c.wind_speed_10m)} km/h`,
+          rainRisk: precip > 0 ? '70%' : '10%',
+          radarStatus: precip > 0 ? 'LLUVIA EN PISTA' : 'RADAR SECO',
+          conditionDesc: precip > 0 ? 'Asfalto Húmedo' : 'Asfalto Seco C2/C3'
+        };
+      }),
+      catchError(() => of(null))
+    );
   }
 
   private formatArgTime(isoString?: string | null): { dateLabel: string; timeArg: string } {

@@ -3,7 +3,7 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
 import { ErrorBannerService } from './error-banner.service';
 
-const SILENT_URL_FRAGMENTS = ['/backendping', '/conectorping', '/ping', '/health', '/users/check-display-name', '/f1/drivers/'];
+const SILENT_URL_FRAGMENTS = ['/backendping', '/conectorping', '/ping', '/health', '/users/check-display-name', '/f1/'];
 
 export const errorInterceptor: HttpInterceptorFn = (request, next) => {
   const banner = inject(ErrorBannerService);

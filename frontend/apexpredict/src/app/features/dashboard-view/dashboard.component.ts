@@ -1,7 +1,8 @@
-import { Component, inject, OnInit, signal, computed, HostListener } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed, HostListener } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { of, Subscription, catchError, finalize, switchMap } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import {
@@ -29,10 +30,14 @@ import { PodiumSlot } from '../../core/models/f1-drivers.model';
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   public readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private initSub: Subscription | null = null;
+
+  readonly isInitializing = signal<boolean>(true);
+  readonly loadingMessage = signal<string>('Sincronizando sesión oficial y tu panel de pronósticos...');
 
   readonly drivers: F1Driver[] = ACTIVE_F1_DRIVERS;
   readonly activeTab = signal<'pronostico' | 'ligas' | 'posiciones' | 'historial'>('pronostico');
@@ -153,7 +158,6 @@ export class DashboardComponent implements OnInit {
 
     this.loadNextSession();
     if (this.auth.authenticated()) {
-      this.loadCurrentPrediction();
       this.loadUserLeagues();
       this.loadGlobalLeaderboard();
       this.loadHistory();
@@ -162,7 +166,6 @@ export class DashboardComponent implements OnInit {
         error: () => {}
       });
     }
-    this.loadF1Standings();
 
     const routeInvite = this.route.snapshot.paramMap.get('inviteCode');
     if (routeInvite) {
@@ -187,6 +190,10 @@ export class DashboardComponent implements OnInit {
     });
   }
 
+  ngOnDestroy() {
+    this.initSub?.unsubscribe();
+  }
+
   loadF1Standings() {
     this.api.jolpicaDriverStandings().subscribe({
       next: (ds) => this.driverStandings.set(ds || []),
@@ -199,20 +206,55 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadNextSession() {
-    this.api.nextSession().subscribe({
-      next: (sess) => {
-        if (!sess || !sess.id) return;
-        const prevSessionId = this.session()?.id;
-        this.session.set(sess);
+    this.initSub?.unsubscribe();
+    this.isInitializing.set(true);
+    this.loadingMessage.set('Sincronizando sesión oficial y tu panel de pronósticos...');
 
-        const activePredSession = this.currentPredictionSessionId();
-        if ((prevSessionId && prevSessionId !== sess.id) || (activePredSession && activePredSession !== sess.id)) {
-          this.clearPredictionState();
+    this.initSub = this.api.nextSession(this.auth.authenticated()).pipe(
+      catchError(() => of(null)),
+      switchMap((sess) => {
+        if (sess && sess.id) {
+          const prevSessionId = this.session()?.id;
+          this.session.set(sess);
+
+          const activePredSession = this.currentPredictionSessionId();
+          if ((prevSessionId && prevSessionId !== sess.id) || (activePredSession && activePredSession !== sess.id)) {
+            this.clearPredictionState();
+          }
         }
 
-        this.loadCurrentPrediction(sess.id);
-      },
-      error: () => { }
+        if (!this.auth.authenticated()) {
+          return of({ sess, pred: null as PredictionDetail | null });
+        }
+
+        const targetSessionId = sess?.id || this.session()?.id;
+        const predRequest$ = targetSessionId
+          ? this.api.predictionForSession(targetSessionId, this.auth.username())
+          : this.api.currentPrediction(this.auth.username());
+
+        return predRequest$.pipe(
+          catchError(() => of(this.api.getCachedPrediction?.(this.auth.username(), targetSessionId) || null)),
+          switchMap((pred) => of({ sess, pred }))
+        );
+      }),
+      finalize(() => {
+        this.isInitializing.set(false);
+        this.loadF1Standings();
+      })
+    ).subscribe({
+      next: ({ sess, pred }) => {
+        if (!this.auth.authenticated()) return;
+        const targetSessionId = sess?.id || this.session()?.id;
+        if (pred && (pred.predictionId || (pred.podium && pred.podium.length > 0))) {
+          if (targetSessionId && pred.sessionId && pred.sessionId !== targetSessionId) {
+            this.clearPredictionState();
+            return;
+          }
+          this.applyPredictionToState(pred);
+        } else {
+          this.clearPredictionState();
+        }
+      }
     });
   }
 

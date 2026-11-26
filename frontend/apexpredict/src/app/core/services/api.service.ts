@@ -115,9 +115,30 @@ export class ApiService {
     return retry<T>({
       count: 1,
       delay: (error) => {
+        if (error.status === 429) {
+          console.warn('[ApexPredict] Telemetria de piloto en espera (HTTP 429), reintentando (1/1)...');
+          return timer(3500);
+        }
         if (error.status === 0 || error.status === 503 || error.status === 504) {
           console.warn(`[ApexPredict] Reintentando telemetria de piloto (1/1, status: ${error.status})...`);
           return timer(2500);
+        }
+        throw error;
+      }
+    });
+  }
+
+  private retryF1Telemetry<T>() {
+    return retry<T>({
+      count: 2,
+      delay: (error, retryCount) => {
+        if (error.status === 429) {
+          console.warn(`[ApexPredict] Telemetria F1 en arranque (HTTP 429), reintentando (${retryCount}/2)...`);
+          return timer(retryCount * 3500);
+        }
+        if (error.status === 0 || error.status === 502 || error.status === 503 || error.status === 504) {
+          console.warn(`[ApexPredict] Reintentando telemetria F1 (${retryCount}/2, status: ${error.status})...`);
+          return timer(Math.min(retryCount * 3000, 6000));
         }
         throw error;
       }
@@ -149,7 +170,6 @@ export class ApiService {
     if (typeof window === 'undefined') return;
     this.http.get(`${this.base}/backendping`).pipe(catchError(() => of(null))).subscribe();
     fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}/.well-known/openid-configuration`).catch(() => {});
-    this.http.get(`${this.base}/conectorping`).pipe(catchError(() => of(null))).subscribe();
   }
 
   getCachedPrediction(username?: string, sessionId?: string): PredictionDetail | null {
@@ -330,15 +350,20 @@ export class ApiService {
     };
   }
 
-  nextSession(): Observable<NextSession> {
+  nextSession(includeBackendSession = true): Observable<NextSession> {
     const bffNextF1$ = this.http.get<any>(`${this.base}/f1/next`).pipe(
-      timeout(3500),
+      timeout(25000),
+      this.retryF1Telemetry(),
       map(data => this.mapConnectorNextSession(data)),
       catchError(() => of(this.getFallbackNextSession()))
     );
 
+    if (!includeBackendSession) {
+      return bffNextF1$;
+    }
+
     return this.http.get<NextSession>(`${this.base}/sessions/next`).pipe(
-      timeout(2500),
+      timeout(15000),
       switchMap(backendSession => {
         const isBackendExpired = backendSession?.startsAt && (new Date(backendSession.startsAt).getTime() <= Date.now());
         if (isBackendExpired) {
@@ -347,7 +372,8 @@ export class ApiService {
         const roundNum = backendSession.round || 21;
         const duo = getTeammateDuoForRound(roundNum, backendSession.season || 2026);
         return this.http.get<any>(`${this.base}/f1/next`).pipe(
-          timeout(2500),
+          timeout(20000),
+          this.retryF1Telemetry(),
           map(f1Data => {
             const mapped = this.mapConnectorNextSession(f1Data);
             return {
@@ -412,14 +438,16 @@ export class ApiService {
 
   jolpicaDriverStandings(): Observable<JolpicaDriverStanding[]> {
     return this.http.get<JolpicaDriverStanding[]>(`${this.base}/f1/standings/drivers`).pipe(
-      this.retryOnColdStart(),
+      timeout(20000),
+      this.retryF1Telemetry(),
       catchError(() => of([]))
     );
   }
 
   jolpicaConstructorStandings(): Observable<JolpicaConstructorStanding[]> {
     return this.http.get<JolpicaConstructorStanding[]>(`${this.base}/f1/standings/constructors`).pipe(
-      this.retryOnColdStart(),
+      timeout(20000),
+      this.retryF1Telemetry(),
       catchError(() => of([]))
     );
   }

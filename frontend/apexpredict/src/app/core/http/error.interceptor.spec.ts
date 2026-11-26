@@ -51,5 +51,11 @@ describe('errorInterceptor', () => {
       .expectOne('/api/predictions/session/123')
       .flush({ message: 'Las predicciones para esta sesión se encuentran cerradas.' }, { status: 403, statusText: 'Forbidden' });
     expect(banner.message()).toBeNull();
+
+    http.get('/api/f1/standings/drivers').subscribe({ error: () => {} });
+    httpMock
+      .expectOne('/api/f1/standings/drivers')
+      .flush({}, { status: 429, statusText: 'Too Many Requests' });
+    expect(banner.message()).toBeNull();
   });
 });
