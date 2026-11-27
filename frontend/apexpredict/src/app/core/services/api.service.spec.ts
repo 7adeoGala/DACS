@@ -87,4 +87,39 @@ describe('ApiService (BFF-only integration)', () => {
     expect(recovered.standingPosition).toBe('P14');
     expect(recovered.careerWins).toBe(6);
   });
+
+  it('omite /sessions/next en modo invitado para evitar 401 y consulta directo /f1/next', async () => {
+    const promise = firstValueFrom(service.nextSession(false));
+
+    httpMock.expectNone(`${environment.apiUrl}/sessions/next`);
+    const req = httpMock.expectOne(`${environment.apiUrl}/f1/next`);
+    expect(req.request.method).toBe('GET');
+    req.flush({
+      season: 2026,
+      round: 22,
+      name: 'Qatar Grand Prix',
+      circuit: 'Losail International Circuit',
+      circuitId: 'losail',
+      raceDate: '2026-11-29',
+      startsAt: '2026-11-29T16:00:00Z',
+    });
+
+    const session = await promise;
+    expect(session.round).toBe(22);
+    expect(session.name).toBe('Qatar Grand Prix');
+  });
+
+  it('wakeServices no dispara /conectorping para evitar saturar el arranque en frio', () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(() => Promise.resolve(new Response())) as unknown as typeof fetch;
+
+    try {
+      service.wakeServices();
+      const pingReq = httpMock.expectOne(`${environment.apiUrl}/backendping`);
+      pingReq.flush({ status: 'ok' });
+      httpMock.expectNone(`${environment.apiUrl}/conectorping`);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
 });
