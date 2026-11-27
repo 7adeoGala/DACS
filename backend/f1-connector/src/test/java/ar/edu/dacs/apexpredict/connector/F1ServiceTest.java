@@ -21,6 +21,7 @@ import tools.jackson.databind.json.JsonMapper;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("null")
 class F1ServiceTest {
     private JolpicaClient client;
     private OpenF1Client openF1Client;

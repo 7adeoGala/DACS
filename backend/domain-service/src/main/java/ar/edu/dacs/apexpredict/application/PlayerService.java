@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
+@SuppressWarnings("null")
 public class PlayerService {
     private static final Logger log = LoggerFactory.getLogger(PlayerService.class);
     private final UserRepository users;

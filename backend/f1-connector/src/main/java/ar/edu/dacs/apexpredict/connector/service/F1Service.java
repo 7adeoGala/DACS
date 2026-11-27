@@ -20,8 +20,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
+@SuppressWarnings("null")
 public class F1Service {
-    // Configuración y estado en memoria
+    // ==================================================
+    // CONFIGURACION Y ESTADO EN MEMORIA
+    // ==================================================
     private static final Logger log = LoggerFactory.getLogger(F1Service.class);
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
     private static final Duration CAREER_CACHE_TTL = Duration.ofHours(6);
@@ -82,7 +85,9 @@ public class F1Service {
         return circuitBreaker.getState().name();
     }
 
-    // Resiliencia, rate limiting y coalescing
+    // ==================================================
+    // RESILIENCIA, RATE LIMITING Y COALESCING
+    // ==================================================
     private void paceJolpicaRequest() {
         if (jolpicaMinIntervalMs <= 0L) {
             return;
@@ -216,7 +221,9 @@ public class F1Service {
         }
     }
 
-    // Consultas de calendario y resultados
+    // ==================================================
+    // CONSULTAS DE CALENDARIO Y RESULTADOS
+    // ==================================================
     public List<Race> calendar(int season) {
         validateSeason(season);
         var cached = calendarCache.get(season);
@@ -456,7 +463,9 @@ public class F1Service {
         ));
     }
 
-    // Campeonatos y estadísticas de pilotos
+    // ==================================================
+    // CAMPEONATOS Y ESTADISTICAS DE PILOTOS
+    // ==================================================
     public List<DriverStandingInfo> driverStandings() {
         var cached = driverStandingsCache;
         if (cached != null && !cached.isExpired()) {
@@ -757,7 +766,9 @@ public class F1Service {
         return null;
     }
 
-    // Consultas complementarias (Sprint, Qualy, OpenF1)
+    // ==================================================
+    // CONSULTAS COMPLEMENTARIAS (SPRINT, QUALY, OPENF1)
+    // ==================================================
     private void mergeSprintPoints(int season, int round, Map<String, Double> weekendPoints) {
         try {
             var s = callJolpica(() -> client.getSprintResults(season, round, 30));
@@ -831,7 +842,9 @@ public class F1Service {
         }
     }
 
-    // Utilidades y normalización
+    // ==================================================
+    // UTILIDADES Y NORMALIZACION
+    // ==================================================
     public static String normalizeDriverId(String driverId) {
         if (driverId == null) {
             return null;

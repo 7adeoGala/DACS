@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
+@SuppressWarnings("null")
 public class ConnectorExceptionHandler {
 
     @ExceptionHandler(F1Service.F1UnavailableException.class)

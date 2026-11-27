@@ -22,6 +22,7 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 
 @Configuration
 @EnableMethodSecurity
+@SuppressWarnings("null")
 public class SecurityConfig {
 
     private final ObjectMapper objectMapper = new ObjectMapper();

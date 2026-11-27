@@ -16,6 +16,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("null")
 class PredictionServiceTest {
 
     private PredictionRepository predictions;
