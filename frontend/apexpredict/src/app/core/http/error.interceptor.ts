@@ -21,7 +21,7 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) => {
           } else if (error.status === 403) {
             banner.show('No tenés permisos suficientes para realizar esta acción.');
           } else if (error.status === 429) {
-            banner.show('Demasiadas solicitudes en poco tiempo. Esperá unos segundos e intentá nuevamente.');
+            return throwError(() => error);
           } else if (error.status === 0 || error.status >= 500) {
             const backendDesc =
               typeof error.error === 'object' && error.error?.description

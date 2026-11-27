@@ -109,16 +109,34 @@ describe('ApiService (BFF-only integration)', () => {
     expect(session.name).toBe('Qatar Grand Prix');
   });
 
-  it('wakeServices no dispara /conectorping para evitar saturar el arranque en frio', () => {
+  it('wakeServices despierta BFF directo con /ping y activa los servicios de Render sin /conectorping', () => {
     const originalFetch = globalThis.fetch;
-    globalThis.fetch = vi.fn(() => Promise.resolve(new Response())) as unknown as typeof fetch;
+    const originalWakeUrls = [...environment.renderWakeUrls];
+    const fetchSpy = vi.fn(() => Promise.resolve(new Response()));
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    environment.renderWakeUrls.splice(
+      0,
+      environment.renderWakeUrls.length,
+      'https://dacs-f0st.onrender.com/backend/ping',
+      'https://dacs-1-jpud.onrender.com/conector/ping'
+    );
 
     try {
       service.wakeServices();
-      const pingReq = httpMock.expectOne(`${environment.apiUrl}/backendping`);
-      pingReq.flush({ status: 'ok' });
+      const pingReq = httpMock.expectOne(`${environment.apiUrl}/ping`);
+      pingReq.flush({ status: 'UP' });
+      httpMock.expectNone(`${environment.apiUrl}/backendping`);
       httpMock.expectNone(`${environment.apiUrl}/conectorping`);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://dacs-f0st.onrender.com/backend/ping',
+        expect.objectContaining({ mode: 'no-cors' })
+      );
+      expect(fetchSpy).toHaveBeenCalledWith(
+        'https://dacs-1-jpud.onrender.com/conector/ping',
+        expect.objectContaining({ mode: 'no-cors' })
+      );
     } finally {
+      environment.renderWakeUrls.splice(0, environment.renderWakeUrls.length, ...originalWakeUrls);
       globalThis.fetch = originalFetch;
     }
   });

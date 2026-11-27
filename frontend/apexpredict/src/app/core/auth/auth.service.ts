@@ -394,7 +394,7 @@ export class AuthService {
         return;
       }
       this.isProvisioning = true;
-      await fetch(`${environment.apiUrl}/me`, {
+      const res = await fetch(`${environment.apiUrl}/me`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -402,7 +402,9 @@ export class AuthService {
         },
         body: JSON.stringify({})
       });
-      this.lastProvisionedToken = authToken;
+      if (res.ok) {
+        this.lastProvisionedToken = authToken;
+      }
     } catch (e) {
       console.warn('Registro de usuario en backend diferido:', e);
     } finally {

@@ -92,6 +92,7 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
   public readonly auth = inject(AuthService);
   private readonly http = inject(HttpClient);
   private timerInterval: any;
+  private slowWakeTimer: ReturnType<typeof setTimeout> | null = null;
   private initialLoadSub: Subscription | null = null;
   private teamDuoStatsSub: Subscription | null = null;
   private lastLoadedAuthKey = '';
@@ -374,14 +375,21 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     if (this.timerInterval) clearInterval(this.timerInterval);
+    if (this.slowWakeTimer) clearTimeout(this.slowWakeTimer);
     this.initialLoadSub?.unsubscribe();
     this.teamDuoStatsSub?.unsubscribe();
   }
 
   private loadData(): void {
     this.initialLoadSub?.unsubscribe();
+    if (this.slowWakeTimer) clearTimeout(this.slowWakeTimer);
     this.isLoading.set(true);
     this.loadingMessage.set('Conectando con telemetría oficial del Gran Premio...');
+    this.slowWakeTimer = setTimeout(() => {
+      if (this.isLoading()) {
+        this.loadingMessage.set('Despertando servidores en la nube, aguarda unos segundos...');
+      }
+    }, 5000);
 
     const isAuth = this.auth.authenticated();
     const username = this.auth.username();
@@ -420,6 +428,10 @@ export class GpSpotlightComponent implements OnInit, OnDestroy {
         });
       }),
       finalize(() => {
+        if (this.slowWakeTimer) {
+          clearTimeout(this.slowWakeTimer);
+          this.slowWakeTimer = null;
+        }
         this.isLoading.set(false);
       })
     ).subscribe({

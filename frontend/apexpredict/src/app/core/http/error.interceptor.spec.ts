@@ -57,5 +57,11 @@ describe('errorInterceptor', () => {
       .expectOne('/api/f1/standings/drivers')
       .flush({}, { status: 429, statusText: 'Too Many Requests' });
     expect(banner.message()).toBeNull();
+
+    http.get('/api/me').subscribe({ error: () => {} });
+    httpMock
+      .expectOne('/api/me')
+      .flush({}, { status: 429, statusText: 'Too Many Requests' });
+    expect(banner.message()).toBeNull();
   });
 });

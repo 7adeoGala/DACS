@@ -70,7 +70,9 @@ export class ApiService {
   }
 
   profile() {
-    return this.http.put<Profile>(`${this.base}/me`, {});
+    return this.http.put<Profile>(`${this.base}/me`, {}).pipe(
+      this.retryOnColdStart<Profile>()
+    );
   }
 
   getProfile(): Observable<Profile> {
@@ -111,17 +113,31 @@ export class ApiService {
     dnfCount: 3
   };
 
+  private lastRenderWakeAt = 0;
+
+  private triggerExternalRenderWakeup(force = false): void {
+    if (typeof window === 'undefined' || typeof fetch !== 'function') return;
+    const now = Date.now();
+    if (!force && now - this.lastRenderWakeAt < 20000) {
+      return;
+    }
+    this.lastRenderWakeAt = now;
+
+    const wakeUrls = (environment as { renderWakeUrls?: string[] }).renderWakeUrls || [];
+    for (const wakeUrl of wakeUrls) {
+      fetch(wakeUrl, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+    }
+  }
+
   private retryDriverStats<T>() {
     return retry<T>({
-      count: 1,
-      delay: (error) => {
-        if (error.status === 429) {
-          console.warn('[ApexPredict] Telemetria de piloto en espera (HTTP 429), reintentando (1/1)...');
-          return timer(3500);
-        }
-        if (error.status === 0 || error.status === 503 || error.status === 504) {
-          console.warn(`[ApexPredict] Reintentando telemetria de piloto (1/1, status: ${error.status})...`);
-          return timer(2500);
+      count: 3,
+      delay: (error, retryCount) => {
+        if (error.status === 429 || error.status === 0 || error.status === 503 || error.status === 504) {
+          this.triggerExternalRenderWakeup();
+          const waitMs = Math.min(2500 + retryCount * 2000, 8000);
+          console.warn(`[ApexPredict] Reintentando telemetria de piloto (${retryCount}/3, status: ${error.status})...`);
+          return timer(waitMs);
         }
         throw error;
       }
@@ -130,15 +146,13 @@ export class ApiService {
 
   private retryF1Telemetry<T>() {
     return retry<T>({
-      count: 2,
+      count: 5,
       delay: (error, retryCount) => {
-        if (error.status === 429) {
-          console.warn(`[ApexPredict] Telemetria F1 en arranque (HTTP 429), reintentando (${retryCount}/2)...`);
-          return timer(retryCount * 3500);
-        }
-        if (error.status === 0 || error.status === 502 || error.status === 503 || error.status === 504) {
-          console.warn(`[ApexPredict] Reintentando telemetria F1 (${retryCount}/2, status: ${error.status})...`);
-          return timer(Math.min(retryCount * 3000, 6000));
+        if (error.status === 429 || error.status === 0 || error.status === 502 || error.status === 503 || error.status === 504) {
+          this.triggerExternalRenderWakeup();
+          const waitMs = Math.min(2000 + retryCount * 2000, 10000);
+          console.warn(`[ApexPredict] Telemetria F1 iniciando en Render (${retryCount}/5, status: ${error.status})...`);
+          return timer(waitMs);
         }
         throw error;
       }
@@ -147,15 +161,13 @@ export class ApiService {
 
   private retryOnColdStart<T>() {
     return retry<T>({
-      count: 4,
+      count: 6,
       delay: (error, retryCount) => {
-        if (error.status === 429) {
-          console.warn('[ApexPredict] Rate limit alcanzado (HTTP 429). Se preserva la cuota del servidor.');
-          throw error;
-        }
-        if (error.status === 502 || error.status === 503 || error.status === 504 || error.status === 0) {
-          console.warn(`[ApexPredict] Reintentando conexión con servidor (${retryCount}/4, status: ${error.status})...`);
-          return timer(Math.min(retryCount * 2500, 10000));
+        if (error.status === 429 || error.status === 502 || error.status === 503 || error.status === 504 || error.status === 0) {
+          this.triggerExternalRenderWakeup();
+          const waitMs = Math.min(2000 + retryCount * 2000, 10000);
+          console.warn(`[ApexPredict] Despertando servidor backend (${retryCount}/6, status: ${error.status})...`);
+          return timer(waitMs);
         }
         throw error;
       }
@@ -168,7 +180,8 @@ export class ApiService {
 
   wakeServices(): void {
     if (typeof window === 'undefined') return;
-    this.http.get(`${this.base}/backendping`).pipe(catchError(() => of(null))).subscribe();
+    this.http.get(`${this.base}/ping`).pipe(catchError(() => of(null))).subscribe();
+    this.triggerExternalRenderWakeup(true);
     fetch(`${environment.keycloak.url}/realms/${environment.keycloak.realm}/.well-known/openid-configuration`).catch(() => {});
   }
 
@@ -363,7 +376,8 @@ export class ApiService {
     }
 
     return this.http.get<NextSession>(`${this.base}/sessions/next`).pipe(
-      timeout(15000),
+      timeout(20000),
+      this.retryOnColdStart<NextSession>(),
       switchMap(backendSession => {
         const isBackendExpired = backendSession?.startsAt && (new Date(backendSession.startsAt).getTime() <= Date.now());
         if (isBackendExpired) {

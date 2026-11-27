@@ -35,6 +35,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   public readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private initSub: Subscription | null = null;
+  private slowWakeTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly isInitializing = signal<boolean>(true);
   readonly loadingMessage = signal<string>('Sincronizando sesión oficial y tu panel de pronósticos...');
@@ -191,6 +192,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
+    if (this.slowWakeTimer) clearTimeout(this.slowWakeTimer);
     this.initSub?.unsubscribe();
   }
 
@@ -207,8 +209,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
 
   private loadNextSession() {
     this.initSub?.unsubscribe();
+    if (this.slowWakeTimer) clearTimeout(this.slowWakeTimer);
     this.isInitializing.set(true);
     this.loadingMessage.set('Sincronizando sesión oficial y tu panel de pronósticos...');
+    this.slowWakeTimer = setTimeout(() => {
+      if (this.isInitializing()) {
+        this.loadingMessage.set('Despertando servidores en la nube, aguarda unos segundos...');
+      }
+    }, 5000);
 
     this.initSub = this.api.nextSession(this.auth.authenticated()).pipe(
       catchError(() => of(null)),
@@ -238,6 +246,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
         );
       }),
       finalize(() => {
+        if (this.slowWakeTimer) {
+          clearTimeout(this.slowWakeTimer);
+          this.slowWakeTimer = null;
+        }
         this.isInitializing.set(false);
         this.loadF1Standings();
       })
